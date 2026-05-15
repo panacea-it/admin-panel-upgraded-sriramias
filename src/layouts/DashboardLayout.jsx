@@ -1,0 +1,42 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Outlet } from 'react-router-dom'
+import Sidebar from '../components/layout/Sidebar'
+import Header from '../components/layout/Header'
+
+export default function DashboardLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false,
+  )
+
+  const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), [])
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth < 1024
+      setIsMobile(mobile)
+      if (mobile) setSidebarOpen(false)
+    }
+    onResize()
+    window.addEventListener('resize', onResize, { passive: true })
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  return (
+    <div
+      className="flex min-h-screen bg-[#f7f7f7] text-[#111111]"
+      style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}
+    >
+      <Sidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={closeSidebar} />
+
+      <div className="flex min-w-0 flex-1 flex-col" style={{ minWidth: 0 }}>
+        <Header onMenuClick={toggleSidebar} />
+
+        <main className="flex-1 overflow-x-hidden bg-[#f7f7f7]" style={{ minWidth: 0 }}>
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}
