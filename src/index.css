@@ -1,6 +1,50 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 
+:root {
+  --color-primary: #246392;
+  --color-primary-hover: #1a4d73;
+  --color-primary-light: #e8f4fc;
+  --color-primary-text: #246392;
+  --color-border: #e2e8f0;
+  --color-card: #ffffff;
+  --color-text-main: #111111;
+  --color-text-sub: #686868;
+  --color-text-muted: #9ca0a8;
+  --color-input-border: #e2e8f0;
+  --color-input-bg: #ffffff;
+  --color-input-focus: #55ace7;
+  --color-success: #16a34a;
+  --color-success-bg: #dcfce7;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fee2e2;
+  --card-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --app-bg: #f7f7f7;
+  --app-text: #111111;
+}
+
+html.dark {
+  --color-primary: #55ace7;
+  --color-primary-hover: #3d96d4;
+  --color-primary-light: #1e3a5f;
+  --color-primary-text: #93c5fd;
+  --color-border: #334155;
+  --color-card: #0f172a;
+  --color-text-main: #f1f5f9;
+  --color-text-sub: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-input-border: #475569;
+  --color-input-bg: #1e293b;
+  --color-input-focus: #55ace7;
+  --color-success: #4ade80;
+  --color-success-bg: #14532d;
+  --color-danger: #f87171;
+  --color-danger-bg: #450a0a;
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --app-bg: #0b1120;
+  --app-text: #f1f5f9;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -17,8 +61,8 @@ body {
   overflow-x: hidden;
   font-family: 'Poppins', 'Inter', sans-serif;
   max-width: 100vw;
-  background: #f7f7f7;
-  color: #111111;
+  background: var(--app-bg);
+  color: var(--app-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -93,4 +137,26 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+html.dark,
+html.dark body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+html.dark .figma-admin-section {
+  color: #e2e8f0;
 }

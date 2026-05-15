@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import LoadingState from '../components/feedback/LoadingState'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 
@@ -33,8 +34,10 @@ export default function DashboardLayout() {
       <div className="flex min-w-0 flex-1 flex-col" style={{ minWidth: 0 }}>
         <Header onMenuClick={toggleSidebar} />
 
-        <main className="flex-1 overflow-x-hidden bg-[#f7f7f7]" style={{ minWidth: 0 }}>
-          <Outlet />
+        <main className="flex-1 overflow-x-hidden bg-[#f7f7f7] dark:bg-[var(--app-bg)]" style={{ minWidth: 0 }}>
+          <Suspense fallback={<LoadingState message="Loading page..." className="m-6" />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

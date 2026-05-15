@@ -1,8 +1,18 @@
-import { useEffect } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
-export default function Modal({ open, onClose, children, className, size = 'lg' }) {
+export default function Modal({
+  open,
+  onClose,
+  children,
+  className,
+  size = 'lg',
+  title = 'Dialog',
+}) {
+  const titleId = useId()
+  const panelRef = useRef(null)
+
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e) => {
@@ -10,6 +20,7 @@ export default function Modal({ open, onClose, children, className, size = 'lg' 
     }
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
+    panelRef.current?.focus()
     return () => {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
@@ -30,6 +41,7 @@ export default function Modal({ open, onClose, children, className, size = 'lg' 
       className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto p-4 sm:p-6"
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
     >
       <button
         type="button"
@@ -38,12 +50,17 @@ export default function Modal({ open, onClose, children, className, size = 'lg' 
         onClick={onClose}
       />
       <div
+        ref={panelRef}
+        tabIndex={-1}
         className={cn(
-          'relative my-2 w-full',
+          'relative my-2 w-full outline-none',
           sizes[size] ?? sizes.lg,
           className,
         )}
       >
+        <span id={titleId} className="sr-only">
+          {title}
+        </span>
         <button
           type="button"
           onClick={onClose}

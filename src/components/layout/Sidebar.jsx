@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '../../utils/cn'
@@ -7,6 +7,7 @@ import {
   SIDEBAR_GROUPS,
   getGroupIdForPath,
 } from '../../constants/navigation'
+import { useAuth } from '../../contexts/AuthContext'
 
 const groupShell = 'rounded-xl bg-[#2d2f58]'
 const childActive = 'rounded-lg bg-[#1e2145] text-white'
@@ -32,8 +33,13 @@ function SubNavLink({ to, label, onNavigate }) {
 
 function NavGroup({ group, isOpen, onToggle, onNavigate }) {
   const { label, icon: Icon, children } = group
+  const { user } = useAuth()
   const location = useLocation()
-  const hasActiveChild = children.some(
+  const visibleChildren = children.filter((c) => {
+    if (!c.requiredRoles?.length) return true
+    return Boolean(user?.role && c.requiredRoles.includes(user.role))
+  })
+  const hasActiveChild = visibleChildren.some(
     (c) =>
       location.pathname === c.path || location.pathname.startsWith(`${c.path}/`),
   )
@@ -67,7 +73,7 @@ function NavGroup({ group, isOpen, onToggle, onNavigate }) {
         <ChevronUp className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2.5} />
       </button>
       <div className="flex flex-col gap-0.5 px-2 pb-2 pt-0">
-        {children.map((child) => (
+        {visibleChildren.map((child) => (
           <SubNavLink
             key={child.path}
             to={child.path}
@@ -84,10 +90,12 @@ export default function Sidebar({ isOpen, isMobile, onClose }) {
   const location = useLocation()
   const routeGroupId = getGroupIdForPath(location.pathname)
   const [openGroupId, setOpenGroupId] = useState(routeGroupId)
+  const [prevRouteGroupId, setPrevRouteGroupId] = useState(routeGroupId)
 
-  useEffect(() => {
+  if (routeGroupId !== prevRouteGroupId) {
+    setPrevRouteGroupId(routeGroupId)
     if (routeGroupId) setOpenGroupId(routeGroupId)
-  }, [routeGroupId])
+  }
 
   const handleNavigate = isMobile ? onClose : undefined
 

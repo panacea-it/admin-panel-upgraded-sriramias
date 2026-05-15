@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Edit3, PlusCircle, Trash2 } from 'lucide-react'
+import { Edit3, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from './ModalPanelHeader'

@@ -23,7 +23,8 @@ function demoLogin(email, password) {
       u.password === password.trim(),
   )
   if (!user) throw new Error('Invalid email or password')
-  const { password: _, ...safe } = user
+  const { password: _password, ...safe } = user
+  void _password
   return {
     user: safe,
     accessToken: `demo-token-${user.id}`,
@@ -58,6 +59,7 @@ export async function login({ email, password }) {
     if (error.response?.status === 404) {
       throw new Error(
         `Login API not found. Confirm VITE_API_BASE_URL is https://new-sriramias.onrender.com (no trailing /api).`,
+        { cause: error },
       )
     }
 
@@ -73,7 +75,7 @@ export async function login({ email, password }) {
       throw error
     }
 
-    throw new Error(getLoginErrorMessage(error))
+    throw new Error(getLoginErrorMessage(error), { cause: error })
   }
 }
 

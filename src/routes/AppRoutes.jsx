@@ -42,7 +42,7 @@ export default function AppRoutes() {
         />
         <Route path="settings/general" element={<SettingsPage title="General Settings" section="general" />} />
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

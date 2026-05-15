@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { emitAuthLogout } from '../utils/authEvents'
 import { clearAuthStorage, getAuthToken } from '../utils/authStorage'
 
 export function resolveApiBaseUrl() {
@@ -34,8 +35,9 @@ api.interceptors.response.use(
     const isLoginRequest = error.config?.url?.includes('/auth/login')
     if (error.response?.status === 401 && !isLoginRequest) {
       clearAuthStorage()
+      emitAuthLogout()
       if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
+        window.location.assign('/login')
       }
     }
     return Promise.reject(error)

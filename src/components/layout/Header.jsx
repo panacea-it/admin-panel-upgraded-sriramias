@@ -16,18 +16,12 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTheme } from '../../hooks/useTheme'
 import { initialNotifications } from '../../data/notifications'
 import NotificationPanel from './NotificationPanel'
 import SriramLogo from '../brand/SriramLogo'
 import { cn } from '../../utils/cn'
-
-const centers = [
-  'All Centers',
-  'Delhi Center',
-  'Mumbai Center',
-  'Bangalore Center',
-  'Chennai Center',
-]
+import { useCenters } from '../../contexts/CentersContext'
 
 const roleLabels = {
   superadmin: 'Super Admin',
@@ -51,11 +45,12 @@ function IconAction({ icon: Icon, label, className }) {
 
 export default function Header({ onMenuClick }) {
   const { user, selectedCenter, setSelectedCenter, logout } = useAuth()
+  const { headerCenterOptions } = useCenters()
   const navigate = useNavigate()
   const [centerOpen, setCenterOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
+  const { isDark, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState(initialNotifications)
   const headerRef = useRef(null)
 
@@ -69,6 +64,16 @@ export default function Header({ onMenuClick }) {
     roleLabels[user?.role] ||
     (user?.role ? user.role.replace(/([a-z])([A-Z])/g, '$1 $2') : 'Super Admin')
   const initials = user?.avatar || 'SK'
+
+  useEffect(() => {
+    if (
+      selectedCenter &&
+      selectedCenter !== 'All Centers' &&
+      !headerCenterOptions.includes(selectedCenter)
+    ) {
+      setSelectedCenter('All Centers')
+    }
+  }, [headerCenterOptions, selectedCenter, setSelectedCenter])
 
   useEffect(() => {
     const handler = (e) => {
@@ -149,7 +154,7 @@ export default function Header({ onMenuClick }) {
           </button>
           {centerOpen && (
             <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(100vw-2rem,220px)] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
-              {centers.map((c) => (
+              {headerCenterOptions.map((c) => (
                 <button
                   key={c}
                   type="button"
@@ -200,11 +205,11 @@ export default function Header({ onMenuClick }) {
 
         <button
           type="button"
-          onClick={() => setDarkMode((v) => !v)}
-          className="hidden h-9 w-9 items-center justify-center rounded-xl text-amber-500 transition hover:bg-amber-50 sm:flex"
-          aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          onClick={toggleTheme}
+          className="hidden h-9 w-9 items-center justify-center rounded-xl text-amber-500 transition hover:bg-amber-50 sm:flex dark:hover:bg-slate-800"
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {darkMode ? (
+          {isDark ? (
             <Moon className="h-[18px] w-[18px]" strokeWidth={2.2} />
           ) : (
             <Sun className="h-[18px] w-[18px]" strokeWidth={2.2} />

@@ -31,6 +31,9 @@ import {
   Database,
   Plug,
   ListOrdered,
+  Building2,
+  IdCard,
+  LayoutGrid,
 } from 'lucide-react'
 
 /** Top-level dashboard link (no children) */
@@ -64,7 +67,15 @@ export const SIDEBAR_GROUPS = [
       { label: 'Manage Users', path: '/users/manage', icon: Users },
       { label: 'Wallet', path: '/users/wallet', icon: Wallet },
       { label: 'Coupons', path: '/coupons', icon: TicketPercent },
-      { label: 'Admin', path: '/users/admin', icon: Shield },
+      { label: 'Admin Management', path: '/users/admin', icon: Shield },
+      { label: 'Admin Access Types', path: '/users/admin-access-types', icon: IdCard },
+      { label: 'Role Access Matrix', path: '/users/role-matrix', icon: LayoutGrid },
+      {
+        label: 'Center Management',
+        path: '/users/centers',
+        icon: Building2,
+        requiredRoles: ['superadmin'],
+      },
     ],
   },
   {

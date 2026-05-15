@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../../contexts/AuthContext'
@@ -7,15 +7,20 @@ import SriramLogo from '../../components/brand/SriramLogo'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, authLoading, isAuthenticated, loading } = useAuth()
+  const redirectTo =
+    location.state?.from?.pathname && location.state.from.pathname !== '/login'
+      ? location.state.from.pathname
+      : '/dashboard'
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ email: '', password: '' })
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      navigate('/dashboard', { replace: true })
+      navigate(redirectTo, { replace: true })
     }
-  }, [isAuthenticated, loading, navigate])
+  }, [isAuthenticated, loading, navigate, redirectTo])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -26,7 +31,7 @@ export default function LoginPage() {
     try {
       await login(form)
       toast.success('Welcome back!')
-      navigate('/dashboard', { replace: true })
+      navigate(redirectTo, { replace: true })
     } catch (err) {
       toast.error(err.message || 'Login failed')
     }

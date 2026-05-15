@@ -1,17 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import {
-  BookOpen,
   Radio,
-  FolderOpen,
   ClipboardList,
-  Newspaper,
   Tags,
   Users,
   Wallet,
-  TicketPercent,
-  Shield,
   UserPlus,
-  MessageCircle,
   Headphones,
   BellRing,
   Image,
@@ -19,21 +13,27 @@ import {
   FileSearch,
   FileText,
   Tv,
-  BarChart2,
   SlidersHorizontal,
   ScrollText,
   Database,
   Plug,
   ListOrdered,
 } from 'lucide-react'
-import ModuleListPage from '../pages/ModuleListPage'
-import CoursesPage from '../pages/academics/CoursesPage'
-import ContentLibraryPage from '../pages/academics/ContentLibraryPage'
-import CurrentAffairsPage from '../pages/academics/CurrentAffairsPage'
-import BooksPage from '../pages/marketing/BooksPage'
-import CouponsPage from '../pages/users/CouponsPage'
-import EnquiriesPage from '../pages/crm/EnquiriesPage'
-import AnalyticsPage from '../pages/AnalyticsPage'
+import RoleRoute from './RoleRoute'
+import {
+  AdminManagementPage,
+  AdminAccessTypesPage,
+  RoleAccessMatrixPage,
+  CenterManagementPage,
+  AnalyticsPage,
+  BooksPage,
+  ContentLibraryPage,
+  CouponsPage,
+  CoursesPage,
+  CurrentAffairsPage,
+  EnquiriesPage,
+  ModuleListPage,
+} from './lazyPages'
 
 function module(icon, title, addLabel, searchPlaceholder) {
   return (
@@ -56,7 +56,38 @@ export const MODULE_ROUTE_ELEMENTS = [
   { path: 'users/manage', element: module(Users, 'Manage Users', 'Add User', 'Search users') },
   { path: 'users/wallet', element: module(Wallet, 'Wallet', 'Add Transaction', 'Search wallet') },
   { path: 'coupons', element: <CouponsPage /> },
-  { path: 'users/admin', element: module(Shield, 'Admin', 'Add Admin', 'Search admins') },
+  {
+    path: 'users/admin',
+    element: (
+      <RoleRoute allowedRoles={['superadmin']}>
+        <AdminManagementPage />
+      </RoleRoute>
+    ),
+  },
+  {
+    path: 'users/admin-access-types',
+    element: (
+      <RoleRoute allowedRoles={['superadmin']}>
+        <AdminAccessTypesPage />
+      </RoleRoute>
+    ),
+  },
+  {
+    path: 'users/role-matrix',
+    element: (
+      <RoleRoute allowedRoles={['superadmin']}>
+        <RoleAccessMatrixPage />
+      </RoleRoute>
+    ),
+  },
+  {
+    path: 'users/centers',
+    element: (
+      <RoleRoute allowedRoles={['superadmin']}>
+        <CenterManagementPage />
+      </RoleRoute>
+    ),
+  },
   { path: 'crm/leads', element: module(UserPlus, 'Leads', 'Add Lead', 'Search leads') },
   { path: 'enquiries', element: <EnquiriesPage /> },
   {
@@ -97,8 +128,6 @@ export const MODULE_ROUTE_ELEMENTS = [
     path: 'system/queue-monitor',
     element: module(ListOrdered, 'Queue Monitor', 'Refresh', 'Search queue'),
   },
-  /* Legacy paths */
   { path: 'free-resources', element: <Navigate to="/content-library" replace /> },
-  /* Content Library lives under Academics */
   { path: 'books', element: <Navigate to="/marketing/books" replace /> },
 ]

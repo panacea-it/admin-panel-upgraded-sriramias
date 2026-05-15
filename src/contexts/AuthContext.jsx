@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import { login as loginApi, logout as logoutApi } from '../api/authAPI'
+import { AUTH_LOGOUT_EVENT } from '../utils/authEvents'
 import { normalizeStoredUser } from '../utils/authHelpers'
 import {
   clearAuthStorage,
@@ -17,28 +18,35 @@ import {
 
 const AuthContext = createContext(null)
 
+function readStoredSession() {
+  const token = getAuthToken()
+  const stored = getStoredUserJson()
+  if (!token || !stored) return null
+  try {
+    return normalizeStoredUser(JSON.parse(stored))
+  } catch {
+    clearAuthStorage()
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [selectedCenter, setSelectedCenter] = useState('All Centers')
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(readStoredSession)
+  const [selectedCenter, setSelectedCenter] = useState(() => {
+    const sessionUser = readStoredSession()
+    return sessionUser?.center || sessionUser?.centers?.[0] || 'All Centers'
+  })
   const [authLoading, setAuthLoading] = useState(false)
 
   useEffect(() => {
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
+  }, [])
 
-    const token = getAuthToken()
-    const stored = getStoredUserJson()
-    if (token && stored) {
-      try {
-        const parsed = normalizeStoredUser(JSON.parse(stored))
-        if (parsed) setUser(parsed)
-        else clearAuthStorage()
-      } catch {
-        clearAuthStorage()
-      }
-    }
-    setLoading(false)
+  useEffect(() => {
+    const onForcedLogout = () => setUser(null)
+    window.addEventListener(AUTH_LOGOUT_EVENT, onForcedLogout)
+    return () => window.removeEventListener(AUTH_LOGOUT_EVENT, onForcedLogout)
   }, [])
 
   const login = useCallback(async (credentials) => {
@@ -63,19 +71,20 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       isAuthenticated: !!user,
-      loading,
+      loading: false,
       authLoading,
       selectedCenter,
       setSelectedCenter,
       login,
       logout,
     }),
-    [user, loading, authLoading, selectedCenter, login, logout],
+    [user, authLoading, selectedCenter, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook colocated with provider
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')

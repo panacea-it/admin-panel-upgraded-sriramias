@@ -2,7 +2,7 @@
 export function normalizeRole(role) {
   if (!role) return 'superadmin'
 
-  const normalized = String(role).toLowerCase().replace(/[\s_/\-]+/g, '')
+  const normalized = String(role).toLowerCase().replace(/[\s_/-]+/g, '')
 
   switch (normalized) {
     case 'superadmin':
