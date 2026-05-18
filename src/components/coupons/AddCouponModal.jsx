@@ -1,11 +1,19 @@
 import { useState } from 'react'
-import { Calendar, ImageIcon, TicketPercent } from 'lucide-react'
-import { toast } from 'sonner'
+import { AlarmClock, TicketPercent } from 'lucide-react'
+import { toast } from '@/utils/toast'
+import { cn } from '../../utils/cn'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
 import SectionBar from '../courses/SectionBar'
-import { CourseFormField, CourseInput, CourseSelect } from '../courses/CourseFormField'
-import FileInputWithIcon from '../books/FileInputWithIcon'
+import {
+  CourseDateInput,
+  CourseFileInput,
+  CourseFormField,
+  CourseInput,
+  CourseSelect,
+} from '../courses/CourseFormField'
+
+const COUPON_STUDENTS = ['Darshan', 'Priya Sharma', 'Amit Kumar', 'Neha Gupta', 'Rajesh Verma']
 
 const emptyForm = {
   couponName: '',
@@ -16,8 +24,57 @@ const emptyForm = {
   validTill: '',
   category: 'Course',
   backgroundImage: '',
-  usageLimit: '',
-  perUserLimit: '',
+  totalUsersLimit: '',
+  usageLimitPerCustomer: '',
+  minQuantityItems: '',
+  minCartValue: '',
+  eligibility: 'everyone',
+  specificStudent: COUPON_STUDENTS[0],
+}
+
+function ValueField({ type, value, onChange }) {
+  const label = type === 'Percentage' ? 'Percentage Value' : type === 'Flat Discount' ? 'Flat Amount' : 'Value'
+  return (
+    <CourseFormField label={label} required>
+      <div className="relative">
+        <CourseInput
+          value={value}
+          onChange={onChange}
+          inputMode="decimal"
+          className="pr-11"
+          placeholder=""
+        />
+        <AlarmClock
+          className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#246392]"
+          strokeWidth={2}
+        />
+      </div>
+    </CourseFormField>
+  )
+}
+
+function EligibilityOption({ id, name, label, checked, onChange, children }) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl bg-[#e8f4fc] px-4 py-3.5 transition',
+        checked && 'ring-2 ring-[#55ace7]/35',
+      )}
+    >
+      <label htmlFor={id} className="flex cursor-pointer items-center gap-3">
+        <input
+          id={id}
+          type="radio"
+          name={name}
+          checked={checked}
+          onChange={onChange}
+          className="h-4 w-4 shrink-0 border-[#246392] text-[#246392] focus:ring-[#55ace7]"
+        />
+        <span className="text-sm font-semibold text-[#333]">{label}</span>
+      </label>
+      {children}
+    </div>
+  )
 }
 
 export default function AddCouponModal({ open, onClose, onSubmit }) {
@@ -26,26 +83,43 @@ export default function AddCouponModal({ open, onClose, onSubmit }) {
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
   const handleClose = () => {
-    setForm(emptyForm)
+    setForm({ ...emptyForm })
     onClose()
+  }
+
+  const handleReset = () => {
+    setForm({ ...emptyForm })
+    toast.message('Form reset')
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.couponName.trim() || !form.couponCode.trim() || !form.validFrom || !form.validTill) {
-      toast.error('Please fill required coupon details')
+    if (!form.couponName.trim() || !form.couponCode.trim()) {
+      toast.error('Coupon name and code are required')
+      return
+    }
+    if (!form.value.trim() || !form.validFrom || !form.validTill) {
+      toast.error('Please fill value and validity dates')
+      return
+    }
+    if (!form.backgroundImage) {
+      toast.error('Background image is required')
+      return
+    }
+    if (form.eligibility === 'specific' && !form.specificStudent) {
+      toast.error('Select a student for specific eligibility')
       return
     }
     onSubmit?.(form)
-    toast.success('Coupon created')
+    toast.success('Coupon created successfully')
     handleClose()
   }
 
   return (
-    <Modal open={open} onClose={handleClose} size="full">
+    <Modal open={open} onClose={handleClose} size="full" title="Add Coupon">
       <form
         onSubmit={handleSubmit}
-        className="overflow-hidden rounded-xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
+        className="overflow-hidden rounded-xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
         <ModalPanelHeader title="Coupon" onBack={handleClose} icon={TicketPercent} />
 
@@ -66,76 +140,116 @@ export default function AddCouponModal({ open, onClose, onSubmit }) {
                 <option value="BOGO">BOGO</option>
               </CourseSelect>
             </CourseFormField>
-            <CourseFormField label="Percentage Value" required>
-              <CourseInput
-                value={form.value}
-                onChange={update('value')}
-                placeholder="e.g. 20"
-                className="pr-12"
-              />
-            </CourseFormField>
+
+            <ValueField type={form.type} value={form.value} onChange={update('value')} />
+
             <CourseFormField label="Valid From" required>
-              <div className="relative">
-                <CourseInput type="date" value={form.validFrom} onChange={update('validFrom')} />
-                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
-              </div>
+              <CourseDateInput value={form.validFrom} onChange={update('validFrom')} />
             </CourseFormField>
             <CourseFormField label="Valid Till" required>
-              <div className="relative">
-                <CourseInput type="date" value={form.validTill} onChange={update('validTill')} />
-                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
-              </div>
+              <CourseDateInput value={form.validTill} onChange={update('validTill')} />
             </CourseFormField>
+
             <CourseFormField label="Category">
               <CourseSelect value={form.category} onChange={update('category')}>
                 <option value="Course">Course</option>
                 <option value="Books">Books</option>
+                <option value="Test Series">Test Series</option>
                 <option value="All">All</option>
               </CourseSelect>
             </CourseFormField>
             <CourseFormField label="Background Image" required className="sm:col-span-2">
-              <FileInputWithIcon
-                icon={ImageIcon}
-                value={form.backgroundImage}
+              <CourseFileInput
+                placeholder={form.backgroundImage || '312×214 Kb'}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, backgroundImage: e.target.files?.[0]?.name || '' }))
+                  setForm((f) => ({
+                    ...f,
+                    backgroundImage: e.target.files?.[0]?.name || '',
+                  }))
                 }
-                accept="image/*"
-                placeholder="Upload image"
               />
             </CourseFormField>
           </div>
 
           <SectionBar title="Usage Limit" />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CourseFormField label="Total Usage Limit">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <CourseFormField label="Total Users Limit">
               <CourseInput
-                value={form.usageLimit}
-                onChange={update('usageLimit')}
-                placeholder="e.g. 1000"
+                value={form.totalUsersLimit}
+                onChange={update('totalUsersLimit')}
+                inputMode="numeric"
               />
             </CourseFormField>
-            <CourseFormField label="Per User Limit">
+            <CourseFormField label="Usage Limit per Customer">
               <CourseInput
-                value={form.perUserLimit}
-                onChange={update('perUserLimit')}
-                placeholder="e.g. 1"
+                value={form.usageLimitPerCustomer}
+                onChange={update('usageLimitPerCustomer')}
+                inputMode="numeric"
+              />
+            </CourseFormField>
+            <CourseFormField label="Minimum Quantity of Items">
+              <CourseInput
+                value={form.minQuantityItems}
+                onChange={update('minQuantityItems')}
+                inputMode="numeric"
+              />
+            </CourseFormField>
+            <CourseFormField label="Minimum Cart Value" className="lg:col-span-1">
+              <CourseInput
+                value={form.minCartValue}
+                onChange={update('minCartValue')}
+                inputMode="decimal"
               />
             </CourseFormField>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4 pt-2">
+          <div>
+            <h3 className="mb-3 text-base font-bold text-[#246392] sm:text-lg">Customer Eligibility</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <EligibilityOption
+                id="eligibility-everyone"
+                name="eligibility"
+                label="Every one"
+                checked={form.eligibility === 'everyone'}
+                onChange={() => setForm((f) => ({ ...f, eligibility: 'everyone' }))}
+              />
+              <EligibilityOption
+                id="eligibility-specific"
+                name="eligibility"
+                label="Specific Students"
+                checked={form.eligibility === 'specific'}
+                onChange={() => setForm((f) => ({ ...f, eligibility: 'specific' }))}
+              >
+                {form.eligibility === 'specific' && (
+                  <div className="mt-3">
+                    <CourseSelect
+                      value={form.specificStudent}
+                      onChange={update('specificStudent')}
+                    >
+                      {COUPON_STUDENTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </CourseSelect>
+                  </div>
+                )}
+              </EligibilityOption>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 border-t border-slate-200/80 pt-8">
             <button
               type="button"
-              onClick={handleClose}
-              className="h-11 min-w-[140px] rounded-lg bg-gradient-to-r from-[#55ace7] to-[#246392] px-8 text-sm font-bold text-white"
+              onClick={handleReset}
+              className="min-w-[140px] rounded-full bg-gradient-to-r from-[#5eb8f5] to-[#2b78a5] px-10 py-3 text-base font-bold text-white shadow-[0_6px_18px_rgba(43,120,165,0.35)] transition hover:brightness-105"
             >
               Reset
             </button>
             <button
               type="submit"
-              className="h-11 min-w-[140px] rounded-lg bg-gradient-to-r from-[#1a3a5c] to-[#0f172a] px-8 text-sm font-bold text-white"
+              className="min-w-[140px] rounded-full bg-gradient-to-r from-[#0d3b66] to-[#05192d] px-10 py-3 text-base font-bold text-white shadow-[0_6px_18px_rgba(5,25,45,0.4)] transition hover:brightness-110"
             >
               Save
             </button>
@@ -145,3 +259,4 @@ export default function AddCouponModal({ open, onClose, onSubmit }) {
     </Modal>
   )
 }
+

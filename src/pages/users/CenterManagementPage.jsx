@@ -9,7 +9,7 @@ import {
   Trash2,
   UserCheck,
 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
 import CenterFormDrawer from '../../components/center-management/CenterFormDrawer'
 import ViewCenterDrawer from '../../components/center-management/ViewCenterDrawer'

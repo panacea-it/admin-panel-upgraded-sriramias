@@ -6,6 +6,15 @@ export const COURSE_CATEGORIES = [
   { id: 5, name: 'NCERT Foundation', status: 'Active' },
 ]
 
+/** Sub-categories keyed by parent category name */
+export const SUB_CATEGORIES_BY_CATEGORY = {
+  'GS Foundation Course': ['Prelims Integrated', 'Mains Integrated', 'CSAT Booster'],
+  Mentorship: ['1-on-1 Mentorship', 'Group Mentorship'],
+  'Test Series': ['Prelims Test Series', 'Mains Test Series', 'Full Length Tests'],
+  'Optional Foundation': ['Sociology', 'Anthropology', 'Geography'],
+  'NCERT Foundation': ['Class VI–XII', 'NCERT Revision'],
+}
+
 export const INITIAL_COURSES = [
   {
     id: 1,

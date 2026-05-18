@@ -1,25 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Layers } from 'lucide-react'
 import PageBanner from '../../components/figma/PageBanner'
-import FigmaTable from '../../components/figma/FigmaTable'
+import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import EnquiryFilterToolbar from '../../components/enquiries/EnquiryFilterToolbar'
 import EnquiryStatCards from '../../components/enquiries/EnquiryStatCards'
-import { cn } from '../../utils/cn'
+import EnquiryStatusBadge from '../../components/enquiries/EnquiryStatusBadge'
 import { ENQUIRY_STATS, INITIAL_ENQUIRIES } from '../../data/enquiriesData'
-
-function EnquiryStatusBadge({ status }) {
-  const opened = status === 'Opened'
-  return (
-    <span
-      className={cn(
-        'inline-flex min-w-[88px] items-center justify-center rounded-md px-3 py-1.5 text-sm font-semibold text-white',
-        opened ? 'bg-[#69df66]' : 'bg-[#ef4444]',
-      )}
-    >
-      {status}
-    </span>
-  )
-}
 
 function matchesType(rowType, filter) {
   if (filter === 'all') return true
@@ -29,11 +15,17 @@ function matchesType(rowType, filter) {
 }
 
 export default function EnquiriesPage() {
-  const [enquiries] = useState(INITIAL_ENQUIRIES)
+  const [enquiries, setEnquiries] = useState(INITIAL_ENQUIRIES)
   const [search, setSearch] = useState('')
   const [centerFilter, setCenterFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+
+  const handleStatusChange = useCallback((id, nextStatus) => {
+    setEnquiries((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, status: nextStatus } : row)),
+    )
+  }, [])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -56,7 +48,7 @@ export default function EnquiriesPage() {
       key: 'student',
       label: 'Student',
       headerClassName: 'pl-6 sm:pl-10',
-      cellClassName: 'pl-6 sm:pl-10',
+      cellClassName: 'pl-6 sm:pl-10 align-middle',
       render: (row) => (
         <div className="flex items-center gap-3 sm:gap-4">
           <span className="h-6 w-6 shrink-0 rounded bg-[#cbeeff]" />
@@ -67,19 +59,27 @@ export default function EnquiriesPage() {
     {
       key: 'contact',
       label: 'Contact Details',
+      cellClassName: 'align-middle',
       render: (row) => (
         <span className="text-sm sm:text-base">
           {row.email} <span className="text-[#9ca0a8]">|</span> {row.phone}
         </span>
       ),
     },
-    { key: 'enquiryType', label: 'Enquiry Type' },
-    { key: 'center', label: 'Center' },
-    { key: 'enquiryDate', label: 'Enquiry Date' },
+    { key: 'enquiryType', label: 'Enquiry Type', cellClassName: 'align-middle' },
+    { key: 'center', label: 'Center', cellClassName: 'align-middle' },
+    { key: 'enquiryDate', label: 'Enquiry Date', cellClassName: 'align-middle' },
     {
       key: 'status',
       label: 'Status',
-      render: (row) => <EnquiryStatusBadge status={row.status} />,
+      headerClassName: 'text-center',
+      cellClassName: 'align-middle text-center',
+      render: (row) => (
+        <EnquiryStatusBadge
+          status={row.status}
+          onStatusChange={(nextStatus) => handleStatusChange(row.id, nextStatus)}
+        />
+      ),
     },
   ]
 
@@ -106,14 +106,13 @@ export default function EnquiriesPage() {
 
         <EnquiryStatCards stats={ENQUIRY_STATS} />
 
-        <p className="text-xs font-medium text-[#686868] sm:text-sm">
-          Showing {filtered.length} of {enquiries.length} enquiries
-        </p>
-
-        <FigmaTable
+        <PaginatedFigmaTable
           columns={columns}
           data={filtered}
           emptyMessage="No enquiries match your filters."
+          itemLabel="enquiries"
+          resetDeps={[search, centerFilter, dateFilter, typeFilter]}
+          rowClassName="hover:bg-slate-50/90"
         />
       </section>
     </div>

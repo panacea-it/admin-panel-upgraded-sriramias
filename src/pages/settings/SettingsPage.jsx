@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Settings } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
 import { useAuth } from '../../contexts/AuthContext'
 

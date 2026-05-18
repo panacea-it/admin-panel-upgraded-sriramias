@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Save, RotateCcw, Download, ScrollText } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 
 export default function StickyFooter({ onResetPermissions, onSave }) {
   return (

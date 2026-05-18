@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Edit3, Layers, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
-import FigmaTable from '../../components/figma/FigmaTable'
+import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import AddCurrentAffairsModal from '../../components/current-affairs/AddCurrentAffairsModal'
 import ModifyCurrentAffairsCategoryModal from '../../components/current-affairs/ModifyCurrentAffairsCategoryModal'
@@ -141,16 +141,13 @@ export default function CurrentAffairsPage() {
           categoryOptions={categoryOptions}
         />
 
-        <p className="text-xs font-medium text-[#686868] sm:text-sm">
-          {filtered.length} of {items.length} entries
-          {categoryFilter !== 'all' && ` · ${categoryFilter}`}
-          {statusFilter !== 'all' && ` · ${statusFilter}`}
-        </p>
-
-        <FigmaTable
+        <PaginatedFigmaTable
           columns={columns}
           data={filtered}
           emptyMessage="No current affairs match your filters."
+          itemLabel="entries"
+          resetDeps={[search, categoryFilter, statusFilter]}
+          rowClassName="hover:bg-slate-50/90"
         />
       </section>
 

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Edit3, ImageIcon, Layers, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
 import SectionBar from '../courses/SectionBar'

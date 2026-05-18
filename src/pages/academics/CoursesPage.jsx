@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { BookMarked, Edit3, PlusCircle } from 'lucide-react'
 import PageBanner from '../../components/figma/PageBanner'
-import FigmaTable from '../../components/figma/FigmaTable'
+import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import AddCourseModal from '../../components/courses/AddCourseModal'
 import ModifyCategoryModal from '../../components/courses/ModifyCategoryModal'
@@ -150,7 +150,14 @@ export default function CoursesPage() {
           categoryOptions={categoryOptions}
         />
 
-        <FigmaTable columns={columns} data={filtered} emptyMessage="No courses found." />
+        <PaginatedFigmaTable
+          columns={columns}
+          data={filtered}
+          emptyMessage="No courses found."
+          itemLabel="courses"
+          resetDeps={[search, categoryFilter, statusFilter]}
+          rowClassName="hover:bg-slate-50/90"
+        />
       </section>
 
       <AddCourseModal

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Building2, X } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import { cn } from '../../utils/cn'
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

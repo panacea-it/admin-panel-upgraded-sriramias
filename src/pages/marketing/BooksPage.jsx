@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { BookMarked, Edit3, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
-import FigmaTable from '../../components/figma/FigmaTable'
+import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import AddBookModal from '../../components/books/AddBookModal'
 import AddMainBookModal from '../../components/books/AddMainBookModal'
@@ -26,12 +26,15 @@ export default function BooksPage() {
   }, [books, search, statusFilter])
 
   const handleAddBook = (form) => {
+    const price =
+      form.bookPrice?.trim() ||
+      (form.discountPct ? `${form.bookPrice || '—'} (${form.discountPct}% off)` : '—')
     setBooks((prev) => [
       ...prev,
       {
         id: Date.now(),
         name: form.bookName,
-        price: '5,000',
+        price: form.bookPrice?.trim() ? `₹${form.bookPrice}` : price,
         status: 'Active',
       },
     ])
@@ -108,12 +111,14 @@ export default function BooksPage() {
           onStatusChange={(e) => setStatusFilter(e.target.value)}
         />
 
-        <p className="text-xs font-medium text-[#686868] sm:text-sm">
-          {filtered.length} of {books.length} books
-          {statusFilter !== 'all' && ` · ${statusFilter}`}
-        </p>
-
-        <FigmaTable columns={columns} data={filtered} emptyMessage="No books match your filters." />
+        <PaginatedFigmaTable
+          columns={columns}
+          data={filtered}
+          emptyMessage="No books match your filters."
+          itemLabel="books"
+          resetDeps={[search, statusFilter]}
+          rowClassName="hover:bg-slate-50/90"
+        />
       </section>
 
       <AddBookModal

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Edit3, Layers, Star, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
-import FigmaTable from '../../components/figma/FigmaTable'
+import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CouponFilterToolbar from '../../components/coupons/CouponFilterToolbar'
 import AddCouponModal from '../../components/coupons/AddCouponModal'
 import { BannerButton, StatusBadge } from '../../components/academics/AcademicsUi'
@@ -131,13 +131,14 @@ export default function CouponsPage() {
           onStatusChange={(e) => setStatusFilter(e.target.value)}
         />
 
-        <p className="text-xs font-medium text-[#686868] sm:text-sm">
-          {filtered.length} of {coupons.length} coupons
-          {typeFilter !== 'all' && ` · ${typeFilter}`}
-          {statusFilter !== 'all' && ` · ${statusFilter}`}
-        </p>
-
-        <FigmaTable columns={columns} data={filtered} emptyMessage="No coupons match your filters." />
+        <PaginatedFigmaTable
+          columns={columns}
+          data={filtered}
+          emptyMessage="No coupons match your filters."
+          itemLabel="coupons"
+          resetDeps={[search, typeFilter, statusFilter]}
+          rowClassName="hover:bg-slate-50/90"
+        />
       </section>
 
       <AddCouponModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAdd} />

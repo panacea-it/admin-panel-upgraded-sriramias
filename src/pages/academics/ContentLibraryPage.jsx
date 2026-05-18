@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Edit3, Layers, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
-import FigmaTable from '../../components/figma/FigmaTable'
+import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import AddFreeResourceModal from '../../components/content-library/AddFreeResourceModal'
 import ModifyFreeResourceCategoryModal from '../../components/content-library/ModifyFreeResourceCategoryModal'
@@ -139,16 +139,13 @@ export default function ContentLibraryPage() {
           categoryOptions={categoryOptions}
         />
 
-        <p className="text-xs font-medium text-[#686868] sm:text-sm">
-          {filtered.length} of {resources.length} resources
-          {categoryFilter !== 'all' && ` · ${categoryFilter}`}
-          {statusFilter !== 'all' && ` · ${statusFilter}`}
-        </p>
-
-        <FigmaTable
+        <PaginatedFigmaTable
           columns={columns}
           data={filtered}
           emptyMessage="No free resources match your filters."
+          itemLabel="resources"
+          resetDeps={[search, categoryFilter, statusFilter]}
+          rowClassName="hover:bg-slate-50/90"
         />
       </section>
 

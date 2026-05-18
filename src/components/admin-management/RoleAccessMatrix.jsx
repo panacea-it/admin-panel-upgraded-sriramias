@@ -1,7 +1,7 @@
 ﻿import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronRight, Search, Shield, Pencil, Save } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import { cn } from '../../utils/cn'
 import { useAdminRoles } from '../../contexts/AdminRolesContext'
 import { PERMISSION_MODULES } from '../../data/adminManagementConfig'

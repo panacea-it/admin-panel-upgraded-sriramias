@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import { LayoutGrid } from 'lucide-react'
 import PageBanner from '../../components/figma/PageBanner'
 import RoleAccessMatrix from '../../components/admin-management/RoleAccessMatrix'

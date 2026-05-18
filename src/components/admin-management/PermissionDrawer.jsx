@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Shield, X, Save, Sparkles, Ban, RotateCcw } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import { cn } from '../../utils/cn'
 import { RBAC_MODULE_FEATURES } from '../../data/rbacConfig'
 import {

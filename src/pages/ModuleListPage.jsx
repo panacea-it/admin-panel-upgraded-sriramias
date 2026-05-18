@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Edit3, PlusCircle, Trash2 } from 'lucide-react'
 import PageBanner from '../components/figma/PageBanner'
 import FilterToolbar from '../components/figma/FilterToolbar'
-import FigmaTable from '../components/figma/FigmaTable'
+import PaginatedFigmaTable from '../components/figma/PaginatedFigmaTable'
 
 const SAMPLE = [
   { id: 1, name: 'UPSC Foundation 2026', status: 'Active', updated: 'May 12, 2026', price: '12,000' },
@@ -130,10 +130,12 @@ export default function ModuleListPage({
           filterOptions={STATUS_OPTIONS}
         />
 
-        <FigmaTable
+        <PaginatedFigmaTable
           columns={columns}
           data={filtered}
           emptyMessage={`No ${title?.toLowerCase()} found.`}
+          itemLabel={title?.toLowerCase() || 'records'}
+          resetDeps={[search, filter]}
         />
       </section>
     </div>

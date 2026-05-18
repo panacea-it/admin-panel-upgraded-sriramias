@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/utils/toast'
 import { useAuth } from '../../contexts/AuthContext'
 import SriramLogo from '../../components/brand/SriramLogo'
 
