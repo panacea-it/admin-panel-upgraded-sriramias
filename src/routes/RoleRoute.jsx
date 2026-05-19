@@ -1,15 +1,14 @@
-import { Navigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import PermissionDeniedPage from '../pages/auth/PermissionDeniedPage'
+import { usePermissions } from '../hooks/usePermissions'
 
 /**
  * Client-side role gate for UI routes. API must enforce permissions server-side.
  */
 export default function RoleRoute({ children, allowedRoles }) {
-  const { user } = useAuth()
-  const role = user?.role
+  const { role, hasRole } = usePermissions()
 
-  if (allowedRoles?.length && (!role || !allowedRoles.includes(role))) {
-    return <Navigate to="/dashboard" replace />
+  if (allowedRoles?.length && (!role || !hasRole(...allowedRoles))) {
+    return <PermissionDeniedPage />
   }
 
   return children

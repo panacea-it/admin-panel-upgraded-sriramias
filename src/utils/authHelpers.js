@@ -1,19 +1,38 @@
-/** Normalize backend role strings for the admin UI. */
+import { ROLES } from '../constants/roles'
+
+const ROLE_ALIASES = {
+  superadmin: ROLES.SUPER_ADMIN,
+  super_admin: ROLES.SUPER_ADMIN,
+  centeradmin: ROLES.CENTER_ADMIN,
+  center_admin: ROLES.CENTER_ADMIN,
+  operationadmin: ROLES.OPERATION_ADMIN,
+  operation_admin: ROLES.OPERATION_ADMIN,
+  operationsadmin: ROLES.OPERATION_ADMIN,
+  operations: ROLES.OPERATION_ADMIN,
+  contentadmin: ROLES.CONTENT_ADMIN,
+  content_admin: ROLES.CONTENT_ADMIN,
+  mentoradmin: ROLES.MENTOR_ADMIN,
+  mentor_admin: ROLES.MENTOR_ADMIN,
+  teacheradmin: ROLES.TEACHER_ADMIN,
+  teacher_admin: ROLES.TEACHER_ADMIN,
+  counselingadmin: ROLES.COUNSELING_ADMIN,
+  counseling_admin: ROLES.COUNSELING_ADMIN,
+  counselloradmin: ROLES.COUNSELING_ADMIN,
+  counseloradmin: ROLES.COUNSELING_ADMIN,
+}
+
+/** Normalize backend / legacy role strings to canonical role ids */
 export function normalizeRole(role) {
-  if (!role) return 'superadmin'
+  if (!role) return ROLES.SUPER_ADMIN
 
-  const normalized = String(role).toLowerCase().replace(/[\s_/-]+/g, '')
+  const compact = String(role).toLowerCase().replace(/[\s-]+/g, '_')
+  const squashed = compact.replace(/_/g, '')
 
-  switch (normalized) {
-    case 'superadmin':
-    case 'super_admin':
-      return 'superadmin'
-    case 'centeradmin':
-    case 'center_admin':
-      return 'centeradmin'
-    default:
-      return normalized || role
-  }
+  if (ROLE_ALIASES[compact]) return ROLE_ALIASES[compact]
+  if (ROLE_ALIASES[squashed]) return ROLE_ALIASES[squashed]
+  if (Object.values(ROLES).includes(compact)) return compact
+
+  return compact || ROLES.SUPER_ADMIN
 }
 
 /**

@@ -1,10 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getDefaultRouteForRole } from '../config/rbacAccess'
 import LoadingState from '../components/feedback/LoadingState'
 
-/** Login and other public pages — signed-in users go to the dashboard. */
+/** Login and other public pages — signed-in users go to their role home route. */
 export default function GuestRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, user } = useAuth()
 
   if (loading) {
     return (
@@ -15,7 +16,7 @@ export default function GuestRoute({ children }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   }
 
   return children

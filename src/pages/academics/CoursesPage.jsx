@@ -1,12 +1,21 @@
-import { useMemo, useState } from 'react'
-import { BookMarked, Edit3, PlusCircle } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { BookMarked, PlusCircle } from 'lucide-react'
+import EditButton from '../../components/common/EditButton'
 import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import AddCourseModal from '../../components/courses/AddCourseModal'
 import ModifyCategoryModal from '../../components/courses/ModifyCategoryModal'
-import { COURSE_CATEGORIES, INITIAL_COURSES } from '../../data/coursesData'
+import { COURSE_CATEGORIES } from '../../data/coursesData'
+import { useEditModal } from '../../hooks/useEditModal'
+import { mapCourseToApiPayload } from '../../utils/coursesApiMappers'
+import {
+  createCourse,
+  fetchCourses,
+  updateCourse,
+} from '../../api/coursesAPI'
 import { cn } from '../../utils/cn'
+import { toast, toastMessages } from '../../utils/toast'
 
 function BannerButton({ children, onClick }) {
   return (
@@ -36,13 +45,28 @@ function StatusBadge({ status }) {
 }
 
 export default function CoursesPage() {
-  const [courses, setCourses] = useState(INITIAL_COURSES)
+  const [courses, setCourses] = useState([])
   const [categories, setCategories] = useState(COURSE_CATEGORIES)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [addOpen, setAddOpen] = useState(false)
+  const modal = useEditModal()
   const [categoryOpen, setCategoryOpen] = useState(false)
+
+  const loadCourses = useCallback(async () => {
+    try {
+      const rows = await fetchCourses()
+      setCourses(rows)
+    } catch (err) {
+      const message =
+        err.response?.data?.message || err.message || toastMessages.error.server
+      toast.error(message)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCourses()
+  }, [loadCourses])
 
   const categoryOptions = useMemo(
     () => [
@@ -66,18 +90,17 @@ export default function CoursesPage() {
     })
   }, [courses, search, categoryFilter, statusFilter])
 
-  const handleAddCourse = (form) => {
-    setCourses((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: form.courseName,
-        category: form.category,
-        center: 'Delhi',
-        price: form.offlineFees || form.onlineFees || '—',
-        status: 'Active',
-      },
-    ])
+  const handleSaveCourse = async (form, { isEdit, id }) => {
+    const existing = isEdit ? courses.find((c) => c.id === id) : null
+    const payload = mapCourseToApiPayload(form, existing)
+
+    if (isEdit && id != null) {
+      await updateCourse(id, payload)
+    } else {
+      await createCourse(payload)
+    }
+
+    await loadCourses()
   }
 
   const handleAddCategory = (name) => {
@@ -115,15 +138,7 @@ export default function CoursesPage() {
     {
       key: 'actions',
       label: 'Action',
-      render: () => (
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#686868] transition hover:text-[#246392] sm:text-base"
-        >
-          <Edit3 className="h-4 w-4" strokeWidth={2.35} />
-          Edit
-        </button>
-      ),
+      render: (row) => <EditButton onClick={() => modal.openEdit(row)} />,
     },
   ]
 
@@ -136,7 +151,7 @@ export default function CoursesPage() {
           title="Course Manager"
           className="from-[#55ace7] via-[#8b98bb] to-[#b8887a]"
         >
-          <BannerButton onClick={() => setAddOpen(true)}>Add New Course</BannerButton>
+          <BannerButton onClick={modal.openCreate}>Add New Course</BannerButton>
           <BannerButton onClick={() => setCategoryOpen(true)}>Modify Category</BannerButton>
         </PageBanner>
 
@@ -161,10 +176,11 @@ export default function CoursesPage() {
       </section>
 
       <AddCourseModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
+        open={modal.isOpen}
+        onClose={modal.close}
+        item={modal.selectedItem}
         categories={categories}
-        onSubmit={handleAddCourse}
+        onSubmit={handleSaveCourse}
       />
 
       <ModifyCategoryModal

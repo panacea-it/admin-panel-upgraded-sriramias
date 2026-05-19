@@ -11,6 +11,7 @@ import FloatingInput from './ui/FloatingInput'
 import PasswordField from './ui/PasswordField'
 import Switch from './ui/Switch'
 import RoleOverviewCard from './RoleOverviewCard'
+import { saveEmployeeAccount } from '../../utils/employeeAuthStorage'
 
 const INITIAL = {
   fullName: '',
@@ -40,7 +41,7 @@ const fieldLabelClass = cn(
   'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400',
 )
 
-export default function CreateAdminModal({ open, onClose }) {
+export default function CreateAdminModal({ open, onClose, onSuccess, editingRecord = null }) {
   const { activeCenters } = useCenters()
   const { assignableForNewAdmin } = useAdminRoles()
   const assignableCenterNames = useMemo(
@@ -54,8 +55,26 @@ export default function CreateAdminModal({ open, onClose }) {
 
   useEffect(() => {
     if (!open) return
+    if (editingRecord) {
+      setForm({
+        fullName: editingRecord.name || '',
+        email: editingRecord.email || '',
+        mobile: editingRecord.phone || '',
+        employeeId: editingRecord.employeeId || editingRecord.id || '',
+        adminType: editingRecord.role || '',
+        center: editingRecord.center || '',
+        password: '',
+        confirmPassword: '',
+        active: editingRecord.status !== 'inactive',
+        twoFactor: false,
+        sessionTimeout: '60',
+        loginAlert: true,
+      })
+      setErrors({})
+      return
+    }
     setForm((f) => ({
-      ...f,
+      ...INITIAL,
       adminType: assignableForNewAdmin.some((r) => r.id === f.adminType)
         ? f.adminType
         : assignableForNewAdmin[0]?.id || '',
@@ -63,7 +82,8 @@ export default function CreateAdminModal({ open, onClose }) {
         ? f.center
         : assignableCenterNames[0] || '',
     }))
-  }, [open, assignableCenterNames, assignableForNewAdmin])
+    setErrors({})
+  }, [open, editingRecord, assignableCenterNames, assignableForNewAdmin])
 
   const selectedRole = useMemo(
     () => assignableForNewAdmin.find((r) => r.id === form.adminType),
@@ -106,9 +126,12 @@ export default function CreateAdminModal({ open, onClose }) {
     if (!mobileRe.test(form.mobile.replace(/\D/g, '')))
       next.mobile = 'Enter a valid 10-digit mobile number'
     if (!form.employeeId.trim()) next.employeeId = 'Employee / Admin ID is required'
-    if (form.password.length < 8) next.password = 'Minimum 8 characters required'
-    if (form.password !== form.confirmPassword)
-      next.confirmPassword = 'Passwords do not match'
+    const isEdit = Boolean(editingRecord)
+    if (!isEdit || form.password) {
+      if (form.password.length < 8) next.password = 'Minimum 8 characters required'
+      if (form.password !== form.confirmPassword)
+        next.confirmPassword = 'Passwords do not match'
+    }
     const roleMeta = assignableForNewAdmin.find((r) => r.id === form.adminType)
     if (roleMeta?.requiresCenter) {
       if (assignableCenterNames.length === 0)
@@ -123,11 +146,27 @@ export default function CreateAdminModal({ open, onClose }) {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    setLoading(false)
-    toast.success('Admin access created successfully', {
-      description: `${form.fullName} can now sign in as ${selectedRole?.label}.`,
+    await new Promise((r) => setTimeout(r, 800))
+    const saved = saveEmployeeAccount({
+      id: form.employeeId.trim(),
+      name: form.fullName.trim(),
+      email: form.email.trim(),
+      password: form.password || editingRecord?.password,
+      phone: form.mobile.trim(),
+      role: form.adminType,
+      center: form.center || undefined,
+      employeeId: form.employeeId.trim(),
+      status: form.active ? 'active' : 'inactive',
+      createdAt: editingRecord?.createdAt,
     })
+    setLoading(false)
+    onSuccess?.(saved)
+    toast.success(
+      editingRecord ? 'User access updated successfully' : 'Admin access created successfully',
+      {
+        description: `${form.fullName} can now sign in as ${selectedRole?.label}.`,
+      },
+    )
     resetAll()
     onClose()
   }
@@ -259,7 +298,7 @@ export default function CreateAdminModal({ open, onClose }) {
                     <div className="grid gap-5 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6 lg:gap-x-10">
                       <div>
                         <label htmlFor="modal-adminType" className={fieldLabelClass}>
-                          Admin Access Type
+                          Admin Access
                         </label>
                         <select
                           id="modal-adminType"
@@ -269,7 +308,7 @@ export default function CreateAdminModal({ open, onClose }) {
                           className={selectClassName}
                         >
                           {assignableForNewAdmin.length === 0 ? (
-                            <option value="">Enable an Admin Access Type first</option>
+                            <option value="">Enable an Admin Access role first</option>
                           ) : (
                             assignableForNewAdmin.map((t) => (
                               <option key={t.id} value={t.id}>
@@ -317,7 +356,7 @@ export default function CreateAdminModal({ open, onClose }) {
                       ) : (
                         <p className="rounded-xl border border-dashed border-slate-200 px-6 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
                           No eligible access type selected. Configure and enable titles under{' '}
-                          <strong>Admin Access Types</strong>.
+                          <strong>Role Access</strong>.
                         </p>
                       )}
                     </div>

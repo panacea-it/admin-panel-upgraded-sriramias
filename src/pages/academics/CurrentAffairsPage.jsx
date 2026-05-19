@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Edit3, Layers, Trash2 } from 'lucide-react'
+import { Layers, Trash2 } from 'lucide-react'
+import EditButton from '../../components/common/EditButton'
 import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
@@ -11,6 +12,9 @@ import {
   CURRENT_AFFAIRS_CATEGORIES,
   INITIAL_CURRENT_AFFAIRS,
 } from '../../data/currentAffairsData'
+import { useEditModal } from '../../hooks/useEditModal'
+import { currentAffairsFormToRow } from '../../utils/academicsFormMappers'
+import { upsertListItem } from '../../utils/academicsCrud'
 
 export default function CurrentAffairsPage() {
   const [items, setItems] = useState(INITIAL_CURRENT_AFFAIRS)
@@ -18,7 +22,7 @@ export default function CurrentAffairsPage() {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [addOpen, setAddOpen] = useState(false)
+  const modal = useEditModal()
   const [categoryOpen, setCategoryOpen] = useState(false)
 
   const categoryOptions = useMemo(
@@ -42,19 +46,10 @@ export default function CurrentAffairsPage() {
     })
   }, [items, search, categoryFilter, statusFilter])
 
-  const handleAdd = (form) => {
-    const displayName =
-      form.name.trim() ||
-      `${form.month} ${form.year} - ${form.category}`
-    setItems((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: displayName,
-        category: form.category,
-        status: 'Active',
-      },
-    ])
+  const handleSave = (form, { isEdit, id }) => {
+    const existing = isEdit ? items.find((i) => i.id === id) : null
+    const row = currentAffairsFormToRow(form, existing)
+    setItems((prev) => upsertListItem(prev, row, { isEdit, id }))
   }
 
   const handleAddCategory = ({ name }) => {
@@ -97,13 +92,7 @@ export default function CurrentAffairsPage() {
       label: 'Action',
       render: (row) => (
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#686868] transition hover:text-[#246392] sm:text-base"
-          >
-            <Edit3 className="h-4 w-4" strokeWidth={2.35} />
-            Edit
-          </button>
+          <EditButton onClick={() => modal.openEdit(row)} />
           <button
             type="button"
             onClick={() => handleDelete(row.id)}
@@ -126,7 +115,7 @@ export default function CurrentAffairsPage() {
           title="Current Affairs"
           className="from-[#55ace7] via-[#8b98bb] to-[#b8887a]"
         >
-          <BannerButton onClick={() => setAddOpen(true)}>Add Current Affairs</BannerButton>
+          <BannerButton onClick={modal.openCreate}>Add Current Affairs</BannerButton>
           <BannerButton onClick={() => setCategoryOpen(true)}>Modify Category</BannerButton>
         </PageBanner>
 
@@ -152,10 +141,11 @@ export default function CurrentAffairsPage() {
       </section>
 
       <AddCurrentAffairsModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
+        open={modal.isOpen}
+        onClose={modal.close}
+        item={modal.selectedItem}
         categories={categories}
-        onSubmit={handleAdd}
+        onSubmit={handleSave}
       />
 
       <ModifyCurrentAffairsCategoryModal

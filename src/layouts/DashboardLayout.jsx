@@ -26,15 +26,15 @@ export default function DashboardLayout() {
 
   return (
     <div
-      className="flex min-h-screen bg-[#f7f7f7] text-[#111111]"
+      className="flex h-screen max-h-[100dvh] w-full overflow-hidden bg-[#f7f7f7] text-[#111111]"
       style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}
     >
       <Sidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={closeSidebar} />
 
-      <div className="flex min-w-0 flex-1 flex-col" style={{ minWidth: 0 }}>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <Header onMenuClick={toggleSidebar} />
 
-        <main className="flex-1 overflow-x-hidden bg-[#f7f7f7] dark:bg-[var(--app-bg)]" style={{ minWidth: 0 }}>
+        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f7f7f7] dark:bg-[var(--app-bg)]">
           <Suspense fallback={<LoadingState message="Loading page..." className="m-6" />}>
             <Outlet />
           </Suspense>

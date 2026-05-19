@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { BookMarked } from 'lucide-react'
 import { toast } from '@/utils/toast'
+import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import Modal from '../ui/Modal'
+import { bookRowToForm, createEmptyBookForm } from '../../utils/academicsFormMappers'
+import { useModalForm } from '../../hooks/useModalForm'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
 import SectionBar from '../courses/SectionBar'
 import {
@@ -10,37 +13,28 @@ import {
   CourseFormField,
   CourseInput,
   CoursePdfInput,
+  CourseSelect,
   CourseTextarea,
 } from '../courses/CourseFormField'
 
 const makeSlots = (count) => Array.from({ length: count }, () => ({ fileName: '' }))
 
-const emptyForm = () => ({
-  bookName: '',
-  thumbnail: '',
-  author: '',
-  description: '',
-  detailImages: makeSlots(3),
-  galleryImages: makeSlots(3),
-  keywords: Array.from({ length: 3 }, () => ({ value: '', fileName: '' })),
-  samplePdf: '',
-  bookPrice: '',
-  discountPct: '',
-  coupons: [{ code: '', discount: '', description: '' }],
-})
-
-export default function AddBookModal({ open, onClose, onSubmit }) {
-  const [form, setForm] = useState(emptyForm)
+export default function AddBookModal({ open, onClose, item, onSubmit }) {
+  const { form, setForm, isEditMode, reset } = useModalForm(
+    open,
+    item,
+    bookRowToForm,
+    createEmptyBookForm,
+  )
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
   const handleClose = () => {
-    setForm(emptyForm())
     onClose()
   }
 
   const handleReset = () => {
-    setForm(emptyForm())
+    reset()
     toast.message('Form reset')
   }
 
@@ -54,8 +48,8 @@ export default function AddBookModal({ open, onClose, onSubmit }) {
       toast.error('Book price is required')
       return
     }
-    onSubmit?.(form)
-    toast.success('Book saved successfully')
+    onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
+    toast.success(isEditMode ? 'Book updated successfully' : 'Book created successfully')
     handleClose()
   }
 
@@ -96,12 +90,21 @@ export default function AddBookModal({ open, onClose, onSubmit }) {
   }
 
   return (
-    <Modal open={open} onClose={handleClose} size="full" title="Add Book">
+    <Modal
+      open={open}
+      onClose={handleClose}
+      size="full"
+      title={isEditMode ? 'Edit Book' : 'Add Book'}
+    >
       <form
         onSubmit={handleSubmit}
-        className="overflow-hidden rounded-xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
-        <ModalPanelHeader title="Book" onBack={handleClose} icon={BookMarked} />
+        <ModalPanelHeader
+          title={isEditMode ? 'Edit Book' : 'Add Book'}
+          onBack={handleClose}
+          icon={BookMarked}
+        />
 
         <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6">
           <SectionBar title="Book Details" />
@@ -121,6 +124,13 @@ export default function AddBookModal({ open, onClose, onSubmit }) {
             </CourseFormField>
             <CourseFormField label="Author Name" required>
               <CourseInput value={form.author} onChange={update('author')} />
+            </CourseFormField>
+            <CourseFormField label="Status" required>
+              <CourseSelect value={form.status} onChange={update('status')}>
+                <option value="Active">Active</option>
+                <option value="In Active">In Active</option>
+                <option value="Draft">Draft</option>
+              </CourseSelect>
             </CourseFormField>
           </div>
 
@@ -263,21 +273,12 @@ export default function AddBookModal({ open, onClose, onSubmit }) {
             </CourseAddMoreLink>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 border-t border-slate-200/80 pt-8">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="min-w-[140px] rounded-full bg-gradient-to-r from-[#5eb8f5] to-[#2b78a5] px-10 py-3 text-base font-bold text-white shadow-[0_6px_18px_rgba(43,120,165,0.35)] transition hover:brightness-105"
-            >
-              Reset
-            </button>
-            <button
-              type="submit"
-              className="min-w-[140px] rounded-full bg-gradient-to-r from-[#0d3b66] to-[#05192d] px-10 py-3 text-base font-bold text-white shadow-[0_6px_18px_rgba(5,25,45,0.4)] transition hover:brightness-110"
-            >
-              Save
-            </button>
-          </div>
+          <FormModalSubmitBar
+            isEditMode={isEditMode}
+            onReset={handleReset}
+            createLabel="Create"
+            updateLabel="Update"
+          />
         </div>
       </form>
     </Modal>

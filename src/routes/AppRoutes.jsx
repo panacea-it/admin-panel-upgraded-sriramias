@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import GuestRoute from './GuestRoute'
+import RoutePermissionGuard from './RoutePermissionGuard'
 import DashboardLayout from '../layouts/DashboardLayout'
 import LoginPage from '../pages/auth/LoginPage'
 import DashboardPage from '../pages/dashboard/DashboardPage'
@@ -29,20 +30,22 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route element={<RoutePermissionGuard />}>
+          <Route path="dashboard" element={<DashboardPage />} />
 
-        {MODULE_ROUTE_ELEMENTS.map(({ path, element }) => (
-          <Route key={path} path={path} element={element} />
-        ))}
+          {MODULE_ROUTE_ELEMENTS.map(({ path, element }) => (
+            <Route key={path} path={path} element={element} />
+          ))}
 
-        <Route path="settings/profile" element={<SettingsPage title="Profile Settings" section="profile" />} />
-        <Route
-          path="settings/notifications"
-          element={<SettingsPage title="Notification Settings" section="notifications" />}
-        />
-        <Route path="settings/general" element={<SettingsPage title="General Settings" section="general" />} />
+          <Route path="settings/profile" element={<SettingsPage title="Profile Settings" section="profile" />} />
+          <Route
+            path="settings/notifications"
+            element={<SettingsPage title="Notification Settings" section="notifications" />}
+          />
+          <Route path="settings/general" element={<SettingsPage title="General Settings" section="general" />} />
 
-        <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

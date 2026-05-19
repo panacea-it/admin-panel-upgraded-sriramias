@@ -1,12 +1,13 @@
 import { cn } from '../../utils/cn'
 
-/** Official SRIRAM'S IAS lockup — asset: /public/sriram-logo.png */
+/** Official SRIRAM'S IAS lockup — asset: /public/sriram-logo.png (transparent background) */
 const LOGO_SRC = '/sriram-logo.png'
 
 const sizes = {
-  header: 'h-10 w-auto max-w-[min(72vw,240px)] sm:h-11 sm:max-w-[280px] md:h-12 md:max-w-[320px] lg:max-w-[360px]',
-  login: 'h-14 w-auto max-w-[min(90vw,320px)] sm:h-16 sm:max-w-[380px]',
-  compact: 'h-8 w-auto max-w-[min(60vw,180px)] sm:h-9 sm:max-w-[220px]',
+  header:
+    'h-9 w-auto max-w-[min(82vw,300px)] sm:h-10 sm:max-w-[360px] md:h-11 md:max-w-[420px] lg:max-w-[460px]',
+  login: 'h-12 w-auto max-w-[min(92vw,340px)] sm:h-14 sm:max-w-[400px]',
+  compact: 'h-8 w-auto max-w-[min(70vw,220px)] sm:h-9 sm:max-w-[280px]',
 }
 
 export default function SriramLogo({
@@ -20,8 +21,8 @@ export default function SriramLogo({
     <img
       src={LOGO_SRC}
       alt="SRIRAM'S IAS — Serving The Nation Since 1985"
-      width={360}
-      height={72}
+      width={480}
+      height={96}
       decoding="async"
       className={cn(
         'block shrink-0 object-contain object-left',

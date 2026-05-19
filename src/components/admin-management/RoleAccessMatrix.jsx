@@ -105,12 +105,13 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
     if (roleFullAccess) return
     if (!roleEnabled) {
       toast.warning('Access type is disabled', {
-        description: 'Enable the role under Admin Access Types before editing permissions.',
+        description: 'Enable the role under Admin Access before editing permissions.',
       })
       return
     }
     const src = nestedRbac[roleId]?.[moduleId]
     if (!src) return
+    setEditable(true)
     setDrawer({ roleId, moduleId })
   }, [nestedRbac])
 
@@ -188,11 +189,11 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0 space-y-1">
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Role Access Matrix
+              Permission matrix
             </h2>
             <p className="max-w-3xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-              Module-level access with granular feature RBAC. Roles are maintained under Admin Access Types.
-              Status chips reflect feature coverage: Full Access, Custom, or Restricted.
+              Module-level access with granular feature RBAC. Click any status chip to open the permission
+              drawer. Status reflects feature coverage: Full Access, Custom, or Restricted.
             </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end md:w-auto md:min-w-[320px]">
@@ -215,7 +216,11 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                       'Local permissions are saved. Use Save permissions when you are ready to sync the API payload.',
                   })
                 }
-                setEditable((v) => !v)
+                if (!editable) {
+                  setEditable(true)
+                  return
+                }
+                setEditable(false)
               }}
               className={cn(
                 'inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
@@ -316,8 +321,21 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                   return (
                     <div
                       key={mod.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openDrawer(role.id, mod.id, role.fullAccess, role.enabled)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          openDrawer(role.id, mod.id, role.fullAccess, role.enabled)
+                        }
+                      }}
                       className={cn(
-                        'flex items-center justify-center px-2 py-4 transition-colors duration-200',
+                        'flex cursor-pointer items-center justify-center px-2 py-4 transition-colors duration-200',
                         highlightCol && 'bg-violet-50/50 dark:bg-violet-950/25',
                       )}
                     >
@@ -329,6 +347,7 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                         <AccessStatusChip
                           status={status}
                           disabled={!role.enabled}
+                          interactive
                           onPress={() => openDrawer(role.id, mod.id, role.fullAccess, role.enabled)}
                         />
                       )}
@@ -427,7 +446,6 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
         role={drawerRole}
         module={drawerModuleMeta}
         featureMap={drawerFeatures || {}}
-        editable={editable}
         defaultTemplateFeatures={drawerDefaultTemplate || undefined}
         onReplaceFeatures={replaceModuleFeatures}
         onSave={handleDrawerSave}

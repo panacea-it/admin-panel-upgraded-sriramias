@@ -1,38 +1,41 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { BookMarked, Layers } from 'lucide-react'
 import { toast } from '@/utils/toast'
+import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
 import SectionBar from '../courses/SectionBar'
 import { CourseFormField, CourseInput, CourseSelect } from '../courses/CourseFormField'
+import {
+  createEmptyFreeResourceForm,
+  freeResourceRowToForm,
+} from '../../utils/academicsFormMappers'
+import { useModalForm } from '../../hooks/useModalForm'
 
-const emptyForm = {
-  category: '',
-  subject: '',
-  className: '',
-  bookName: '',
-  fileName: '',
-}
-
-export default function AddFreeResourceModal({ open, onClose, categories, onSubmit }) {
+export default function AddFreeResourceModal({ open, onClose, item, categories, onSubmit }) {
   const fileRef = useRef(null)
-  const [form, setForm] = useState(emptyForm)
+  const { form, setForm, isEditMode, reset } = useModalForm(
+    open,
+    item,
+    freeResourceRowToForm,
+    createEmptyFreeResourceForm,
+  )
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
   const handleClose = () => {
-    setForm(emptyForm)
+    if (fileRef.current) fileRef.current.value = ''
     onClose()
   }
 
   const handleReset = () => {
-    setForm(emptyForm)
+    reset()
     if (fileRef.current) fileRef.current.value = ''
   }
 
   const handleFile = (e) => {
     const file = e.target.files?.[0]
-    setForm((f) => ({ ...f, fileName: file?.name || '' }))
+    setForm((f) => ({ ...f, fileName: file?.name || f.fileName }))
   }
 
   const handleSubmit = (e) => {
@@ -41,18 +44,29 @@ export default function AddFreeResourceModal({ open, onClose, categories, onSubm
       toast.error('Please fill all required fields')
       return
     }
-    onSubmit?.(form)
-    toast.success('Free resource saved')
+    onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
+    toast.success(
+      isEditMode ? 'Free resource updated successfully' : 'Free resource created successfully',
+    )
     handleClose()
   }
 
   return (
-    <Modal open={open} onClose={handleClose} size="full">
+    <Modal
+      open={open}
+      onClose={handleClose}
+      size="full"
+      title={isEditMode ? 'Edit Free Resource' : 'Add Free Resource'}
+    >
       <form
         onSubmit={handleSubmit}
-        className="overflow-hidden rounded-xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
+        className="overflow-hidden rounded-2xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
       >
-        <ModalPanelHeader title="Free Resource" onBack={handleClose} icon={Layers} />
+        <ModalPanelHeader
+          title={isEditMode ? 'Edit Free Resource' : 'Add Free Resource'}
+          onBack={handleClose}
+          icon={Layers}
+        />
 
         <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6">
           <SectionBar title="Free Resource Details" />
@@ -77,6 +91,13 @@ export default function AddFreeResourceModal({ open, onClose, categories, onSubm
             <CourseFormField label="Book Name" required className="sm:col-span-2 lg:col-span-1">
               <CourseInput value={form.bookName} onChange={update('bookName')} placeholder="Book name" />
             </CourseFormField>
+            <CourseFormField label="Status" required>
+              <CourseSelect value={form.status} onChange={update('status')}>
+                <option value="Active">Active</option>
+                <option value="In Active">In Active</option>
+                <option value="Draft">Draft</option>
+              </CourseSelect>
+            </CourseFormField>
             <CourseFormField label="Upload Book" required className="sm:col-span-2 lg:col-span-2">
               <div className="relative">
                 <CourseInput
@@ -94,24 +115,19 @@ export default function AddFreeResourceModal({ open, onClose, categories, onSubm
                 />
                 <BookMarked className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
               </div>
+              {form.fileName ? (
+                <p className="mt-1 truncate text-[11px] text-[#246392]">Current: {form.fileName}</p>
+              ) : null}
             </CourseFormField>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4 pt-2 sm:gap-6">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="h-11 min-w-[140px] rounded-lg bg-gradient-to-r from-[#55ace7] to-[#246392] px-8 text-sm font-bold text-white shadow-[0_4px_12px_rgba(36,99,146,0.35)] transition hover:opacity-95"
-            >
-              Reset
-            </button>
-            <button
-              type="submit"
-              className="h-11 min-w-[140px] rounded-lg bg-gradient-to-r from-[#1a3a5c] to-[#0f172a] px-8 text-sm font-bold text-white shadow-[0_4px_12px_rgba(15,23,42,0.35)] transition hover:opacity-95"
-            >
-              Save
-            </button>
-          </div>
+          <FormModalSubmitBar
+            isEditMode={isEditMode}
+            onReset={handleReset}
+            className="pt-2"
+            createLabel="Create"
+            updateLabel="Update"
+          />
         </div>
       </form>
     </Modal>

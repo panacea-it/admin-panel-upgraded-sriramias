@@ -2,7 +2,13 @@ import { useSearchParams } from 'react-router-dom'
 import { toast } from '@/utils/toast'
 import { LayoutGrid } from 'lucide-react'
 import PageBanner from '../../components/figma/PageBanner'
+import CategoryBreadcrumb from '../../components/categories/CategoryBreadcrumb'
 import RoleAccessMatrix from '../../components/admin-management/RoleAccessMatrix'
+
+const BREADCRUMB = [
+  { label: 'Admin Management' },
+  { label: 'Admin Access' },
+]
 
 export default function RoleAccessMatrixPage() {
   const [searchParams] = useSearchParams()
@@ -19,24 +25,26 @@ export default function RoleAccessMatrixPage() {
       return
     }
 
-    // detail.fullExport is POST-ready: { version, rbac, roles, roleDefinitions, exportedAt }
-
-    toast.success('Role access saved', {
-      description: 'Permissions updated successfully — payload includes role actions and matrix.',
+    toast.success('Permissions saved', {
+      description: 'Access control updated successfully across roles and modules.',
     })
   }
 
   return (
     <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-10 pt-6 dark:bg-[var(--app-bg)] sm:px-5 lg:px-6">
-      <section className="mx-auto max-w-screen-2xl space-y-6 sm:space-y-8">
-        <PageBanner icon={LayoutGrid} title="Role Access Matrix">
-          <p className="max-w-xl text-right text-sm font-medium leading-snug text-white/90">
-            Rows reflect dynamic admin access types. Save exports matrix + role-definition metadata for your API.
-          </p>
-        </PageBanner>
+      <section className="mx-auto max-w-screen-2xl space-y-5 sm:space-y-6">
+        <CategoryBreadcrumb items={BREADCRUMB} />
+
+        <PageBanner
+          icon={LayoutGrid}
+          iconClassName="text-[#246392]"
+          title="Admin Access"
+          className="from-[#55ace7] via-[#8b98bb] to-[#df8284]"
+        />
 
         <RoleAccessMatrix onSave={handleSavePermissions} focusRoleId={focusRoleId} />
       </section>
     </div>
   )
 }
+

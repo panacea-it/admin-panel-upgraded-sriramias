@@ -1,5 +1,11 @@
 import { PERMISSION_MODULES } from '../data/adminManagementConfig'
 import { RBAC_MODULE_FEATURES } from '../data/rbacConfig'
+import {
+  emptyPermissionSet,
+  fullPermissionSet,
+  isFeaturePermissionActive,
+  summarizeFeatureMap,
+} from './rbacPermissionModel'
 
 /**
  * @typedef {'full' | 'custom' | 'restricted'} ModuleAccessStatus
@@ -9,10 +15,10 @@ import { RBAC_MODULE_FEATURES } from '../data/rbacConfig'
 export function deriveModuleAccessStatus(featureMap) {
   if (!featureMap || typeof featureMap !== 'object') return 'restricted'
 
-  const values = Object.values(featureMap).filter((v) => typeof v === 'boolean')
+  const values = Object.values(featureMap || {})
   if (values.length === 0) return 'restricted'
 
-  const enabled = values.filter(Boolean).length
+  const enabled = values.filter((v) => isFeaturePermissionActive(v)).length
   const total = values.length
 
   if (enabled === 0) return 'restricted'
@@ -21,23 +27,17 @@ export function deriveModuleAccessStatus(featureMap) {
 }
 
 export function featureSummary(featureMap) {
-  const values = Object.values(featureMap || {}).filter((v) => typeof v === 'boolean')
-  const allowed = values.filter(Boolean).length
-  return {
-    allowed,
-    restricted: values.length - allowed,
-    total: values.length,
-  }
+  return summarizeFeatureMap(featureMap)
 }
 
 export function buildFullFeatureMap(moduleId) {
   const defs = RBAC_MODULE_FEATURES[moduleId] || []
-  return Object.fromEntries(defs.map((d) => [d.id, true]))
+  return Object.fromEntries(defs.map((d) => [d.id, fullPermissionSet()]))
 }
 
 export function buildEmptyFeatureMap(moduleId) {
   const defs = RBAC_MODULE_FEATURES[moduleId] || []
-  return Object.fromEntries(defs.map((d) => [d.id, false]))
+  return Object.fromEntries(defs.map((d) => [d.id, emptyPermissionSet()]))
 }
 
 /**
@@ -58,7 +58,9 @@ export function buildNestedRbacFromLegacy(legacyMatrix, roles) {
       const defs = RBAC_MODULE_FEATURES[mod.id]
       if (!defs?.length) continue
 
-      out[role.id][mod.id] = Object.fromEntries(defs.map((d) => [d.id, legacyOn]))
+      out[role.id][mod.id] = Object.fromEntries(
+        defs.map((d) => [d.id, legacyOn ? fullPermissionSet() : emptyPermissionSet()]),
+      )
     }
   }
 

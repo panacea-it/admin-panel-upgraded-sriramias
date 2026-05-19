@@ -7,6 +7,8 @@ import {
   useState,
 } from 'react'
 import { login as loginApi, logout as logoutApi } from '../api/authAPI'
+import { roleHasFullAccess } from '../config/rbacAccess'
+import { ROLE_LABELS } from '../constants/roles'
 import { AUTH_LOGOUT_EVENT } from '../utils/authEvents'
 import { normalizeStoredUser } from '../utils/authHelpers'
 import {
@@ -31,16 +33,18 @@ function readStoredSession() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(readStoredSession)
-  const [selectedCenter, setSelectedCenter] = useState(() => {
-    const sessionUser = readStoredSession()
-    return sessionUser?.center || sessionUser?.centers?.[0] || 'All Centers'
-  })
+  const [user, setUser] = useState(null)
+  const [bootstrapping, setBootstrapping] = useState(true)
+  const [selectedCenter, setSelectedCenter] = useState('All Centers')
   const [authLoading, setAuthLoading] = useState(false)
 
   useEffect(() => {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
+    const sessionUser = readStoredSession()
+    if (sessionUser) {
+      setUser(sessionUser)
+      setSelectedCenter(sessionUser.center || sessionUser.centers?.[0] || 'All Centers')
+    }
+    setBootstrapping(false)
   }, [])
 
   useEffect(() => {
@@ -53,7 +57,7 @@ export function AuthProvider({ children }) {
     setAuthLoading(true)
     try {
       const { user: u, accessToken } = await loginApi(credentials)
-      persistAuth(accessToken, u)
+      persistAuth(accessToken, u, { remember: Boolean(credentials.remember) })
       setUser(u)
       setSelectedCenter(u.center || u.centers?.[0] || 'All Centers')
       return u
@@ -71,14 +75,16 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       isAuthenticated: !!user,
-      loading: false,
+      loading: bootstrapping,
       authLoading,
       selectedCenter,
       setSelectedCenter,
       login,
       logout,
+      roleLabel: user?.role ? ROLE_LABELS[user.role] : null,
+      isSuperAdmin: roleHasFullAccess(user?.role),
     }),
-    [user, authLoading, selectedCenter, login, logout],
+    [user, bootstrapping, authLoading, selectedCenter, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,9 +1,15 @@
 import { useMemo, useState } from 'react'
 import { toast } from '@/utils/toast'
+import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from './ModalPanelHeader'
 import SectionBar from './SectionBar'
 import { SUB_CATEGORIES_BY_CATEGORY } from '../../data/coursesData'
+import {
+  courseRowToForm,
+  createEmptyCourseForm,
+} from '../../utils/academicsFormMappers'
+import { useModalForm } from '../../hooks/useModalForm'
 import {
   CourseAddMoreLink,
   CourseDateInput,
@@ -19,45 +25,13 @@ import {
 
 const makeSlots = (count, factory) => Array.from({ length: count }, (_, i) => factory(i))
 
-const emptyForm = () => ({
-  courseName: '',
-  category: '',
-  subCategory: '',
-  commencement: '',
-  durationFrom: '',
-  durationTo: '',
-  batchStartFrom: '',
-  batchEndTo: '',
-  bannerFileName: '',
-  subjects: ['', ''],
-  onlineFees: '',
-  onlineDiscount: '',
-  offlineFees: '',
-  offlineDiscount: '',
-  overview: '',
-  keyFeatures: makeSlots(6, (i) => ({
-    id: `kf-${i}`,
-    fileName: '',
-    text: '',
-  })),
-  whyChoose: makeSlots(6, (i) => ({
-    id: `wc-${i}`,
-    fileName: '',
-    hasIcon: i > 0,
-  })),
-  howWill: makeSlots(6, (i) => ({
-    id: `hw-${i}`,
-    kind: i === 0 || i === 3 ? 'video' : 'image',
-    fileName: i === 1 ? '' : '',
-    placeholder:
-      i === 0 || i === 3
-        ? 'Video to be played for motion effect'
-        : 'Image to be displayed',
-  })),
-})
-
-export default function AddCourseModal({ open, onClose, categories, onSubmit }) {
-  const [form, setForm] = useState(emptyForm)
+export default function AddCourseModal({ open, onClose, item, categories, onSubmit }) {
+  const { form, setForm, isEditMode, reset } = useModalForm(
+    open,
+    item,
+    courseRowToForm,
+    createEmptyCourseForm,
+  )
 
   const subCategoryOptions = useMemo(() => {
     if (!form.category) return []
@@ -70,24 +44,31 @@ export default function AddCourseModal({ open, onClose, categories, onSubmit }) 
   }
 
   const handleClose = () => {
-    setForm(emptyForm())
     onClose()
   }
 
   const handleReset = () => {
-    setForm(emptyForm())
+    reset()
     toast.message('Form reset')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.courseName.trim() || !form.category) {
       toast.error('Please fill required course details')
       return
     }
-    onSubmit?.(form)
-    toast.success('Course saved successfully')
-    handleClose()
+    try {
+      await onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
+      toast.success(
+        isEditMode ? 'Course updated successfully' : 'Course created successfully',
+      )
+      handleClose()
+    } catch (err) {
+      const message =
+        err.response?.data?.message || err.message || 'Failed to save course'
+      toast.error(message)
+    }
   }
 
   const addSubjectRow = () => {
@@ -122,12 +103,20 @@ export default function AddCourseModal({ open, onClose, categories, onSubmit }) 
     : 'How Will the {Course Name} Helps You ?'
 
   return (
-    <Modal open={open} onClose={handleClose} size="full" title="Add Course">
+    <Modal
+      open={open}
+      onClose={handleClose}
+      size="full"
+      title={isEditMode ? 'Edit Course' : 'Add Course'}
+    >
       <form
         onSubmit={handleSubmit}
-        className="overflow-hidden rounded-xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
-        <ModalPanelHeader title="Course" onBack={handleClose} />
+        <ModalPanelHeader
+          title={isEditMode ? 'Edit Course' : 'Add Course'}
+          onBack={handleClose}
+        />
 
         <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6">
           {/* Course Details */}
@@ -203,6 +192,19 @@ export default function AddCourseModal({ open, onClose, categories, onSubmit }) 
                   }))
                 }}
               />
+              {form.bannerFileName ? (
+                <p className="mt-1 truncate text-[11px] text-[#246392]">{form.bannerFileName}</p>
+              ) : null}
+            </CourseFormField>
+            <CourseFormField label="Center" required>
+              <CourseInput value={form.center} onChange={update('center')} />
+            </CourseFormField>
+            <CourseFormField label="Status" required>
+              <CourseSelect value={form.status} onChange={update('status')}>
+                <option value="Active">Active</option>
+                <option value="In Active">In Active</option>
+                <option value="Draft">Draft</option>
+              </CourseSelect>
             </CourseFormField>
           </div>
 
@@ -383,22 +385,12 @@ export default function AddCourseModal({ open, onClose, categories, onSubmit }) 
             ))}
           </div>
 
-          {/* Footer */}
-          <div className="flex flex-wrap items-center justify-center gap-4 border-t border-slate-200/80 pt-8">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="min-w-[140px] rounded-full bg-gradient-to-r from-[#5eb8f5] to-[#2b78a5] px-10 py-3 text-base font-bold text-white shadow-[0_6px_18px_rgba(43,120,165,0.35)] transition hover:brightness-105"
-            >
-              Reset
-            </button>
-            <button
-              type="submit"
-              className="min-w-[140px] rounded-full bg-gradient-to-r from-[#0d3b66] to-[#05192d] px-10 py-3 text-base font-bold text-white shadow-[0_6px_18px_rgba(5,25,45,0.4)] transition hover:brightness-110"
-            >
-              Save
-            </button>
-          </div>
+          <FormModalSubmitBar
+            isEditMode={isEditMode}
+            onReset={handleReset}
+            createLabel="Create"
+            updateLabel="Update"
+          />
         </div>
       </form>
     </Modal>

@@ -1,12 +1,8 @@
 import { Navigate } from 'react-router-dom'
 import {
-  Radio,
-  ClipboardList,
-  Tags,
   Users,
   Wallet,
   FileSearch,
-  FileText,
   Tv,
   SlidersHorizontal,
   ScrollText,
@@ -15,6 +11,7 @@ import {
   ListOrdered,
 } from 'lucide-react'
 import RoleRoute from './RoleRoute'
+import { ROLES } from '../constants/roles'
 import {
   AdminManagementPage,
   AdminAccessTypesPage,
@@ -28,7 +25,14 @@ import {
   ContentLibraryPage,
   CouponsPage,
   CoursesPage,
+  LiveClassesPage,
+  LiveClassesLayout,
+  FinanceLayout,
+  TestsPage,
   CurrentAffairsPage,
+  CategoriesHubPage,
+  MainCategoryPage,
+  SubjectCategoryPage,
   EnquiriesPage,
   LeadsPage,
   HelpDeskPage,
@@ -49,18 +53,22 @@ function module(icon, title, addLabel, searchPlaceholder) {
 
 export const MODULE_ROUTE_ELEMENTS = [
   { path: 'courses', element: <CoursesPage /> },
-  { path: 'live-classes', element: module(Radio, 'Live Classes', 'Schedule Class', 'Search classes') },
+  { path: 'live-classes', element: <Navigate to="/academics/live-classes/schedule" replace /> },
+  { path: 'academics/live-classes/*', element: <LiveClassesLayout /> },
   { path: 'content-library', element: <ContentLibraryPage /> },
-  { path: 'tests', element: module(ClipboardList, 'Tests', 'Create Test', 'Search tests') },
+  { path: 'tests', element: <TestsPage /> },
   { path: 'current-affairs', element: <CurrentAffairsPage /> },
-  { path: 'categories', element: module(Tags, 'Categories', 'Add Category', 'Search categories') },
+  { path: 'academics/categories', element: <CategoriesHubPage /> },
+  { path: 'academics/categories/main', element: <MainCategoryPage /> },
+  { path: 'academics/categories/subject', element: <SubjectCategoryPage /> },
+  { path: 'categories', element: <Navigate to="/academics/categories" replace /> },
   { path: 'users/manage', element: module(Users, 'Manage Users', 'Add User', 'Search users') },
   { path: 'users/wallet', element: module(Wallet, 'Wallet', 'Add Transaction', 'Search wallet') },
   { path: 'coupons', element: <CouponsPage /> },
   {
     path: 'users/admin',
     element: (
-      <RoleRoute allowedRoles={['superadmin']}>
+      <RoleRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
         <AdminManagementPage />
       </RoleRoute>
     ),
@@ -68,7 +76,7 @@ export const MODULE_ROUTE_ELEMENTS = [
   {
     path: 'users/admin-access-types',
     element: (
-      <RoleRoute allowedRoles={['superadmin']}>
+      <RoleRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
         <AdminAccessTypesPage />
       </RoleRoute>
     ),
@@ -76,7 +84,7 @@ export const MODULE_ROUTE_ELEMENTS = [
   {
     path: 'users/role-matrix',
     element: (
-      <RoleRoute allowedRoles={['superadmin']}>
+      <RoleRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
         <RoleAccessMatrixPage />
       </RoleRoute>
     ),
@@ -84,7 +92,7 @@ export const MODULE_ROUTE_ELEMENTS = [
   {
     path: 'users/centers',
     element: (
-      <RoleRoute allowedRoles={['superadmin']}>
+      <RoleRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.CENTER_ADMIN]}>
         <CenterManagementPage />
       </RoleRoute>
     ),
@@ -128,4 +136,6 @@ export const MODULE_ROUTE_ELEMENTS = [
   },
   { path: 'free-resources', element: <ContentLibraryPage /> },
   { path: 'books', element: <Navigate to="/marketing/books" replace /> },
+  { path: 'finance', element: <Navigate to="/finance/dashboard" replace /> },
+  { path: 'finance/*', element: <FinanceLayout /> },
 ]

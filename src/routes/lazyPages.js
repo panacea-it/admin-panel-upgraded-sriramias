@@ -1,8 +1,27 @@
 import { lazy } from 'react'
 
 export const CoursesPage = lazy(() => import('../pages/academics/CoursesPage'))
+export const LiveClassesPage = lazy(() => import('../pages/academics/LiveClassesPage'))
+export const LiveClassesLayout = lazy(() => import('../layouts/LiveClassesLayout'))
+export const ScheduleClassPage = lazy(() => import('../pages/academics/live-classes/ScheduleClassPage'))
+export const RecordedClassesPage = lazy(
+  () => import('../pages/academics/live-classes/RecordedClassesPage'),
+)
+export const LiveSessionsPage = lazy(() => import('../pages/academics/live-classes/LiveSessionsPage'))
+export const CalendarViewPage = lazy(() => import('../pages/academics/live-classes/CalendarViewPage'))
+export const LiveClassDetailPage = lazy(
+  () => import('../pages/academics/live-classes/LiveClassDetailPage'),
+)
 export const ContentLibraryPage = lazy(() => import('../pages/academics/ContentLibraryPage'))
+export const TestsPage = lazy(() => import('../pages/academics/TestsPage'))
 export const CurrentAffairsPage = lazy(() => import('../pages/academics/CurrentAffairsPage'))
+export const CategoriesHubPage = lazy(
+  () => import('../pages/academics/categories/CategoriesHubPage'),
+)
+export const MainCategoryPage = lazy(() => import('../pages/academics/categories/MainCategoryPage'))
+export const SubjectCategoryPage = lazy(() =>
+  import('../pages/academics/categories/SubjectCategoryPage'),
+)
 export const BooksPage = lazy(() => import('../pages/marketing/BooksPage'))
 export const WebsitePage = lazy(() => import('../pages/marketing/WebsitePage'))
 export const BannersPage = lazy(() => import('../pages/marketing/BannersPage'))
@@ -18,3 +37,4 @@ export const AdminAccessTypesPage = lazy(() => import('../pages/users/AdminAcces
 export const RoleAccessMatrixPage = lazy(() => import('../pages/users/RoleAccessMatrixPage'))
 export const CenterManagementPage = lazy(() => import('../pages/users/CenterManagementPage'))
 export const ModuleListPage = lazy(() => import('../pages/ModuleListPage'))
+export const FinanceLayout = lazy(() => import('../layouts/FinanceLayout'))

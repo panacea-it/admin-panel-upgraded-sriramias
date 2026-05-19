@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Edit3, Layers, Trash2 } from 'lucide-react'
+import { Layers, Trash2 } from 'lucide-react'
+import EditButton from '../../components/common/EditButton'
 import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
@@ -11,6 +12,9 @@ import {
   FREE_RESOURCE_CATEGORIES,
   INITIAL_FREE_RESOURCES,
 } from '../../data/freeResourcesData'
+import { useEditModal } from '../../hooks/useEditModal'
+import { freeResourceFormToRow } from '../../utils/academicsFormMappers'
+import { upsertListItem } from '../../utils/academicsCrud'
 
 export default function ContentLibraryPage() {
   const [resources, setResources] = useState(INITIAL_FREE_RESOURCES)
@@ -18,7 +22,7 @@ export default function ContentLibraryPage() {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [addOpen, setAddOpen] = useState(false)
+  const modal = useEditModal()
   const [categoryOpen, setCategoryOpen] = useState(false)
 
   const categoryOptions = useMemo(
@@ -42,17 +46,10 @@ export default function ContentLibraryPage() {
     })
   }, [resources, search, categoryFilter, statusFilter])
 
-  const handleAddResource = (form) => {
-    const displayName = form.bookName || `${form.subject} - ${form.className}`
-    setResources((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: displayName,
-        category: form.category,
-        status: 'Active',
-      },
-    ])
+  const handleSaveResource = (form, { isEdit, id }) => {
+    const existing = isEdit ? resources.find((r) => r.id === id) : null
+    const row = freeResourceFormToRow(form, existing)
+    setResources((prev) => upsertListItem(prev, row, { isEdit, id }))
   }
 
   const handleAddCategory = ({ name }) => {
@@ -95,13 +92,7 @@ export default function ContentLibraryPage() {
       label: 'Action',
       render: (row) => (
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#686868] transition hover:text-[#246392] sm:text-base"
-          >
-            <Edit3 className="h-4 w-4" strokeWidth={2.35} />
-            Edit
-          </button>
+          <EditButton onClick={() => modal.openEdit(row)} />
           <button
             type="button"
             onClick={() => handleDeleteResource(row.id)}
@@ -124,7 +115,7 @@ export default function ContentLibraryPage() {
           title="Free Resources"
           className="from-[#55ace7] via-[#8b98bb] to-[#b8887a]"
         >
-          <BannerButton onClick={() => setAddOpen(true)}>Add Free Resource</BannerButton>
+          <BannerButton onClick={modal.openCreate}>Add Free Resource</BannerButton>
           <BannerButton onClick={() => setCategoryOpen(true)}>Modify Category</BannerButton>
         </PageBanner>
 
@@ -150,10 +141,11 @@ export default function ContentLibraryPage() {
       </section>
 
       <AddFreeResourceModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
+        open={modal.isOpen}
+        onClose={modal.close}
+        item={modal.selectedItem}
         categories={categories}
-        onSubmit={handleAddResource}
+        onSubmit={handleSaveResource}
       />
 
       <ModifyFreeResourceCategoryModal

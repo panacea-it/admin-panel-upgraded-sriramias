@@ -46,14 +46,14 @@ export default function Modal({
       <button
         type="button"
         aria-label="Close dialog"
-        className="fixed inset-0 bg-slate-900/55 backdrop-blur-[2px]"
+        className="modal-backdrop-animate fixed inset-0 bg-slate-900/50 backdrop-blur-md"
         onClick={onClose}
       />
       <div
         ref={panelRef}
         tabIndex={-1}
         className={cn(
-          'relative my-2 w-full outline-none',
+          'modal-panel-animate relative my-2 w-full outline-none',
           sizes[size] ?? sizes.lg,
           className,
         )}

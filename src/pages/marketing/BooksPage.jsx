@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { BookMarked, Edit3, Trash2 } from 'lucide-react'
+import { BookMarked, Trash2 } from 'lucide-react'
+import EditButton from '../../components/common/EditButton'
 import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
@@ -8,12 +9,15 @@ import AddBookModal from '../../components/books/AddBookModal'
 import AddMainBookModal from '../../components/books/AddMainBookModal'
 import { BannerButton, ResourceNameCell, StatusBadge } from '../../components/academics/AcademicsUi'
 import { INITIAL_BOOKS } from '../../data/booksData'
+import { useEditModal } from '../../hooks/useEditModal'
+import { bookFormToRow } from '../../utils/academicsFormMappers'
+import { upsertListItem } from '../../utils/academicsCrud'
 
 export default function BooksPage() {
   const [books, setBooks] = useState(INITIAL_BOOKS)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [addBookOpen, setAddBookOpen] = useState(false)
+  const modal = useEditModal()
   const [mainBookOpen, setMainBookOpen] = useState(false)
 
   const filtered = useMemo(() => {
@@ -25,19 +29,10 @@ export default function BooksPage() {
     })
   }, [books, search, statusFilter])
 
-  const handleAddBook = (form) => {
-    const price =
-      form.bookPrice?.trim() ||
-      (form.discountPct ? `${form.bookPrice || '—'} (${form.discountPct}% off)` : '—')
-    setBooks((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: form.bookName,
-        price: form.bookPrice?.trim() ? `₹${form.bookPrice}` : price,
-        status: 'Active',
-      },
-    ])
+  const handleSaveBook = (form, { isEdit, id }) => {
+    const existing = isEdit ? books.find((b) => b.id === id) : null
+    const row = bookFormToRow(form, existing)
+    setBooks((prev) => upsertListItem(prev, row, { isEdit, id }))
   }
 
   const handleDelete = (id) => {
@@ -68,13 +63,7 @@ export default function BooksPage() {
       label: 'Action',
       render: (row) => (
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#686868] transition hover:text-[#246392] sm:text-base"
-          >
-            <Edit3 className="h-4 w-4" strokeWidth={2.35} />
-            Edit
-          </button>
+          <EditButton onClick={() => modal.openEdit(row)} />
           <button
             type="button"
             onClick={() => handleDelete(row.id)}
@@ -97,7 +86,7 @@ export default function BooksPage() {
           title="Book Manager"
           className="from-[#55ace7] via-[#8b98bb] to-[#b8887a]"
         >
-          <BannerButton onClick={() => setAddBookOpen(true)}>Add New Book</BannerButton>
+          <BannerButton onClick={modal.openCreate}>Add New Book</BannerButton>
           <BannerButton onClick={() => setMainBookOpen(true)}>Add Main Book</BannerButton>
         </PageBanner>
 
@@ -122,9 +111,10 @@ export default function BooksPage() {
       </section>
 
       <AddBookModal
-        open={addBookOpen}
-        onClose={() => setAddBookOpen(false)}
-        onSubmit={handleAddBook}
+        open={modal.isOpen}
+        onClose={modal.close}
+        item={modal.selectedItem}
+        onSubmit={handleSaveBook}
       />
 
       <AddMainBookModal

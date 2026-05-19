@@ -8,7 +8,7 @@ import {
   Settings,
   BookOpen,
   BookMarked,
-  Radio,
+  GraduationCap,
   FolderOpen,
   Gift,
   ClipboardList,
@@ -35,6 +35,8 @@ import {
   IdCard,
   LayoutGrid,
 } from 'lucide-react'
+import { ACADEMICS_LIVE_CLASSES_SUBMENU } from './liveClassesNav'
+import { FINANCE_NAV_ITEMS } from './financeNav'
 
 /** Top-level dashboard link (no children) */
 export const SIDEBAR_DASHBOARD = {
@@ -42,6 +44,24 @@ export const SIDEBAR_DASHBOARD = {
   label: 'Dashboard',
   path: '/dashboard',
   icon: LayoutDashboard,
+}
+
+/** Nested Categories submenu under Academics — single hub page with in-page tabs */
+export const ACADEMICS_CATEGORIES_SUBMENU = {
+  id: 'academics-categories',
+  label: 'Categories',
+  children: [
+    {
+      label: 'Main',
+      path: '/academics/categories',
+      icon: LayoutGrid,
+    },
+    {
+      label: 'Subject',
+      path: '/academics/categories/subject',
+      icon: GraduationCap,
+    },
+  ],
 }
 
 /** Collapsible sidebar groups — matches Figma accordion nav */
@@ -52,12 +72,13 @@ export const SIDEBAR_GROUPS = [
     icon: Bookmark,
     children: [
       { label: 'Courses', path: '/courses', icon: BookOpen },
-      { label: 'Live Classes', path: '/live-classes', icon: Radio },
+      ACADEMICS_LIVE_CLASSES_SUBMENU,
       { label: 'Content Library', path: '/content-library', icon: FolderOpen },
       { label: 'Books', path: '/marketing/books', icon: BookMarked },
       { label: 'Free Resources', path: '/free-resources', icon: Gift },
       { label: 'Tests', path: '/tests', icon: ClipboardList },
       { label: 'Current Affairs', path: '/current-affairs', icon: Newspaper },
+      ACADEMICS_CATEGORIES_SUBMENU,
     ],
   },
   {
@@ -65,13 +86,14 @@ export const SIDEBAR_GROUPS = [
     label: 'Admin Management',
     icon: Shield,
     children: [
-      { label: 'Admin Access Types', path: '/users/admin-access-types', icon: IdCard },
-      { label: 'Role Access Matrix', path: '/users/role-matrix', icon: LayoutGrid },
+      { label: 'Admin Management', path: '/users/admin', icon: Shield, requiredRoles: ['super_admin'] },
+      { label: 'Role Access', path: '/users/admin-access-types', icon: IdCard },
+      { label: 'Admin Access', path: '/users/role-matrix', icon: LayoutGrid },
       {
         label: 'Centre Management',
         path: '/users/centers',
         icon: Building2,
-        requiredRoles: ['superadmin'],
+        requiredRoles: ['super_admin', 'center_admin'],
       },
     ],
   },
@@ -83,6 +105,12 @@ export const SIDEBAR_GROUPS = [
       { label: 'Manage Users', path: '/users/manage', icon: Users },
       { label: 'Wallet', path: '/users/wallet', icon: Wallet },
       { label: 'Coupons', path: '/coupons', icon: TicketPercent },
+      {
+        label: 'Center Data',
+        path: '/users/centers',
+        icon: Building2,
+        requiredRoles: ['center_admin'],
+      },
     ],
   },
   {
@@ -108,6 +136,12 @@ export const SIDEBAR_GROUPS = [
     ],
   },
   {
+    id: 'finance',
+    label: 'Finance Operations',
+    icon: Wallet,
+    children: FINANCE_NAV_ITEMS.map(({ label, path, icon }) => ({ label, path, icon })),
+  },
+  {
     id: 'operations',
     label: 'Operations',
     icon: TicketPercent,
@@ -130,10 +164,51 @@ export const SIDEBAR_GROUPS = [
   },
 ]
 
-/** All child paths for active-group detection */
-export function getGroupIdForPath(pathname) {
+/** Whether a nav item (link or nested submenu) matches the current route */
+export function isNavItemActive(item, pathname) {
+  if (item.id === 'academics-live-classes') {
+    return pathname.startsWith('/academics/live-classes')
+  }
+  if (item.path?.startsWith('/finance')) {
+    return pathname === '/finance' || pathname.startsWith('/finance/')
+  }
+  if (item.path) {
+    if (item.path === '/academics/categories') {
+      return (
+        pathname === '/academics/categories' ||
+        pathname.startsWith('/academics/categories/')
+      )
+    }
+    if (item.path?.startsWith('/academics/live-classes')) {
+      return (
+        pathname === '/academics/live-classes' ||
+        pathname.startsWith('/academics/live-classes/')
+      )
+    }
+    return pathname === item.path || pathname.startsWith(`${item.path}/`)
+  }
+  if (item.children?.length) {
+    return item.children.some((child) => isNavItemActive(child, pathname))
+  }
+  return false
+}
+
+/** Nested submenu id when route is under Categories (Main / Subject) */
+export function getSubmenuIdForPath(pathname) {
   for (const group of SIDEBAR_GROUPS) {
-    if (group.children.some((c) => pathname === c.path || pathname.startsWith(`${c.path}/`))) {
+    for (const child of group.children) {
+      if (child.children?.length && child.children.some((sub) => isNavItemActive(sub, pathname))) {
+        return child.id
+      }
+    }
+  }
+  return null
+}
+
+/** Top-level group id for active-group accordion detection */
+export function getGroupIdForPath(pathname, groups = SIDEBAR_GROUPS) {
+  for (const group of groups) {
+    if (group.children.some((c) => isNavItemActive(c, pathname))) {
       return group.id
     }
   }

@@ -91,7 +91,7 @@ export const SEED_ADMIN_ROLES = [
   }),
   roleFromLegacy({
     id: 'content_admin',
-    label: 'Content / Blog Admin',
+    label: 'Content Admin',
     description: 'Creates and publishes learning content, blogs, and marketing assets.',
     modules: ['Content Library', 'Blogs', 'Resources', 'Media'],
     permissionCount: 18,
