@@ -11,6 +11,8 @@ import {
 import { usePermissions } from '../../hooks/usePermissions'
 
 const groupShell = 'rounded-xl bg-[#2d2f58]'
+const salesModuleShell =
+  'rounded-xl bg-gradient-to-br from-[#1a2f4a] to-[#2d4a6f] ring-1 ring-[#55ace7]/35 shadow-[0_4px_20px_rgba(85,172,231,0.12)]'
 const childActive = 'rounded-lg bg-[#1e2145] text-white'
 const childIdle = 'rounded-lg text-white/90 hover:bg-white/[0.06] hover:text-white'
 
@@ -107,7 +109,8 @@ function CategoriesSubmenu({ submenu, isOpen, onToggle, onNavigate }) {
 }
 
 function NavGroup({ group, isOpen, onToggle, onNavigate }) {
-  const { label, icon: Icon, children } = group
+  const { label, icon: Icon, children, moduleType } = group
+  const shellClass = moduleType === 'sales-analytics' ? salesModuleShell : groupShell
   const location = useLocation()
   const routeSubmenuId = getSubmenuIdForPath(location.pathname)
   const [openSubmenuId, setOpenSubmenuId] = useState(routeSubmenuId)
@@ -132,18 +135,23 @@ function NavGroup({ group, isOpen, onToggle, onNavigate }) {
         onClick={onToggle}
         className={cn(
           'flex w-full min-h-[44px] items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-[14px] font-semibold text-white transition-colors',
-          hasActiveChild ? groupShell : 'hover:bg-white/[0.05]',
+          hasActiveChild ? shellClass : 'hover:bg-white/[0.05]',
         )}
       >
         <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
         <span className="min-w-0 flex-1 truncate">{label}</span>
+        {moduleType === 'sales-analytics' && (
+          <span className="shrink-0 rounded-md bg-[#55ace7]/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a8d4f0]">
+            CRM
+          </span>
+        )}
         <ChevronDown className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2.5} />
       </button>
     )
   }
 
   return (
-    <div className={cn(groupShell, 'overflow-hidden py-1')}>
+    <div className={cn(shellClass, 'overflow-hidden py-1')}>
       <button
         type="button"
         onClick={onToggle}
@@ -151,6 +159,11 @@ function NavGroup({ group, isOpen, onToggle, onNavigate }) {
       >
         <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
         <span className="min-w-0 flex-1 truncate">{label}</span>
+        {moduleType === 'sales-analytics' && (
+          <span className="shrink-0 rounded-md bg-[#55ace7]/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a8d4f0]">
+            CRM
+          </span>
+        )}
         <ChevronUp className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2.5} />
       </button>
       <div className="flex flex-col gap-0.5 px-2 pb-2 pt-0">

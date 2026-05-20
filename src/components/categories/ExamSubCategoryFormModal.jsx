@@ -1,0 +1,281 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { FolderTree } from 'lucide-react'
+import Modal from '../ui/Modal'
+import ModalPanelHeader from '../courses/ModalPanelHeader'
+import SectionBar from '../courses/SectionBar'
+import FormModalSubmitBar from '../common/FormModalSubmitBar'
+import { CourseFormField, CourseInput } from '../courses/CourseFormField'
+import SearchableSelect from './SearchableSelect'
+import { useCenters } from '../../contexts/CentersContext'
+import {
+  formatExamCategoryLabel,
+  getExamCategoriesForProgram,
+  loadExamCategories,
+} from '../../utils/examCategoriesStorage'
+import {
+  formatProgramLabel,
+  getProgramsForCentre,
+  loadPrograms,
+} from '../../utils/programsStorage'
+import { toast } from '../../utils/toast'
+
+function buildForm(item) {
+  if (item) {
+    return {
+      centerId: item.centerId || '',
+      programId: item.programId || '',
+      examCategoryId: item.examCategoryId || '',
+      name: item.name || '',
+      status: item.status || 'Active',
+    }
+  }
+  return {
+    centerId: '',
+    programId: '',
+    examCategoryId: '',
+    name: '',
+    status: 'Active',
+  }
+}
+
+export default function ExamSubCategoryFormModal({ open, onClose, item, onSubmit }) {
+  const isEdit = Boolean(item)
+  const { activeCenters } = useCenters()
+  const [programs, setPrograms] = useState(() => loadPrograms(activeCenters))
+  const [examCategories, setExamCategories] = useState(() => loadExamCategories())
+  const [form, setForm] = useState(buildForm(null))
+  const [errors, setErrors] = useState({})
+  const closingRef = useRef(false)
+
+  useEffect(() => {
+    const refreshPrograms = () => setPrograms(loadPrograms(activeCenters))
+    const refreshCategories = () => setExamCategories(loadExamCategories())
+    refreshPrograms()
+    refreshCategories()
+    window.addEventListener('programs-updated', refreshPrograms)
+    window.addEventListener('exam-categories-updated', refreshCategories)
+    return () => {
+      window.removeEventListener('programs-updated', refreshPrograms)
+      window.removeEventListener('exam-categories-updated', refreshCategories)
+    }
+  }, [activeCenters])
+
+  useEffect(() => {
+    if (!open) {
+      closingRef.current = false
+      return
+    }
+    closingRef.current = false
+    setForm(buildForm(item))
+    setErrors({})
+  }, [open, item])
+
+  const centreOptions = useMemo(
+    () =>
+      activeCenters.map((c) => ({
+        value: String(c.centerId),
+        label: c.centerName,
+      })),
+    [activeCenters],
+  )
+
+  const programsForCentre = useMemo(
+    () => getProgramsForCentre(programs, form.centerId),
+    [programs, form.centerId],
+  )
+
+  const programOptions = useMemo(
+    () =>
+      programsForCentre.map((p) => ({
+        value: p.programId || p.id,
+        label: formatProgramLabel(p),
+      })),
+    [programsForCentre],
+  )
+
+  const categoriesForProgram = useMemo(
+    () => getExamCategoriesForProgram(examCategories, form.programId),
+    [examCategories, form.programId],
+  )
+
+  const examCategoryOptions = useMemo(
+    () =>
+      categoriesForProgram.map((c) => ({
+        value: c.categoryId || c.id,
+        label: formatExamCategoryLabel(c),
+      })),
+    [categoriesForProgram],
+  )
+
+  const handleClose = () => {
+    if (closingRef.current) return
+    closingRef.current = true
+    setErrors({})
+    onClose()
+  }
+
+  const handleCentreChange = (centerId) => {
+    setForm((f) => ({ ...f, centerId, programId: '', examCategoryId: '' }))
+    setErrors((e) => ({
+      ...e,
+      centerId: undefined,
+      programId: undefined,
+      examCategoryId: undefined,
+    }))
+  }
+
+  const handleProgramChange = (programId) => {
+    setForm((f) => ({ ...f, programId, examCategoryId: '' }))
+    setErrors((e) => ({ ...e, programId: undefined, examCategoryId: undefined }))
+  }
+
+  const validate = () => {
+    const next = {}
+    if (!form.centerId) next.centerId = 'Centre is required'
+    if (!form.programId) next.programId = 'Program is required'
+    if (!form.examCategoryId) next.examCategoryId = 'Exam category is required'
+    if (!form.name.trim()) next.name = 'Sub-category name is required'
+    if (!form.status) next.status = 'Status is required'
+    setErrors(next)
+    return Object.keys(next).length === 0
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!validate()) {
+      toast.error('Please fix the highlighted fields')
+      return
+    }
+    const centre = activeCenters.find((c) => String(c.centerId) === String(form.centerId))
+    const program = programsForCentre.find(
+      (p) => (p.programId || p.id) === form.programId,
+    )
+    const category = categoriesForProgram.find(
+      (c) => (c.categoryId || c.id) === form.examCategoryId,
+    )
+    onSubmit(
+      {
+        centerId: form.centerId,
+        centerName: centre?.centerName || '',
+        programId: form.programId,
+        program: formatProgramLabel(program),
+        examCategoryId: form.examCategoryId,
+        examCategory: formatExamCategoryLabel(category),
+        name: form.name.trim(),
+        status: form.status,
+      },
+      { isEdit, id: item?.id },
+    )
+    handleClose()
+  }
+
+  if (!open) return null
+
+  const title = isEdit ? 'Edit Exam Sub-Category' : 'Add Exam Sub-Category'
+
+  return (
+    <Modal open={open} onClose={handleClose} size="md" title={title}>
+      <form
+        onSubmit={handleSubmit}
+        className="overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+      >
+        <ModalPanelHeader
+          title={title}
+          onBack={handleClose}
+          icon={FolderTree}
+          iconClassName="text-[#246392]"
+        />
+
+        <div className="space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+          <SectionBar title="Sub-Category Details" />
+
+          <div className="grid gap-4 rounded-xl bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:grid-cols-2 sm:px-6 sm:py-6">
+            <CourseFormField label="Centre" required>
+              <SearchableSelect
+                options={centreOptions}
+                value={form.centerId}
+                onChange={handleCentreChange}
+                placeholder="Select centre"
+                emptyMessage="No centres available"
+                error={errors.centerId}
+              />
+            </CourseFormField>
+
+            <CourseFormField label="Program" required>
+              <SearchableSelect
+                options={programOptions}
+                value={form.programId}
+                onChange={handleProgramChange}
+                placeholder={form.centerId ? 'Select program' : 'Select centre first'}
+                emptyMessage={
+                  form.centerId
+                    ? 'No programs available for this centre'
+                    : 'Select a centre first'
+                }
+                disabled={!form.centerId}
+                error={errors.programId}
+              />
+            </CourseFormField>
+
+            <CourseFormField label="Exam Category" required className="sm:col-span-2">
+              <SearchableSelect
+                options={examCategoryOptions}
+                value={form.examCategoryId}
+                onChange={(examCategoryId) => {
+                  setForm((f) => ({ ...f, examCategoryId }))
+                  if (errors.examCategoryId) {
+                    setErrors((e) => ({ ...e, examCategoryId: undefined }))
+                  }
+                }}
+                placeholder={form.programId ? 'Select exam category' : 'Select program first'}
+                emptyMessage={
+                  form.programId
+                    ? 'No exam categories available for this program'
+                    : 'Select a program first'
+                }
+                disabled={!form.programId}
+                error={errors.examCategoryId}
+              />
+            </CourseFormField>
+
+            <CourseFormField label="Exam Sub-Category Name" required className="sm:col-span-2">
+              <CourseInput
+                value={form.name}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, name: e.target.value }))
+                  if (errors.name) setErrors((err) => ({ ...err, name: undefined }))
+                }}
+                placeholder="e.g. Prelims Test Series"
+              />
+            </CourseFormField>
+            {errors.name && (
+              <p className="text-xs font-medium text-[#dc2626] sm:col-span-2">{errors.name}</p>
+            )}
+
+            <CourseFormField label="Status" required>
+              <select
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                className="h-11 w-full rounded-lg bg-[#e8f4fc] px-4 text-sm font-medium text-[#222] outline-none focus:ring-2 focus:ring-[#55ace7]"
+              >
+                <option value="Active">Active</option>
+                <option value="In Active">Inactive</option>
+              </select>
+            </CourseFormField>
+          </div>
+
+          <FormModalSubmitBar
+            isEditMode={isEdit}
+            onReset={() => {
+              setForm(buildForm(item))
+              setErrors({})
+              toast.message('Form reset')
+            }}
+            createLabel="Save"
+            updateLabel="Update"
+          />
+        </div>
+      </form>
+    </Modal>
+  )
+}

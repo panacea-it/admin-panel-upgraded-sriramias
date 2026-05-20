@@ -1,44 +1,85 @@
-import { Layers } from 'lucide-react'
+import { Layers, GraduationCap, BookOpen, Users, FolderTree, LayoutGrid } from 'lucide-react'
 
+/** Tab order: Programs first, then full academic hierarchy */
 export const CATEGORY_HUB_TABS = [
-  { id: 'exam-category', label: 'Exam Category' },
-  { id: 'exam-sub-category', label: 'Exam Sub-Category' },
-  { id: 'subject', label: 'Subject' },
-  { id: 'topic', label: 'Topic' },
-  { id: 'teachers', label: 'Teachers' },
+  { id: 'programs', label: 'Programs', path: '/academics/categories/programs' },
+  { id: 'exam-category', label: 'Exam Category', path: '/academics/categories/exam-category' },
+  { id: 'exam-sub-category', label: 'Exam Sub-Category', path: '/academics/categories/exam-sub-category' },
+  { id: 'courses', label: 'Courses', path: '/academics/categories/courses' },
+  { id: 'subject', label: 'Subject', path: '/academics/categories/subject' },
+  { id: 'topic', label: 'Topic', path: '/academics/categories/topic' },
+  { id: 'teachers', label: 'Teachers', path: '/academics/categories/teachers' },
 ]
 
+export const DEFAULT_CATEGORY_TAB = 'programs'
+
+export function getTabIdFromPath(pathname) {
+  const match = CATEGORY_HUB_TABS.find(
+    (t) => pathname === t.path || pathname.startsWith(`${t.path}/`),
+  )
+  return match?.id || DEFAULT_CATEGORY_TAB
+}
+
 export const CATEGORY_HUB_SECTIONS = {
+  programs: {
+    id: 'programs',
+    icon: LayoutGrid,
+    bannerTitle: 'Programs',
+    bannerSubtitle: 'Manage Academic Programs',
+    addLabel: 'Create Program',
+    searchPlaceholder: 'Search programs...',
+    primaryColumn: 'Program Name',
+    emptyTitle: 'No Programs Found',
+    emptyDescription: 'Create your first academic program and link courses to it.',
+    emptyCta: 'Create Program',
+    filters: ['status', 'centre'],
+  },
   'exam-category': {
     id: 'exam-category',
     icon: Layers,
     bannerTitle: 'Exam Category',
+    bannerSubtitle: 'Organize exam categories under programs',
     addLabel: 'Add Category',
     searchPlaceholder: 'Search Category',
     primaryColumn: 'Category',
     emptyTitle: 'No Exam Categories Found',
     emptyDescription: 'Create your first exam category to get started.',
     emptyCta: 'Create Category',
-    filters: ['status'],
-    formFields: ['name', 'description', 'status', 'icon'],
+    filters: ['status', 'program'],
+    formFields: ['center', 'program', 'name', 'status'],
   },
   'exam-sub-category': {
     id: 'exam-sub-category',
-    icon: Layers,
+    icon: FolderTree,
     bannerTitle: 'Exam Sub-Category',
+    bannerSubtitle: 'Sub-divisions under each exam category',
     addLabel: 'Add Sub-Category',
     searchPlaceholder: 'Search Sub Category',
     primaryColumn: 'Sub-Category',
     emptyTitle: 'No Sub-Categories Found',
     emptyDescription: 'Add sub-categories under your exam categories.',
     emptyCta: 'Create Sub-Category',
-    filters: ['category', 'status'],
-    formFields: ['parentCategory', 'name', 'description', 'status'],
+    filters: ['status'],
+    formFields: ['center', 'program', 'examCategory', 'name', 'status'],
+  },
+  courses: {
+    id: 'courses',
+    icon: BookOpen,
+    bannerTitle: 'Courses',
+    bannerSubtitle: 'Manage courses linked to programs and exam hierarchy',
+    addLabel: 'Add Course',
+    searchPlaceholder: 'Search courses...',
+    primaryColumn: 'Course Name',
+    emptyTitle: 'No Courses Found',
+    emptyDescription: 'Create your first course and link it to a program and exam hierarchy.',
+    emptyCta: 'Add Course',
+    filters: ['status', 'centre', 'program'],
   },
   subject: {
     id: 'subject',
-    icon: Layers,
+    icon: GraduationCap,
     bannerTitle: 'Subjects',
+    bannerSubtitle: 'Subjects under courses',
     addLabel: 'Add Subject',
     searchPlaceholder: 'Search Subject',
     primaryColumn: 'Subject',
@@ -52,6 +93,7 @@ export const CATEGORY_HUB_SECTIONS = {
     id: 'topic',
     icon: Layers,
     bannerTitle: 'Topics',
+    bannerSubtitle: 'Topics organized under subjects',
     addLabel: 'Add Topic',
     searchPlaceholder: 'Search Topic',
     primaryColumn: 'Topic',
@@ -63,10 +105,11 @@ export const CATEGORY_HUB_SECTIONS = {
   },
   teachers: {
     id: 'teachers',
-    icon: Layers,
+    icon: Users,
     bannerTitle: 'Teachers',
+    bannerSubtitle: 'Faculty assigned to topics',
     addLabel: 'Add Teacher',
-    searchPlaceholder: 'Search Topic',
+    searchPlaceholder: 'Search teachers...',
     primaryColumn: 'Name',
     emptyTitle: 'No Teachers Found',
     emptyDescription: 'Add faculty linked to subjects.',

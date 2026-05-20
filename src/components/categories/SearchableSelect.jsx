@@ -1,0 +1,101 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, Search } from 'lucide-react'
+import { cn } from '../../utils/cn'
+
+/**
+ * Searchable single-select dropdown.
+ * @param {{ value: string, label: string }[]} options
+ */
+export default function SearchableSelect({
+  options = [],
+  value = '',
+  onChange,
+  placeholder = 'Select...',
+  emptyMessage = 'No options available',
+  disabled = false,
+  error,
+  triggerClassName,
+}) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const rootRef = useRef(null)
+
+  const selected = options.find((o) => o.value === value)
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return options
+    return options.filter((o) => o.label.toLowerCase().includes(q))
+  }, [options, search])
+
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (!rootRef.current?.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((o) => !o)}
+        className={cn(
+          triggerClassName ||
+            'flex h-11 w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-left text-sm font-medium text-[#222] shadow-sm outline-none transition hover:border-[#93c5fd] focus:ring-2 focus:ring-blue-400/35',
+          !triggerClassName && 'bg-[#e8f4fc]',
+          disabled && 'cursor-not-allowed opacity-60',
+          error && 'ring-2 ring-[#dc2626]/40',
+        )}
+      >
+        <span className={cn('truncate', !selected && 'text-[#8b98bb]')}>
+          {selected?.label || placeholder}
+        </span>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 text-[#246392] transition', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
+          <div className="relative border-b border-[#f0f0f0] p-2">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca0a8]" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="h-9 w-full rounded-lg bg-[#eef2fc] pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#55ace7]"
+              autoFocus
+            />
+          </div>
+          <ul className="max-h-48 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <li className="px-4 py-6 text-center text-sm text-[#686868]">{emptyMessage}</li>
+            ) : (
+              filtered.map((opt) => (
+                <li key={opt.value}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value)
+                      setOpen(false)
+                      setSearch('')
+                    }}
+                    className={cn(
+                      'w-full px-4 py-2.5 text-left text-sm transition hover:bg-[#f0f7fc]',
+                      value === opt.value && 'bg-[#e8f4fc] font-semibold text-[#246392]',
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      )}
+      {error && <p className="mt-1 text-xs font-medium text-[#dc2626]">{error}</p>}
+    </div>
+  )
+}

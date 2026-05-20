@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import FinanceRouteTabs from '../components/finance/FinanceRouteTabs'
 import PaymentDashboardPage from '../pages/finance/PaymentDashboardPage'
 import StudentPaymentReportsPage from '../pages/finance/StudentPaymentReportsPage'
 import PaymentVerificationCenterPage from '../pages/finance/PaymentVerificationCenterPage'
@@ -14,8 +13,7 @@ import GstInvoiceSettingsPage from '../pages/finance/GstInvoiceSettingsPage'
 export default function FinanceLayout() {
   return (
     <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-8 pt-6 sm:px-5 lg:px-6">
-      <section className="mx-auto max-w-screen-2xl space-y-5 sm:space-y-6">
-        <FinanceRouteTabs />
+      <section className="mx-auto max-w-screen-2xl">
         <Routes>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<PaymentDashboardPage />} />

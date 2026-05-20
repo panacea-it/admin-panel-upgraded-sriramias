@@ -1,0 +1,679 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { PlusCircle } from 'lucide-react'
+import CategoryPageHeader from '../../../components/categories/CategoryPageHeader'
+import CategoryFilterBar from '../../../components/categories/CategoryFilterBar'
+import CategoryStatusBadge from '../../../components/categories/CategoryStatusBadge'
+import CategoryTableActions from '../../../components/categories/CategoryTableActions'
+import CategoryEmptyState from '../../../components/categories/CategoryEmptyState'
+import CategoryHubFormModal from '../../../components/categories/CategoryHubFormModal'
+import ExamCategoryFormModal from '../../../components/categories/ExamCategoryFormModal'
+import ExamSubCategoryFormModal from '../../../components/categories/ExamSubCategoryFormModal'
+import ViewMainCategoryModal from '../../../components/categories/ViewMainCategoryModal'
+import ViewExamCategoryModal from '../../../components/categories/ViewExamCategoryModal'
+import ViewExamSubCategoryModal from '../../../components/categories/ViewExamSubCategoryModal'
+import PaginatedFigmaTable from '../../../components/figma/PaginatedFigmaTable'
+import {
+  CATEGORIES_HUB_INITIAL,
+  PARENT_CATEGORY_OPTIONS,
+  SUBJECT_OPTIONS,
+} from '../../../data/categoriesHubData'
+import {
+  CATEGORY_HUB_SECTIONS,
+  getTabIdFromPath,
+} from '../../../constants/categoryHubSections'
+import { useCenters } from '../../../contexts/CentersContext'
+import { useEditModal } from '../../../hooks/useEditModal'
+import { formatCategoryDateTime } from '../../../utils/formatDateTime'
+import { nextExamCategoryId } from '../../../utils/examCategoryHelpers'
+import { loadExamCategories, saveExamCategories } from '../../../utils/examCategoriesStorage'
+import {
+  loadExamSubCategories,
+  saveExamSubCategories,
+} from '../../../utils/examSubCategoriesStorage'
+import { nextExamSubCategoryId } from '../../../utils/examSubCategoryHelpers'
+import { loadSubjects, saveSubjects, nextSubjectId } from '../../../utils/subjectsStorage'
+import { formatProgramLabel, loadPrograms } from '../../../utils/programsStorage'
+import { toast } from '../../../utils/toast'
+
+function nextId(list) {
+  const max = list.reduce((m, row) => Math.max(m, parseInt(row.id, 10) || 0), 0)
+  return String(max + 1).padStart(3, '0')
+}
+
+function emptyFilters() {
+  return { search: '', status: 'all', category: 'all', subject: 'all', program: 'all' }
+}
+
+function CategoryIcon({ row }) {
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#cbeeff] text-xs font-bold text-[#246392] shadow-sm">
+      {row.iconUrl ? (
+        <img src={row.iconUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        row.iconLabel || row.name?.slice(0, 2)?.toUpperCase()
+      )}
+    </div>
+  )
+}
+
+function AddButton({ onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#1a3a5c] to-[#03045e] px-4 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(3,4,94,0.35)] transition hover:scale-[1.02]"
+    >
+      <PlusCircle className="h-4 w-4" />
+      {children}
+    </button>
+  )
+}
+
+export default function CategorySectionPage() {
+  const location = useLocation()
+  const activeTab = getTabIdFromPath(location.pathname)
+  const section = CATEGORY_HUB_SECTIONS[activeTab]
+  const Icon = section?.icon
+  const isExamCategory = activeTab === 'exam-category'
+  const isExamSubCategory = activeTab === 'exam-sub-category'
+  const { activeCenters } = useCenters()
+
+  const [dataBySection, setDataBySection] = useState(() => ({
+    ...CATEGORIES_HUB_INITIAL,
+    'exam-category': loadExamCategories(),
+    subject: loadSubjects(),
+  }))
+  const [filtersBySection, setFiltersBySection] = useState(() =>
+    Object.fromEntries(
+      Object.keys(CATEGORY_HUB_SECTIONS)
+        .filter((k) => k !== 'programs' && k !== 'courses')
+        .map((k) => [k, emptyFilters()]),
+    ),
+  )
+  const [programs, setPrograms] = useState(() => loadPrograms(activeCenters))
+  const [selectedIds, setSelectedIds] = useState([])
+
+  const modal = useEditModal()
+  const [viewItem, setViewItem] = useState(null)
+
+  useEffect(() => {
+    const refresh = () => setPrograms(loadPrograms(activeCenters))
+    window.addEventListener('programs-updated', refresh)
+    return () => window.removeEventListener('programs-updated', refresh)
+  }, [activeCenters])
+
+  useEffect(() => {
+    saveExamCategories(dataBySection['exam-category'] || [])
+  }, [dataBySection['exam-category']])
+
+  useEffect(() => {
+    saveExamSubCategories(dataBySection['exam-sub-category'] || [])
+  }, [dataBySection['exam-sub-category']])
+
+  useEffect(() => {
+    saveSubjects(dataBySection.subject || [])
+  }, [dataBySection.subject])
+
+  const rows = dataBySection[activeTab] || []
+  const filters = filtersBySection[activeTab] || emptyFilters()
+
+  const updateFilters = (patch) => {
+    setFiltersBySection((prev) => ({
+      ...prev,
+      [activeTab]: { ...prev[activeTab], ...patch },
+    }))
+  }
+
+  const filtered = useMemo(() => {
+    const q = filters.search.toLowerCase().trim()
+    return rows.filter((row) => {
+      const matchSearch =
+        !q ||
+        row.name?.toLowerCase().includes(q) ||
+        row.categoryId?.toLowerCase().includes(q) ||
+        row.subcategoryId?.toLowerCase().includes(q) ||
+        row.examCategory?.toLowerCase().includes(q) ||
+        row.description?.toLowerCase().includes(q) ||
+        row.parentCategory?.toLowerCase().includes(q) ||
+        row.subject?.toLowerCase().includes(q) ||
+        row.program?.toLowerCase().includes(q) ||
+        row.centerName?.toLowerCase().includes(q)
+      const matchStatus = filters.status === 'all' || row.status === filters.status
+      const matchCategory =
+        filters.category === 'all' || row.parentCategory === filters.category
+      const matchSubject = filters.subject === 'all' || row.subject === filters.subject
+      const matchProgram = filters.program === 'all' || row.program === filters.program
+      return matchSearch && matchStatus && matchCategory && matchSubject && matchProgram
+    })
+  }, [rows, filters])
+
+  const handleExamCategorySave = useCallback(
+    (form, { isEdit, id }) => {
+      const now = new Date().toISOString()
+      const payload = {
+        name: form.name,
+        centerId: form.centerId,
+        centerName: form.centerName,
+        programId: form.programId,
+        program: form.program,
+        status: form.status,
+        modifiedAt: now,
+      }
+
+      setDataBySection((prev) => {
+        const list = prev['exam-category'] || []
+        if (isEdit && id != null) {
+          return {
+            ...prev,
+            'exam-category': list.map((row) =>
+              row.id === id ? { ...row, ...payload } : row,
+            ),
+          }
+        }
+        return {
+          ...prev,
+          'exam-category': [
+            ...list,
+            {
+              id: nextId(list),
+              categoryId: nextExamCategoryId(list),
+              ...payload,
+              createdAt: now,
+            },
+          ],
+        }
+      })
+      toast.success(isEdit ? 'Category updated' : 'Category created')
+    },
+    [],
+  )
+
+  const handleExamSubCategorySave = useCallback((form, { isEdit, id }) => {
+    const now = new Date().toISOString()
+    const payload = {
+      name: form.name,
+      centerId: form.centerId,
+      centerName: form.centerName,
+      programId: form.programId,
+      program: form.program,
+      examCategoryId: form.examCategoryId,
+      examCategory: form.examCategory,
+      status: form.status,
+      modifiedAt: now,
+    }
+
+    setDataBySection((prev) => {
+      const list = prev['exam-sub-category'] || []
+      if (isEdit && id != null) {
+        return {
+          ...prev,
+          'exam-sub-category': list.map((row) =>
+            row.id === id ? { ...row, ...payload } : row,
+          ),
+        }
+      }
+      return {
+        ...prev,
+        'exam-sub-category': [
+          ...list,
+          {
+            id: nextId(list),
+            subcategoryId: nextExamSubCategoryId(list),
+            ...payload,
+            createdAt: now,
+          },
+        ],
+      }
+    })
+    toast.success(isEdit ? 'Sub-category updated' : 'Sub-category created')
+  }, [])
+
+  const handleGenericSave = useCallback(
+    (form, { isEdit, id }) => {
+      const now = new Date().toISOString()
+      const payload = {
+        name: form.name.trim(),
+        description: form.description?.trim() || '',
+        status: form.status,
+        parentCategory: form.parentCategory || '',
+        subject: form.subject || '',
+        program: form.program || '',
+        iconUrl: form.iconUrl || '',
+        iconFileName: form.iconFileName || '',
+        iconLabel: form.iconLabel || form.name.slice(0, 2).toUpperCase(),
+        modifiedAt: now,
+      }
+
+      setDataBySection((prev) => {
+        const list = prev[activeTab] || []
+        if (isEdit && id != null) {
+          return {
+            ...prev,
+            [activeTab]: list.map((row) => (row.id === id ? { ...row, ...payload } : row)),
+          }
+        }
+        const newRow = { id: nextId(list), ...payload, createdAt: now }
+        if (activeTab === 'subject') {
+          newRow.subjectId = nextSubjectId(list)
+        }
+        return {
+          ...prev,
+          [activeTab]: [...list, newRow],
+        }
+      })
+      toast.success(isEdit ? 'Updated successfully' : 'Created successfully')
+    },
+    [activeTab],
+  )
+
+  const handleDelete = (row) => {
+    if (!window.confirm(`Delete "${row.name}"?`)) return
+    setDataBySection((prev) => ({
+      ...prev,
+      [activeTab]: prev[activeTab].filter((c) => c.id !== row.id),
+    }))
+    setSelectedIds((prev) => prev.filter((sid) => sid !== row.id))
+    toast.success('Deleted successfully')
+  }
+
+  const handleToggleStatus = (row) => {
+    const next = row.status === 'Active' ? 'In Active' : 'Active'
+    setDataBySection((prev) => ({
+      ...prev,
+      [activeTab]: prev[activeTab].map((c) =>
+        c.id === row.id ? { ...c, status: next, modifiedAt: new Date().toISOString() } : c,
+      ),
+    }))
+    toast.success(next === 'Active' ? 'Enabled' : 'Disabled')
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(filtered.map((r) => r.id))
+    }
+  }
+
+  const createdLabel = section?.dateColumns?.created || 'Created On'
+  const modifiedLabel = section?.dateColumns?.modified || 'Modified On'
+
+  const programFilterOptions = useMemo(() => {
+    if (!section) return [{ value: 'all', label: 'All Programs' }]
+    const fromRows = [...new Set(rows.map((r) => r.program).filter(Boolean))]
+    const fromPrograms = programs.map((p) => formatProgramLabel(p))
+    const merged = [...new Set([...fromRows, ...fromPrograms])].sort()
+    return [
+      { value: 'all', label: 'All Programs' },
+      ...merged.map((p) => ({ value: p, label: p })),
+    ]
+  }, [rows, programs, section])
+
+  const columns = useMemo(() => {
+    if (!section) return []
+    if (isExamCategory) {
+      return [
+        {
+          key: 'select',
+          label: '',
+          headerClassName: 'w-12 pl-6 sm:pl-8',
+          cellClassName: 'pl-6 sm:pl-8',
+          render: (row) => (
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(row.id)}
+              onChange={() => {
+                setSelectedIds((prev) =>
+                  prev.includes(row.id)
+                    ? prev.filter((x) => x !== row.id)
+                    : [...prev, row.id],
+                )
+              }}
+              className="h-4 w-4 rounded accent-[#246392]"
+              aria-label={`Select ${row.name}`}
+            />
+          ),
+        },
+        {
+          key: 'categoryId',
+          label: 'ID',
+          render: (row) => (
+            <span className="font-mono text-sm font-medium text-[#111]">
+              {row.categoryId || row.id}
+            </span>
+          ),
+        },
+        {
+          key: 'name',
+          label: 'Category',
+          render: (row) => <span className="font-semibold text-[#111]">{row.name}</span>,
+        },
+        {
+          key: 'program',
+          label: 'Program',
+          render: (row) => (
+            <span className="text-sm font-medium text-[#444]">{row.program || '—'}</span>
+          ),
+        },
+        {
+          key: 'createdAt',
+          label: 'Created On',
+          render: (row) => (
+            <span className="whitespace-nowrap text-sm">
+              {formatCategoryDateTime(row.createdAt)}
+            </span>
+          ),
+        },
+        {
+          key: 'status',
+          label: 'Status',
+          render: (row) => <CategoryStatusBadge status={row.status} />,
+        },
+        {
+          key: 'actions',
+          label: 'Actions',
+          render: (row) => (
+            <CategoryTableActions
+              status={row.status}
+              onView={() => setViewItem(row)}
+              onEdit={() => modal.openEdit(row)}
+              onDelete={() => handleDelete(row)}
+              onToggleStatus={() => handleToggleStatus(row)}
+            />
+          ),
+        },
+      ]
+    }
+
+    if (isExamSubCategory) {
+      return [
+        {
+          key: 'select',
+          label: '',
+          headerClassName: 'w-12 pl-6 sm:pl-8',
+          cellClassName: 'pl-6 sm:pl-8',
+          render: (row) => (
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(row.id)}
+              onChange={() => {
+                setSelectedIds((prev) =>
+                  prev.includes(row.id)
+                    ? prev.filter((x) => x !== row.id)
+                    : [...prev, row.id],
+                )
+              }}
+              className="h-4 w-4 rounded accent-[#246392]"
+              aria-label={`Select ${row.name}`}
+            />
+          ),
+        },
+        {
+          key: 'subcategoryId',
+          label: 'ID',
+          render: (row) => (
+            <span className="font-mono text-sm font-medium text-[#111]">
+              {row.subcategoryId || row.id}
+            </span>
+          ),
+        },
+        {
+          key: 'name',
+          label: 'Subcategory',
+          render: (row) => <span className="font-semibold text-[#111]">{row.name}</span>,
+        },
+        {
+          key: 'createdAt',
+          label: 'Created On',
+          render: (row) => (
+            <span className="whitespace-nowrap text-sm">
+              {formatCategoryDateTime(row.createdAt)}
+            </span>
+          ),
+        },
+        {
+          key: 'status',
+          label: 'Status',
+          render: (row) => <CategoryStatusBadge status={row.status} />,
+        },
+        {
+          key: 'actions',
+          label: 'Actions',
+          render: (row) => (
+            <CategoryTableActions
+              status={row.status}
+              onView={() => setViewItem(row)}
+              onEdit={() => modal.openEdit(row)}
+              onDelete={() => handleDelete(row)}
+              onToggleStatus={() => handleToggleStatus(row)}
+            />
+          ),
+        },
+      ]
+    }
+
+    const cols = [
+      {
+        key: 'id',
+        label: 'ID',
+        headerClassName: 'pl-6 sm:pl-8',
+        cellClassName: 'pl-6 sm:pl-8 font-medium tabular-nums',
+        render: (row) => row.id,
+      },
+      {
+        key: 'name',
+        label: section.primaryColumn,
+        render: (row) => (
+          <div className="flex items-center gap-3">
+            {section.formFields?.includes('icon') && <CategoryIcon row={row} />}
+            <span className="font-semibold">{row.name}</span>
+          </div>
+        ),
+      },
+    ]
+
+    if (activeTab === 'topic' || activeTab === 'teachers') {
+      cols.push({ key: 'subject', label: 'Subject', render: (row) => row.subject })
+    }
+
+    cols.push(
+      {
+        key: 'createdAt',
+        label: createdLabel,
+        render: (row) => (
+          <span className="whitespace-nowrap text-sm">{formatCategoryDateTime(row.createdAt)}</span>
+        ),
+      },
+      {
+        key: 'modifiedAt',
+        label: modifiedLabel,
+        render: (row) => (
+          <span className="whitespace-nowrap text-sm">{formatCategoryDateTime(row.modifiedAt)}</span>
+        ),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        render: (row) => <CategoryStatusBadge status={row.status} />,
+      },
+      {
+        key: 'actions',
+        label: 'Actions',
+        render: (row) => (
+          <CategoryTableActions
+            status={row.status}
+            onView={() => setViewItem(row)}
+            onEdit={() => modal.openEdit(row)}
+            onDelete={() => handleDelete(row)}
+            onToggleStatus={() => handleToggleStatus(row)}
+          />
+        ),
+      },
+    )
+
+    return cols
+  }, [
+    activeTab,
+    section,
+    isExamCategory,
+    isExamSubCategory,
+    selectedIds,
+    modal,
+    createdLabel,
+    modifiedLabel,
+  ])
+
+  const categoryFilterOptions = [
+    { value: 'all', label: 'Category' },
+    ...PARENT_CATEGORY_OPTIONS.map((c) => ({ value: c, label: c })),
+  ]
+
+  const subjectFilterOptions = [
+    { value: 'all', label: 'Subject' },
+    ...SUBJECT_OPTIONS.map((s) => ({ value: s, label: s })),
+  ]
+
+  const showEmpty = rows.length === 0
+  const showNoResults = !showEmpty && filtered.length === 0
+
+  if (!section) return null
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.22 }}
+        className="space-y-5 sm:space-y-6"
+      >
+        <CategoryPageHeader icon={Icon} title={section.bannerTitle} subtitle={section.bannerSubtitle}>
+          <AddButton onClick={modal.openCreate}>{section.addLabel}</AddButton>
+        </CategoryPageHeader>
+
+        <CategoryFilterBar
+          search={filters.search}
+          onSearchChange={(e) => updateFilters({ search: e.target.value })}
+          searchPlaceholder={section.searchPlaceholder}
+          status={filters.status}
+          onStatusChange={(e) => updateFilters({ status: e.target.value })}
+          categoryFilter={filters.category}
+          onCategoryFilterChange={(e) => updateFilters({ category: e.target.value })}
+          categoryOptions={
+            section.filters?.includes('category') ? categoryFilterOptions : undefined
+          }
+          subjectFilter={filters.subject}
+          onSubjectFilterChange={(e) => updateFilters({ subject: e.target.value })}
+          subjectOptions={section.filters?.includes('subject') ? subjectFilterOptions : undefined}
+        />
+
+        {section.filters?.includes('program') && (
+          <div className="flex justify-end">
+            <select
+              value={filters.program}
+              onChange={(e) => updateFilters({ program: e.target.value })}
+              className="h-10 rounded-lg bg-[#55ace7] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4a9ad4]"
+            >
+              {programFilterOptions.map((o) => (
+                <option key={o.value} value={o.value} className="text-[#222]">
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {(isExamCategory || isExamSubCategory) && filtered.length > 0 && (
+          <div className="flex items-center gap-2 text-sm text-[#686868]">
+            <input
+              type="checkbox"
+              checked={selectedIds.length === filtered.length && filtered.length > 0}
+              onChange={toggleSelectAll}
+              className="h-4 w-4 rounded accent-[#246392]"
+            />
+            <span>Select all on this page</span>
+          </div>
+        )}
+
+        {showEmpty ? (
+          <CategoryEmptyState
+            title={section.emptyTitle}
+            description={section.emptyDescription}
+            ctaLabel={section.emptyCta}
+            onCta={modal.openCreate}
+          />
+        ) : showNoResults ? (
+          <CategoryEmptyState
+            title="No matching records"
+            description="Try adjusting your search or filters."
+            ctaLabel="Clear filters"
+            onCta={() => updateFilters(emptyFilters())}
+          />
+        ) : (
+          <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80">
+            <PaginatedFigmaTable
+              columns={columns}
+              data={filtered}
+              itemLabel={section.bannerTitle.toLowerCase()}
+              resetDeps={[filters, activeTab]}
+              rowClassName="transition-colors hover:bg-[#f8fbff]"
+              tableClassName={
+                isExamCategory || isExamSubCategory
+                  ? '[&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10'
+                  : undefined
+              }
+            />
+          </div>
+        )}
+
+        {isExamCategory ? (
+          <>
+            <ExamCategoryFormModal
+              open={modal.isOpen}
+              onClose={modal.close}
+              item={modal.selectedItem}
+              onSubmit={handleExamCategorySave}
+            />
+            <ViewExamCategoryModal
+              open={Boolean(viewItem)}
+              onClose={() => setViewItem(null)}
+              item={viewItem}
+            />
+          </>
+        ) : isExamSubCategory ? (
+          <>
+            <ExamSubCategoryFormModal
+              open={modal.isOpen}
+              onClose={modal.close}
+              item={modal.selectedItem}
+              onSubmit={handleExamSubCategorySave}
+            />
+            <ViewExamSubCategoryModal
+              open={Boolean(viewItem)}
+              onClose={() => setViewItem(null)}
+              item={viewItem}
+            />
+          </>
+        ) : (
+          <>
+            <CategoryHubFormModal
+              open={modal.isOpen}
+              onClose={modal.close}
+              item={modal.selectedItem}
+              section={section}
+              onSubmit={handleGenericSave}
+            />
+            <ViewMainCategoryModal
+              open={Boolean(viewItem)}
+              onClose={() => setViewItem(null)}
+              item={viewItem}
+            />
+          </>
+        )}
+      </motion.div>
+    </AnimatePresence>
+  )
+}

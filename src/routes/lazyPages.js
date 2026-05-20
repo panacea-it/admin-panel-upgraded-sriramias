@@ -1,6 +1,11 @@
 import { lazy } from 'react'
 
-export const CoursesPage = lazy(() => import('../pages/academics/CoursesPage'))
+export const BatchesPage = lazy(() => import('../pages/academics/BatchesPage'))
+export const SubjectsPage = lazy(() => import('../pages/academics/SubjectsPage'))
+export const SubjectViewListPage = lazy(
+  () => import('../pages/academics/SubjectViewListPage'),
+)
+export const CoursesPage = BatchesPage
 export const LiveClassesPage = lazy(() => import('../pages/academics/LiveClassesPage'))
 export const LiveClassesLayout = lazy(() => import('../layouts/LiveClassesLayout'))
 export const ScheduleClassPage = lazy(() => import('../pages/academics/live-classes/ScheduleClassPage'))
@@ -15,6 +20,7 @@ export const LiveClassDetailPage = lazy(
 export const ContentLibraryPage = lazy(() => import('../pages/academics/ContentLibraryPage'))
 export const TestsPage = lazy(() => import('../pages/academics/TestsPage'))
 export const CurrentAffairsPage = lazy(() => import('../pages/academics/CurrentAffairsPage'))
+export const CategoriesLayout = lazy(() => import('../layouts/CategoriesLayout'))
 export const CategoriesHubPage = lazy(
   () => import('../pages/academics/categories/CategoriesHubPage'),
 )
@@ -38,3 +44,4 @@ export const RoleAccessMatrixPage = lazy(() => import('../pages/users/RoleAccess
 export const CenterManagementPage = lazy(() => import('../pages/users/CenterManagementPage'))
 export const ModuleListPage = lazy(() => import('../pages/ModuleListPage'))
 export const FinanceLayout = lazy(() => import('../layouts/FinanceLayout'))
+export const SalesAnalyticsLayout = lazy(() => import('../layouts/SalesAnalyticsLayout'))

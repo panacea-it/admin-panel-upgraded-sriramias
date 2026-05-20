@@ -34,9 +34,12 @@ import {
   Building2,
   IdCard,
   LayoutGrid,
+  TrendingUp,
+  Layers3,
 } from 'lucide-react'
 import { ACADEMICS_LIVE_CLASSES_SUBMENU } from './liveClassesNav'
 import { FINANCE_NAV_ITEMS } from './financeNav'
+import { SALES_ANALYTICS_NAV_ITEMS } from './salesAnalyticsNav'
 
 /** Top-level dashboard link (no children) */
 export const SIDEBAR_DASHBOARD = {
@@ -46,21 +49,18 @@ export const SIDEBAR_DASHBOARD = {
   icon: LayoutDashboard,
 }
 
-/** Nested Categories submenu under Academics — single hub page with in-page tabs */
+/** Nested Categories submenu — academic hierarchy */
 export const ACADEMICS_CATEGORIES_SUBMENU = {
   id: 'academics-categories',
   label: 'Categories',
   children: [
-    {
-      label: 'Main',
-      path: '/academics/categories',
-      icon: LayoutGrid,
-    },
-    {
-      label: 'Subject',
-      path: '/academics/categories/subject',
-      icon: GraduationCap,
-    },
+    { label: 'Programs', path: '/academics/categories/programs', icon: LayoutGrid },
+    { label: 'Exam Category', path: '/academics/categories/exam-category', icon: LayoutGrid },
+    { label: 'Exam Sub Category', path: '/academics/categories/exam-sub-category', icon: LayoutGrid },
+    { label: 'Courses', path: '/academics/categories/courses', icon: BookOpen },
+    { label: 'Subject', path: '/academics/categories/subject', icon: GraduationCap },
+    { label: 'Topic', path: '/academics/categories/topic', icon: Layers },
+    { label: 'Teachers', path: '/academics/categories/teachers', icon: Users },
   ],
 }
 
@@ -71,7 +71,8 @@ export const SIDEBAR_GROUPS = [
     label: 'Academics',
     icon: Bookmark,
     children: [
-      { label: 'Courses', path: '/courses', icon: BookOpen },
+      { label: 'Batch', path: '/academics/batch', icon: BookOpen },
+      { label: 'Subjects', path: '/academics/subjects', icon: Layers3 },
       ACADEMICS_LIVE_CLASSES_SUBMENU,
       { label: 'Content Library', path: '/content-library', icon: FolderOpen },
       { label: 'Books', path: '/marketing/books', icon: BookMarked },
@@ -142,6 +143,18 @@ export const SIDEBAR_GROUPS = [
     children: FINANCE_NAV_ITEMS.map(({ label, path, icon }) => ({ label, path, icon })),
   },
   {
+    id: 'sales-analytics',
+    label: 'Sales & Analytics',
+    icon: TrendingUp,
+    moduleType: 'sales-analytics',
+    children: SALES_ANALYTICS_NAV_ITEMS.map(({ label, path, icon, requiredRoles }) => ({
+      label,
+      path,
+      icon,
+      requiredRoles,
+    })),
+  },
+  {
     id: 'operations',
     label: 'Operations',
     icon: TicketPercent,
@@ -171,6 +184,9 @@ export function isNavItemActive(item, pathname) {
   }
   if (item.path?.startsWith('/finance')) {
     return pathname === '/finance' || pathname.startsWith('/finance/')
+  }
+  if (item.path?.startsWith('/sales-analytics')) {
+    return pathname === '/sales-analytics' || pathname.startsWith('/sales-analytics/')
   }
   if (item.path) {
     if (item.path === '/academics/categories') {

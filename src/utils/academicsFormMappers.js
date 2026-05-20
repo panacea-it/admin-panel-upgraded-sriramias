@@ -1,18 +1,28 @@
+import { normalizeLinkedSubjects } from './batchHelpers'
+import { emptyWhyChooseFeature, normalizeWhyChooseFeatures } from './whyChooseFeatures'
+
 const makeSlots = (count, factory) => Array.from({ length: count }, (_, i) => factory(i))
 
 export function createEmptyCourseForm() {
   return {
+    batchId: '',
+    batchName: '',
+    courseId: '',
     courseName: '',
     category: '',
     subCategory: '',
     center: 'Delhi',
     status: 'Active',
     commencement: '',
+    durationLabel: '',
     durationFrom: '',
     durationTo: '',
     batchStartFrom: '',
     batchEndTo: '',
     bannerFileName: '',
+    bannerPreview: '',
+    bannerUrl: '',
+    linkedSubjects: [{ subjectId: '', subjectName: '' }],
     subjects: ['', ''],
     onlineFees: '',
     onlineDiscount: '',
@@ -21,6 +31,7 @@ export function createEmptyCourseForm() {
     overview: '',
     keyFeatures: makeSlots(6, (i) => ({ id: `kf-${i}`, fileName: '', text: '' })),
     whyChoose: makeSlots(6, (i) => ({ id: `wc-${i}`, fileName: '', hasIcon: i > 0 })),
+    whyChooseFeatures: [emptyWhyChooseFeature(1)],
     howWill: makeSlots(6, (i) => ({
       id: `hw-${i}`,
       kind: i === 0 || i === 3 ? 'video' : 'image',
@@ -31,11 +42,22 @@ export function createEmptyCourseForm() {
 }
 
 export function courseRowToForm(row) {
-  if (row?.formData) return { ...createEmptyCourseForm(), ...row.formData }
+  if (row?.formData) {
+    const merged = { ...createEmptyCourseForm(), ...row.formData }
+    merged.linkedSubjects = normalizeLinkedSubjects(merged)
+    merged.whyChooseFeatures = normalizeWhyChooseFeatures(merged)
+    if (!merged.linkedSubjects.length) {
+      merged.linkedSubjects = [{ subjectId: '', subjectName: '' }]
+    }
+    return merged
+  }
   const price = String(row?.price || '')
   return {
     ...createEmptyCourseForm(),
-    courseName: row?.name || '',
+    batchId: row?.batchId || '',
+    batchName: row?.batchName || row?.name || '',
+    courseId: row?.courseId || '',
+    courseName: row?.courseName || row?.name || '',
     category: row?.category || '',
     center: row?.center || 'Delhi',
     status: row?.status || 'Active',
@@ -49,9 +71,21 @@ export function courseFormToRow(form, existing) {
     form.offlineFees && form.onlineFees
       ? `${form.offlineFees} - ${form.onlineFees}`
       : form.offlineFees || form.onlineFees || existing?.price || '—'
+  const displayName = form.batchName?.trim() || form.courseName?.trim() || existing?.name
+  const linkedSubjects = normalizeLinkedSubjects(form)
   return {
     id: existing?.id ?? Date.now(),
-    name: form.courseName?.trim() || existing?.name,
+    batchId: form.batchId || existing?.batchId,
+    batchName: form.batchName?.trim() || displayName,
+    name: displayName,
+    courseId: form.courseId || existing?.courseId,
+    commencement: form.commencement || existing?.commencement,
+    durationLabel: form.durationLabel || existing?.durationLabel,
+    batchStartFrom: form.batchStartFrom || existing?.batchStartFrom,
+    batchEndTo: form.batchEndTo || existing?.batchEndTo,
+    bannerPreview: form.bannerPreview || existing?.bannerPreview,
+    bannerFileName: form.bannerFileName || existing?.bannerFileName,
+    linkedSubjects,
     category: form.category || existing?.category,
     center: form.center || existing?.center || 'Delhi',
     price,

@@ -33,7 +33,7 @@ export default function Modal({
     md: 'max-w-2xl',
     lg: 'max-w-4xl',
     xl: 'max-w-5xl',
-    full: 'max-w-[min(100%,1100px)]',
+    full: 'max-w-[min(100%,1180px)]',
   }
 
   return (

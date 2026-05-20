@@ -16,10 +16,13 @@ const ROLE_ROUTE_PREFIXES = {
     '/enquiries',
     '/operations/configuration',
     '/finance/*',
+    '/sales-analytics/*',
     ...SETTINGS_PATHS,
   ],
   [ROLES.OPERATION_ADMIN]: [
     '/dashboard',
+    '/academics/batch',
+    '/academics/subjects',
     '/courses',
     '/users/manage',
     '/content-library',
@@ -50,6 +53,7 @@ const ROLE_ROUTE_PREFIXES = {
     '/crm/help-desk',
     '/operations/audit-logs',
     '/users/manage',
+    '/sales-analytics/*',
     ...SETTINGS_PATHS,
   ],
   [ROLES.TEACHER_ADMIN]: [
@@ -70,6 +74,7 @@ const ROLE_ROUTE_PREFIXES = {
     '/users/wallet',
     '/operations/configuration',
     '/finance/*',
+    '/sales-analytics/*',
     ...SETTINGS_PATHS,
   ],
 }
@@ -79,7 +84,7 @@ const ROLE_NAV_SCOPE = {
   [ROLES.SUPER_ADMIN]: { groups: '*', dashboard: true },
   [ROLES.CENTER_ADMIN]: {
     dashboard: true,
-    groups: ['users', 'crm', 'finance', 'operations'],
+    groups: ['users', 'crm', 'finance', 'sales-analytics', 'operations'],
     paths: [
       '/users/manage',
       '/users/wallet',
@@ -102,7 +107,7 @@ const ROLE_NAV_SCOPE = {
   },
   [ROLES.MENTOR_ADMIN]: {
     dashboard: true,
-    groups: ['users', 'crm', 'operations'],
+    groups: ['users', 'crm', 'sales-analytics', 'operations'],
     paths: ['/users/manage', '/analytics', '/crm/help-desk', '/operations/audit-logs'],
   },
   [ROLES.TEACHER_ADMIN]: {
@@ -112,7 +117,7 @@ const ROLE_NAV_SCOPE = {
   },
   [ROLES.COUNSELING_ADMIN]: {
     dashboard: true,
-    groups: ['crm', 'users', 'finance', 'operations'],
+    groups: ['crm', 'users', 'finance', 'sales-analytics', 'operations'],
     paths: ['/crm/leads', '/enquiries', '/crm/help-desk', '/users/wallet', '/operations/configuration'],
   },
 }

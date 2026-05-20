@@ -1,29 +1,34 @@
 import { Calendar, ChevronDown, FileText, Image as ImageIcon, Video } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
-const fieldShell =
-  'h-11 w-full rounded-lg bg-[#e8f4fc] px-3 text-sm text-[#333] outline-none placeholder:text-[#8b98bb] focus:ring-2 focus:ring-[#55ace7]/40 sm:text-[15px]'
+export const courseFieldShell = cn(
+  'h-12 min-h-[48px] w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800',
+  'shadow-sm outline-none transition duration-150',
+  'placeholder:text-gray-400',
+  'hover:border-[#93c5fd] hover:bg-[#fafcff]',
+  'focus:border-[#55ace7] focus:bg-white focus:ring-2 focus:ring-blue-400/35',
+)
 
 export function CourseFormField({ label, required, children, className }) {
   return (
-    <div className={cn('min-w-0', className)}>
-      <label className="mb-1.5 block text-xs font-semibold text-[#5c5c5c] sm:text-sm">
+    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
+      <label className="block text-sm font-semibold text-gray-700">
         {label}
-        {required && <span className="text-[#c96565]"> *</span>}
+        {required && <span className="text-red-500"> *</span>}
       </label>
       {children}
     </div>
   )
 }
 
-export function CourseInput(props) {
-  return <input className={fieldShell} {...props} />
+export function CourseInput({ className, ...props }) {
+  return <input className={cn(courseFieldShell, className)} {...props} />
 }
 
 export function CourseSelect({ children, className, ...props }) {
   return (
     <div className={cn('relative', className)}>
-      <select className={cn(fieldShell, 'appearance-none pr-9')} {...props}>
+      <select className={cn(courseFieldShell, 'appearance-none pr-10')} {...props}>
         {children}
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#246392]" />
@@ -34,7 +39,7 @@ export function CourseSelect({ children, className, ...props }) {
 export function CourseDateInput({ className, ...props }) {
   return (
     <div className={cn('relative', className)}>
-      <input type="date" className={cn(fieldShell, 'pr-10')} {...props} />
+      <input type="date" className={cn(courseFieldShell, 'pr-11')} {...props} />
       <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#246392]" />
     </div>
   )
@@ -44,23 +49,27 @@ export function CourseFileInput({ accept = 'image/*', placeholder = '360 to 480 
   return (
     <label
       className={cn(
-        'relative flex h-11 w-full cursor-pointer items-center rounded-lg bg-[#e8f4fc] px-3 text-sm text-[#8b98bb]',
+        courseFieldShell,
+        'relative flex cursor-pointer items-center',
         className,
       )}
     >
-      <span className="min-w-0 flex-1 truncate">{placeholder}</span>
+      <span className="min-w-0 flex-1 truncate text-gray-400">{placeholder}</span>
       <ImageIcon className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
       <input type="file" accept={accept} className="sr-only" onChange={onChange} />
     </label>
   )
 }
 
-export function CourseTextarea({ className, rows = 6, ...props }) {
+export function CourseTextarea({ className, rows = 8, ...props }) {
   return (
     <textarea
       rows={rows}
       className={cn(
-        'w-full resize-y rounded-lg bg-[#e8f4fc] px-4 py-3 text-sm text-[#333] outline-none placeholder:text-[#8b98bb] focus:ring-2 focus:ring-[#55ace7]/40 sm:text-[15px]',
+        'min-h-[12rem] w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-4 text-sm text-gray-800 shadow-sm outline-none transition duration-150',
+        'placeholder:text-gray-400',
+        'hover:border-[#93c5fd] hover:bg-[#fafcff]',
+        'focus:border-[#55ace7] focus:ring-2 focus:ring-blue-400/35',
         className,
       )}
       {...props}
@@ -82,11 +91,12 @@ export function CourseMediaSlot({
     return (
       <label
         className={cn(
-          'relative flex h-11 w-full cursor-pointer items-center rounded-lg bg-[#e8f4fc] px-3 text-xs text-[#8b98bb] sm:text-sm',
+          courseFieldShell,
+          'relative flex min-h-[48px] cursor-pointer items-center text-xs sm:text-sm',
           className,
         )}
       >
-        <span className="min-w-0 flex-1 truncate">{fileName || placeholder}</span>
+        <span className="min-w-0 flex-1 truncate text-gray-400">{fileName || placeholder}</span>
         <Icon className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
         <input type="file" accept={accept} className="sr-only" onChange={onFileChange} />
       </label>
@@ -96,11 +106,12 @@ export function CourseMediaSlot({
   return (
     <div
       className={cn(
-        'flex h-11 w-full items-center rounded-lg bg-[#e8f4fc] px-3 text-xs text-[#8b98bb] sm:text-sm',
+        courseFieldShell,
+        'flex min-h-[48px] items-center text-xs sm:text-sm',
         className,
       )}
     >
-      <span className="min-w-0 flex-1 truncate">{fileName || placeholder}</span>
+      <span className="min-w-0 flex-1 truncate text-gray-400">{fileName || placeholder}</span>
       <Icon className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
     </div>
   )
@@ -110,14 +121,14 @@ export function CourseIconSlot({ onClick, className }) {
   return (
     <div
       className={cn(
-        'flex h-11 w-full items-center rounded-lg bg-[#e8f4fc] px-2',
+        'flex min-h-[48px] w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-3 shadow-sm',
         className,
       )}
     >
       <button
         type="button"
         onClick={onClick}
-        className="rounded-md bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[#246392] shadow-sm transition hover:bg-slate-50"
+        className="rounded-lg border border-[#d4e4f4] bg-[#f8fbff] px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#246392] transition hover:border-[#55ace7] hover:bg-white hover:shadow-sm"
       >
         ADD ICON
       </button>
@@ -125,7 +136,23 @@ export function CourseIconSlot({ onClick, className }) {
   )
 }
 
-export function CourseAddMoreLink({ onClick, className, children = 'ADD MORE' }) {
+export function CourseAddMoreLink({ onClick, className, children = 'ADD MORE', variant = 'link' }) {
+  if (variant === 'pill') {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          'inline-flex items-center gap-2 rounded-xl border border-[#55ace7]/30 bg-[#eef6fc] px-5 py-2.5 text-sm font-semibold text-[#246392] shadow-sm transition',
+          'hover:border-[#55ace7] hover:bg-white hover:shadow-md active:scale-[0.98]',
+          className,
+        )}
+      >
+        {children}
+      </button>
+    )
+  }
+
   return (
     <button
       type="button"
@@ -148,12 +175,9 @@ export function CoursePdfInput({
 }) {
   return (
     <label
-      className={cn(
-        'relative flex h-11 w-full cursor-pointer items-center rounded-lg bg-[#e8f4fc] px-3 text-sm text-[#8b98bb]',
-        className,
-      )}
+      className={cn(courseFieldShell, 'relative flex cursor-pointer items-center', className)}
     >
-      <span className="min-w-0 flex-1 truncate">{fileName || placeholder}</span>
+      <span className="min-w-0 flex-1 truncate text-gray-400">{fileName || placeholder}</span>
       <FileText className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
       <input
         type="file"
@@ -165,12 +189,12 @@ export function CoursePdfInput({
   )
 }
 
-export function CourseFeeInput({ variant = 'online', ...props }) {
+export function CourseFeeInput({ variant = 'online', className, ...props }) {
   return (
     <div className="relative">
-      <input className={cn(fieldShell, 'pr-14')} {...props} />
+      <input className={cn(courseFieldShell, 'pr-14', className)} {...props} />
       <span
-        className="pointer-events-none absolute right-2 top-1/2 flex h-8 w-10 -translate-y-1/2 items-center justify-center text-lg"
+        className="pointer-events-none absolute right-3 top-1/2 flex h-8 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-[#f0f7fc] text-lg"
         aria-hidden
       >
         {variant === 'online' ? '💻' : '👨‍🏫'}

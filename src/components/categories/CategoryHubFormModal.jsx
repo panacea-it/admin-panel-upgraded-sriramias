@@ -5,12 +5,14 @@ import { useModalForm } from '../../hooks/useModalForm'
 import { cn } from '../../utils/cn'
 import { toast } from '../../utils/toast'
 import { PARENT_CATEGORY_OPTIONS, SUBJECT_OPTIONS } from '../../data/categoriesHubData'
+import { formatProgramLabel, loadPrograms } from '../../utils/programsStorage'
 
 function createEmptyForm(section) {
   return {
     name: '',
     description: '',
     status: 'Active',
+    program: '',
     parentCategory: '',
     subject: '',
     iconUrl: '',
@@ -24,6 +26,7 @@ function rowToForm(row) {
     name: row?.name || '',
     description: row?.description || '',
     status: row?.status || 'Active',
+    program: row?.program || '',
     parentCategory: row?.parentCategory || '',
     subject: row?.subject || '',
     iconUrl: row?.iconUrl || '',
@@ -56,6 +59,7 @@ export default function CategoryHubFormModal({
   onSubmit,
 }) {
   const fileRef = useRef(null)
+  const programOptions = loadPrograms().map((p) => formatProgramLabel(p))
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
@@ -142,6 +146,23 @@ export default function CategoryHubFormModal({
 
         <div className="space-y-4 px-5 py-6 sm:px-6 sm:py-7">
           <div className="grid gap-4 sm:grid-cols-2">
+            {formFields.includes('program') && (
+              <Field label="Program" required>
+                <select
+                  value={form.program}
+                  onChange={(e) => setForm((f) => ({ ...f, program: e.target.value }))}
+                  className={inputClass}
+                >
+                  <option value="">Select Program</option>
+                  {programOptions.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
             {formFields.includes('parentCategory') && (
               <Field label="Exam Category" required error={errors.parentCategory}>
                 <select
