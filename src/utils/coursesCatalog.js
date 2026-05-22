@@ -66,7 +66,7 @@ export async function getCoursesCatalog() {
     const rows = await fetchCourses()
     if (rows?.length) return rows.map(mapRowToCatalog)
   } catch {
-    /* use local seed */
+    /* use local seed — frontend-only never throws */
   }
   return INITIAL_COURSES.map(mapRowToCatalog)
 }

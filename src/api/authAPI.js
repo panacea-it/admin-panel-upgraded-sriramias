@@ -1,12 +1,8 @@
-import api from './axiosInstance'
+import { isDemoAuthEnabled, isFrontendOnly } from '../config/appMode'
 import { findDemoUser } from '../data/demoAuthUsers'
 import { clearAuthStorage } from '../utils/authStorage'
 import { findEmployeeByCredentials } from '../utils/employeeAuthStorage'
 import { getLoginErrorMessage, mapLoginResponse, normalizeRole } from '../utils/authHelpers'
-
-const DEMO_ENABLED =
-  import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true' ||
-  import.meta.env.DEV
 
 function toSafeUser(record) {
   const { password: _password, ...safe } = record
@@ -49,7 +45,7 @@ function mockAuthenticate(email, password) {
 }
 
 /**
- * Admin login — tries API first, then mock demo/employee accounts when enabled or offline.
+ * Admin login — frontend-only uses demo/employee accounts in localStorage.
  */
 export async function login({ email, password, expectedRole }) {
   const credentials = {
@@ -64,20 +60,19 @@ export async function login({ email, password, expectedRole }) {
   const tryMock = () => {
     const result = mockAuthenticate(credentials.email, credentials.password)
     if (expectedRole && result.user.role !== expectedRole) {
-      throw new Error('Selected role does not match this account. Choose the correct role or credentials.')
+      throw new Error(
+        'Selected role does not match this account. Choose the correct role or credentials.',
+      )
     }
     return result
   }
 
-  if (DEMO_ENABLED) {
-    try {
-      return tryMock()
-    } catch (mockErr) {
-      if (mockErr.message?.includes('Selected role')) throw mockErr
-    }
+  if (isFrontendOnly || isDemoAuthEnabled) {
+    return tryMock()
   }
 
   try {
+    const { default: api } = await import('./axiosInstance')
     const { data } = await api.post('/auth/login-super-admin', credentials, {
       timeout: 60000,
     })
@@ -88,38 +83,22 @@ export async function login({ email, password, expectedRole }) {
 
     const mapped = mapLoginResponse(data)
     if (expectedRole && mapped.user.role !== expectedRole) {
-      throw new Error('Selected role does not match this account. Choose the correct role or credentials.')
+      throw new Error(
+        'Selected role does not match this account. Choose the correct role or credentials.',
+      )
     }
     return mapped
   } catch (error) {
-    if (error.response?.status === 404) {
-      if (DEMO_ENABLED) return tryMock()
-      throw new Error(
-        'Login API not found. Enable demo login (VITE_ENABLE_DEMO_LOGIN=true) or confirm VITE_API_BASE_URL.',
-        { cause: error },
-      )
+    if (error.response?.status === 404 || error.code === 'ERR_NETWORK' || !error.response) {
+      return tryMock()
     }
-
-    if (DEMO_ENABLED && (error.code === 'ERR_NETWORK' || !error.response)) {
-      try {
-        return tryMock()
-      } catch (mockErr) {
-        if (mockErr.message?.includes('Selected role')) throw mockErr
-      }
-    }
-
-    if (DEMO_ENABLED && error.response?.status === 401) {
+    if (error.response?.status === 401) {
       try {
         return tryMock()
       } catch {
         /* fall through */
       }
     }
-
-    if (error.message && !error.response) {
-      throw error
-    }
-
     throw new Error(getLoginErrorMessage(error), { cause: error })
   }
 }

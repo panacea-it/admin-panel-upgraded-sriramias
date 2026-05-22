@@ -1,3 +1,4 @@
+import { isFrontendOnly } from '../config/appMode'
 import api from './axiosInstance'
 import {
   MOCK_PAYMENT_REPORTS,
@@ -12,7 +13,7 @@ import {
   buildFinanceDashboardPayload,
 } from '../data/financeMockData'
 
-const USE_MOCK = import.meta.env.VITE_FINANCE_USE_MOCK !== 'false'
+const USE_MOCK = isFrontendOnly || import.meta.env.VITE_FINANCE_USE_MOCK !== 'false'
 
 let mockReports = [...MOCK_PAYMENT_REPORTS]
 let mockOffline = [...MOCK_OFFLINE_REQUESTS]

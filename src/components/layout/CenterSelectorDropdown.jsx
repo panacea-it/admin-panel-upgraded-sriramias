@@ -35,7 +35,9 @@ export default function CenterSelectorDropdown({ open, onToggle, onClose }) {
 
   useEffect(() => {
     if (!open) return
-    fetchCenterPerformance().then((res) => setSummaries(res.summaries || []))
+    fetchCenterPerformance()
+      .then((res) => setSummaries(res.summaries || []))
+      .catch(() => setSummaries([]))
   }, [open])
 
   const summaryByName = useMemo(

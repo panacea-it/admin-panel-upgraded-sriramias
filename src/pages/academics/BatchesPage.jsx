@@ -78,11 +78,8 @@ export default function BatchesPage() {
     try {
       const rows = await fetchCourses()
       setApiBatches(rows.map((row, i) => enrichBatchRow(row, i)))
-    } catch (err) {
-      const message =
-        err.response?.data?.message || err.message || toastMessages.error.server
-      toast.error(message)
-      setApiBatches([])
+    } catch {
+      setApiBatches(mapInitialBatchesToRows().map((row, i) => enrichBatchRow(row, i)))
     } finally {
       setLoading(false)
     }

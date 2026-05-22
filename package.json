@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:api": "npm run dev --prefix backend",
     "build": "vite build",
-    "vercel-build": "vite build",
+    "vercel-build": "npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "start:api": "npm run start --prefix backend"

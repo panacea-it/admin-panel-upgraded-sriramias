@@ -1,3 +1,4 @@
+import { isFrontendOnly } from '../config/appMode'
 import api from './axiosInstance'
 import {
   MOCK_LEADS,
@@ -12,7 +13,7 @@ import {
   MOCK_REPORT_TYPES,
 } from '../data/salesAnalyticsMockData'
 
-const USE_MOCK = import.meta.env.VITE_SALES_ANALYTICS_USE_MOCK !== 'false'
+const USE_MOCK = isFrontendOnly || import.meta.env.VITE_SALES_ANALYTICS_USE_MOCK !== 'false'
 
 let mockLeads = [...MOCK_LEADS]
 let mockConfig = { ...MOCK_TRACKING_CONFIG, autoLeadRules: { ...MOCK_TRACKING_CONFIG.autoLeadRules } }

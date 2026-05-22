@@ -1,91 +1,98 @@
-# Vercel deployment guide
+# Vercel deployment — frontend only
 
-This project deploys as a **single Vercel application**:
+This project deploys to Vercel as a **static Vite SPA**. No backend, MongoDB, or `/api` serverless functions are used in production.
 
-| Layer | How it runs on Vercel |
-|--------|------------------------|
-| **Frontend** | Static Vite build from `dist/` |
-| **Backend** | Node serverless function at `api/index.js` (Express from `backend/`) |
+## What runs on Vercel
 
-## Architecture
+| URL | Serves |
+|-----|--------|
+| `https://your-app.vercel.app/` | React app (`dist/`) |
+| `https://your-app.vercel.app/any/route` | `index.html` (SPA rewrite) |
 
-```
-https://your-app.vercel.app/          → React SPA (index.html)
-https://your-app.vercel.app/api/*     → Express API (serverless)
-```
+## Production behavior
 
-`vercel.json` rewrites:
+Configured in `.env.production`:
 
-1. `/api/*` → `api/index.js` (Express)
-2. Everything else → `/index.html` (client-side routing)
+- **Auth:** Demo + employee accounts (`localStorage` / `sessionStorage`)
+- **Finance / Sales:** In-memory mock data
+- **Batches:** `localStorage` (`batchesApiStorage`)
+- **Classrooms / Subjects / Live classes:** `localStorage` + in-memory stores
+- **No network calls** to `/api` (axios blocked in frontend-only mode)
 
-## Environment variables
+## Demo login credentials
 
-Set these in **Vercel → Project → Settings → Environment Variables**:
+See `src/data/demoAuthUsers.js`, for example:
 
-| Variable | Where | Required | Notes |
-|----------|--------|----------|--------|
-| `MONGO_URI` | Production, Preview | Yes* | Atlas connection string |
-| `MONGO_URI_DIRECT` | Optional | No | Fallback non-SRV URI |
-| `CLIENT_ORIGIN` | Optional | No | Custom domain for CORS |
-| `VITE_ENABLE_DEMO_LOGIN` | Production | No | `true` / `false` |
-| `VITE_API_BASE_URL` | Usually **unset** on Vercel | No | Unset = same-origin `/api` |
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | `superadmin@sriramias.com` | `Super@123` |
+| Center Admin | `centeradmin@sriramias.com` | `Center@123` |
 
-\*Required for database-backed routes (courses, finance, classrooms, etc.)
+Select the matching **role** on the login screen.
 
-**Do not** set `VITE_API_BASE_URL` on Vercel unless the API is hosted on a different domain.
+## Environment variables (Vercel dashboard)
 
-## Deploy from CLI
+Usually **none required** for a working demo deploy.
+
+Optional:
+
+| Variable | Value |
+|----------|--------|
+| `VITE_ENABLE_DEMO_LOGIN` | `true` (default in production build) |
+| `VITE_FRONTEND_ONLY` | `true` (set in `.env.production`) |
+
+Do **not** set `VITE_API_BASE_URL` unless you intentionally point to an external API.
+
+## Deploy
+
+### CLI
 
 ```bash
 npm i -g vercel
 vercel login
+cd path/to/admin-panel
 vercel link
-vercel env pull .env.local   # optional: sync env for local testing
 vercel --prod
 ```
 
-## Deploy from GitHub
+### GitHub
 
-1. Push the repo to GitHub.
-2. [vercel.com/new](https://vercel.com/new) → Import repository.
-3. Framework Preset: **Vite** (auto-detected).
-4. Root Directory: `.` (repository root).
-5. Add environment variables (see table above).
-6. Deploy.
-
-Build settings are defined in `vercel.json` (`buildCommand`, `installCommand`, `outputDirectory`).
+1. Import repo at [vercel.com/new](https://vercel.com/new)
+2. Framework: **Vite**
+3. Root Directory: `.`
+4. Deploy (uses `vercel.json`)
 
 ## Local development
 
-Terminal 1 — frontend:
+**Frontend-only (matches Vercel):**
 
 ```bash
+# .env.local
+VITE_FRONTEND_ONLY=true
+VITE_ENABLE_DEMO_LOGIN=true
+
 npm run dev
 ```
 
-Terminal 2 — API:
+**With optional local API:**
 
 ```bash
+# Terminal 1
+npm run dev
+
+# Terminal 2
 npm run dev:api
 ```
 
-Copy `backend/.env.example` → `backend/.env` and set `MONGO_URI`.
+Use `backend/.env` only when running the Express server locally.
 
-## Verify after deploy
+## Verify
 
-```bash
-curl https://YOUR_DEPLOYMENT.vercel.app/api/health
-```
+1. Open the deployed URL → login page loads
+2. Log in with demo credentials + correct role
+3. Navigate to Finance, Academics, CRM — no “Database unavailable” or API errors
+4. Refresh deep links (e.g. `/academics/batch`) — page loads (SPA rewrite)
 
-Expected: `{"success":true,"message":"API is running",...}`
+## Backend folder
 
-## Troubleshooting
-
-| Issue | Fix |
-|--------|-----|
-| 503 Database unavailable | Set `MONGO_URI` in Vercel; allow `0.0.0.0/0` in Atlas Network Access |
-| SPA 404 on refresh | Ensure `vercel.json` SPA rewrite is present |
-| API 404 | Confirm routes start with `/api` |
-| CORS errors | Unset `VITE_API_BASE_URL` on Vercel so the app uses `/api` |
-| Cold start slow | Normal for serverless; Mongo connection is cached after first request |
+The `/backend` folder remains in the repo for optional local development but is **not** deployed to Vercel.
