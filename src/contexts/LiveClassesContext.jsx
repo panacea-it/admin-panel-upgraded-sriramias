@@ -32,20 +32,24 @@ export function LiveClassesProvider({ children }) {
     load()
   }, [load])
 
-  const saveLesson = useCallback(async (form, { isEdit, id }) => {
+  const saveLesson = useCallback(async (form, { isEdit, id, scope, actor } = {}) => {
     const existing = isEdit ? lessons.find((l) => l.id === id) : null
     const row = lessonFormToRow(form, existing)
-    const saved = await apiSave(row, { isEdit, id })
-    setLessons((prev) => {
-      if (isEdit && id) return prev.map((l) => (l.id === id ? saved : l))
-      return [saved, ...prev]
-    })
-    return saved
+    try {
+      await apiSave(row, { isEdit, id, scope, actor })
+    } catch (err) {
+      toast.error(err?.message || 'Failed to save lesson')
+      throw err
+    }
+    const data = await fetchLiveClasses()
+    setLessons(data)
+    return data.find((l) => l.id === (isEdit ? id : data[0]?.id)) ?? data[0]
   }, [lessons])
 
-  const removeLesson = useCallback(async (id) => {
-    await apiDelete(id)
-    setLessons((prev) => prev.filter((l) => l.id !== id))
+  const removeLesson = useCallback(async (id, { scope } = {}) => {
+    await apiDelete(id, { scope })
+    const data = await fetchLiveClasses()
+    setLessons(data)
   }, [])
 
   const toggleDisabled = useCallback((id) => {

@@ -1,5 +1,22 @@
 /** In-memory mock store for finance APIs when backend is unavailable */
 
+import {
+  aggregateFinanceDashboard,
+  branchToCenterName,
+  buildCenterRanking,
+  buildCenterSummaries,
+  buildCompareSeries,
+  buildPerformanceHighlights,
+} from '../utils/financeCenterAggregation'
+
+const CENTER_SEED = [
+  { centerId: 'ctr-delhi', centerName: 'Delhi Center', centerCode: 'DLH', linkedStudentCount: 420 },
+  { centerId: 'ctr-mumbai', centerName: 'Mumbai Center', centerCode: 'MUM', linkedStudentCount: 380 },
+  { centerId: 'ctr-bangalore', centerName: 'Bangalore Center', centerCode: 'BLR', linkedStudentCount: 310 },
+  { centerId: 'ctr-chennai', centerName: 'Chennai Center', centerCode: 'CHE', linkedStudentCount: 220 },
+  { centerId: 'ctr-hyderabad', centerName: 'Hyderabad Center', centerCode: 'HYD', linkedStudentCount: 290 },
+]
+
 export const FINANCE_COURSES = [
   { id: 'CRS-101', name: 'UPSC Prelims Foundation', type: 'Online' },
   { id: 'CRS-102', name: 'GS Mains Comprehensive', type: 'Offline' },
@@ -272,45 +289,157 @@ export const MOCK_GST_SETTINGS = {
   branchGst: FINANCE_BRANCHES.map((b) => ({ branchId: b.id, branchName: b.name, gstEnabled: true, gstNumber: `29ABCDE${b.id.slice(-3)}F1Z5` })),
 }
 
-export const MOCK_DASHBOARD = {
-  stats: {
-    totalPayments: 1248,
-    totalRevenue: 42500000,
-    pendingPayments: 86,
-    failedPayments: 42,
-    emiActiveStudents: 312,
-    offlineApprovalsPending: 14,
-    todayCollections: 485000,
-    monthlyCollections: 8750000,
-  },
-  monthlyRevenue: [
-    { month: 'Jan', amount: 6200000 },
-    { month: 'Feb', amount: 7100000 },
-    { month: 'Mar', amount: 6800000 },
-    { month: 'Apr', amount: 8200000 },
-    { month: 'May', amount: 8750000 },
-  ],
-  paymentStatusBreakdown: [
-    { label: 'Paid', value: 72, color: '#69df66' },
-    { label: 'Partial', value: 14, color: '#efb36d' },
-    { label: 'Pending', value: 9, color: '#55ace7' },
-    { label: 'Failed', value: 5, color: '#df8284' },
-  ],
-  courseWiseRevenue: FINANCE_COURSES.map((c, i) => ({
-    course: c.name,
-    amount: [12000000, 9800000, 7500000, 5200000][i],
-  })),
-  emiTrend: [
-    { month: 'Jan', collected: 2100000 },
-    { month: 'Feb', collected: 2450000 },
-    { month: 'Mar', collected: 2300000 },
-    { month: 'Apr', collected: 2680000 },
-    { month: 'May', collected: 2890000 },
-  ],
-  recentPayments: MOCK_PAYMENT_REPORTS.filter((p) => p.amountPaid > 0).slice(0, 5),
-  recentFailed: MOCK_PAYMENT_REPORTS.filter((p) => p.paymentStatus === 'Pending').slice(0, 3),
-  pendingEmiDues: MOCK_EMI_PLANS[0].installments.filter((e) => e.status === 'Due' || e.status === 'Overdue'),
+function enrichPayment(p) {
+  const centerName = p.centerName || branchToCenterName(p.branch)
+  const center = CENTER_SEED.find((c) => c.centerName === centerName) || CENTER_SEED[0]
+  return {
+    ...p,
+    centerId: p.centerId || center.centerId,
+    centerName,
+    counselorId: p.counselorId || 'c1',
+    batchId: p.batchId || 'batch-morning',
+  }
 }
+
+/** Extra payments so every center has visible analytics */
+function generateCenterPayments() {
+  const statuses = ['Paid', 'Paid', 'Partial', 'Pending', 'Failed']
+  const extra = []
+  CENTER_SEED.forEach((center, ci) => {
+    FINANCE_COURSES.forEach((course, i) => {
+      const id = `PAY-C${ci}-${i}`
+      extra.push(
+        enrichPayment({
+          id,
+          studentId: `STU-C${ci}${i}`,
+          studentName: `Student ${center.centerCode}-${i + 1}`,
+          mobile: `98${String(10000000 + ci * 100 + i).slice(-8)}`,
+          email: `s${ci}${i}@example.com`,
+          courseId: course.id,
+          courseName: course.name,
+          courseType: course.type,
+          paymentStatus: statuses[(ci + i) % statuses.length],
+          paymentType: i % 2 === 0 ? 'Full' : 'EMI',
+          paymentMode: 'UPI',
+          amountPaid: statuses[(ci + i) % statuses.length] === 'Paid' ? 40000 + ci * 8000 + i * 3000 : i % 3 === 0 ? 15000 : 0,
+          pendingAmount: 0,
+          totalFees: 55000 + i * 5000,
+          gst: 9900,
+          transactionId: `TXN-${id}`,
+          paymentDate: daysAgo(3 + ci + i),
+          branch: center.centerName,
+          centerName: center.centerName,
+          centerId: center.centerId,
+          attempts: buildAttempts(id),
+          adminLogs: [],
+          timeline: [{ event: 'Payment Initiated', timestamp: daysAgo(5 + i) }],
+          receiptNumber: `RCP-${id}`,
+        }),
+      )
+    })
+  })
+  return extra
+}
+
+export const MOCK_PAYMENTS_ENRICHED = [
+  ...MOCK_PAYMENT_REPORTS.map(enrichPayment),
+  ...generateCenterPayments(),
+]
+
+function resolveCentersList(centerNames) {
+  if (!centerNames?.length) return CENTER_SEED
+  const names = String(centerNames).split(',').map((n) => n.trim()).filter(Boolean)
+  return CENTER_SEED.filter((c) => names.includes(c.centerName))
+}
+
+function filterPaymentsForParams(payments, params) {
+  let list = [...payments]
+  if (params.course && params.course !== 'all') {
+    list = list.filter((p) => p.courseId === params.course)
+  }
+  const scope = params.scope || 'overall'
+  if (scope === 'overall') return list
+
+  const centerNames = params.centerNames
+    ? String(params.centerNames).split(',').map((n) => n.trim()).filter(Boolean)
+    : []
+  if (centerNames.length) {
+    const nameSet = new Set(centerNames)
+    list = list.filter((p) => nameSet.has(p.centerName))
+  }
+  return list
+}
+
+export function buildFinanceDashboardPayload(params = {}) {
+  const scope = params.scope || 'overall'
+  const payments = filterPaymentsForParams(MOCK_PAYMENTS_ENRICHED, params)
+  const allSummaries = buildCenterSummaries(CENTER_SEED, MOCK_PAYMENTS_ENRICHED)
+  const dashboard = aggregateFinanceDashboard(payments, MOCK_EMI_PLANS, 14)
+  const paidCount = payments.filter((p) => p.paymentStatus === 'Paid').length
+  const successRate = payments.length ? Math.round((paidCount / payments.length) * 100) : 0
+
+  const base = {
+    ...dashboard,
+    stats: {
+      ...dashboard.stats,
+      paymentSuccessRate: successRate,
+    },
+    centerSummaries: allSummaries,
+    centerRanking: buildCenterRanking(allSummaries),
+    performance: buildPerformanceHighlights(allSummaries),
+  }
+
+  if (scope === 'compare') {
+    const selected = resolveCentersList(params.centerNames)
+    const selectedSummaries = allSummaries.filter((s) =>
+      selected.some((c) => c.centerName === s.centerName),
+    )
+    return {
+      viewMode: 'compare',
+      ...base,
+      centers: selectedSummaries,
+      comparison: {
+        revenue: buildCompareSeries(selectedSummaries, 'totalRevenue'),
+        conversion: buildCompareSeries(selectedSummaries, 'conversionPct'),
+        pending: buildCompareSeries(selectedSummaries, 'pendingPayments'),
+        failed: buildCompareSeries(selectedSummaries, 'failedPayments'),
+      },
+    }
+  }
+
+  if (scope === 'center' || scope === 'multi') {
+    const centerNames = params.centerNames ? String(params.centerNames).split(',').filter(Boolean) : []
+    const primaryName = centerNames[0]
+    return {
+      viewMode: scope,
+      centerName: primaryName,
+      centerNames,
+      ...base,
+      centerRanking: buildCenterRanking(
+        allSummaries.filter((s) => !centerNames.length || centerNames.includes(s.centerName)),
+      ),
+    }
+  }
+
+  return {
+    viewMode: 'overall',
+    ...base,
+    stats: {
+      ...base.stats,
+      totalPayments: 1248,
+      totalRevenue: 42500000,
+      pendingPayments: 86,
+      failedPayments: 42,
+      emiActiveStudents: 312,
+      offlineApprovalsPending: 14,
+      todayCollections: 485000,
+      monthlyCollections: 8750000,
+      paymentSuccessRate: 94,
+    },
+  }
+}
+
+export const MOCK_DASHBOARD = buildFinanceDashboardPayload({ scope: 'overall' })
 
 export const MOCK_VERIFICATION_QUEUE = MOCK_PAYMENT_REPORTS.filter(
   (p) => p.paymentStatus === 'Pending' || p.paymentStatus === 'Partial',

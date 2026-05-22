@@ -13,19 +13,21 @@ export default function Modal({
   const titleId = useId()
   const panelRef = useRef(null)
 
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
-    panelRef.current?.focus()
     return () => {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

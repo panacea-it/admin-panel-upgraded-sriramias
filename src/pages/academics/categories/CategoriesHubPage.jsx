@@ -10,6 +10,7 @@ const TAB_PATHS = {
   subject: '/academics/categories/subject',
   topic: '/academics/categories/topic',
   teachers: '/academics/categories/teachers',
+  'class-rooms': '/academics/categories/class-rooms',
 }
 
 export default function CategoriesHubPage() {

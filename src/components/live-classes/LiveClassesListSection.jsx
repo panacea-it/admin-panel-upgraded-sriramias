@@ -14,6 +14,8 @@ import LiveClassesFilterBar from './LiveClassesFilterBar'
 import LiveClassStatusBadge from './LiveClassStatusBadge'
 import LiveClassesTableActions from './LiveClassesTableActions'
 import ScheduleClassModal from './ScheduleClassModal'
+import RecurrenceScopeDialog from './RecurrenceScopeDialog'
+import { RECURRENCE_DELETE_SCOPES } from '../../constants/recurrence'
 
 function TableSkeleton() {
   return (
@@ -33,6 +35,8 @@ export default function LiveClassesListSection({
   const navigate = useNavigate()
   const { lessons, loading, saveLesson, removeLesson, toggleDisabled } = useLiveClasses()
   const modal = useEditModal()
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const [search, setSearch] = useState('')
   const [lessonType, setLessonType] = useState(fixedLessonType || 'all')
@@ -79,6 +83,28 @@ export default function LiveClassesListSection({
 
   const handleSave = async (form, meta) => {
     await saveLesson(form, meta)
+  }
+
+  const requestDelete = (row) => {
+    if (row.recurrenceSeriesId) {
+      setDeleteTarget(row)
+      return
+    }
+    if (window.confirm(`Delete "${row.lessonName}"?`)) {
+      removeLesson(row.id).then(() => toast.success('Lesson deleted'))
+    }
+  }
+
+  const confirmRecurringDelete = async (scope) => {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    try {
+      await removeLesson(deleteTarget.id, { scope })
+      toast.success('Recurring schedule updated')
+      setDeleteTarget(null)
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const handleDuplicate = async (row) => {
@@ -133,6 +159,12 @@ export default function LiveClassesListSection({
           className="text-left"
         >
           <ResourceNameCell name={row.lessonName} />
+          {row.recurring && (
+            <span className="mt-1 inline-flex rounded-md bg-[#eef6fc] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#246392]">
+              Recurring
+              {row.occurrenceCount ? ` · ${row.occurrenceCount} sessions` : ''}
+            </span>
+          )}
         </button>
       ),
     },
@@ -162,10 +194,7 @@ export default function LiveClassesListSection({
           row={row}
           onView={() => navigate(`${LIVE_CLASSES_BASE}/${row.id}`)}
           onEdit={() => modal.openEdit(row)}
-          onDelete={async () => {
-            await removeLesson(row.id)
-            toast.success('Lesson deleted')
-          }}
+          onDelete={() => requestDelete(row)}
           onDisable={() => toggleDisabled(row.id)}
           onDuplicate={() => handleDuplicate(row)}
         />
@@ -217,6 +246,17 @@ export default function LiveClassesListSection({
         item={modal.selectedItem}
         onSubmit={handleSave}
         lessons={lessons}
+      />
+
+      <RecurrenceScopeDialog
+        open={Boolean(deleteTarget)}
+        mode="delete"
+        title="Delete recurring class"
+        lessonName={deleteTarget?.lessonName ?? ''}
+        scopes={RECURRENCE_DELETE_SCOPES}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmRecurringDelete}
+        loading={deleteLoading}
       />
     </>
   )

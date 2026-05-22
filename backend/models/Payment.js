@@ -55,6 +55,10 @@ const paymentSchema = new mongoose.Schema(
     transactionId: { type: String, trim: true, default: '' },
     paymentDate: { type: Date, default: null },
     branch: { type: String, trim: true, default: '' },
+    centerId: { type: String, trim: true, index: true },
+    centerName: { type: String, trim: true, index: true },
+    counselorId: { type: String, trim: true, default: '' },
+    batchId: { type: String, trim: true, default: '' },
     attempts: { type: [attemptSchema], default: [] },
     adminLogs: { type: [adminLogSchema], default: [] },
     timeline: { type: [timelineEventSchema], default: [] },
@@ -71,5 +75,9 @@ const paymentSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+paymentSchema.index({ centerId: 1, paymentDate: -1 })
+paymentSchema.index({ centerId: 1, paymentStatus: 1 })
+paymentSchema.index({ paymentStatus: 1, paymentDate: -1 })
 
 export default mongoose.model('Payment', paymentSchema)

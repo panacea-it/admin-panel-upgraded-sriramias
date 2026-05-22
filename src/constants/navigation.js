@@ -61,6 +61,7 @@ export const ACADEMICS_CATEGORIES_SUBMENU = {
     { label: 'Subject', path: '/academics/categories/subject', icon: GraduationCap },
     { label: 'Topic', path: '/academics/categories/topic', icon: Layers },
     { label: 'Teachers', path: '/academics/categories/teachers', icon: Users },
+    { label: 'Class Rooms', path: '/academics/categories/class-rooms', icon: LayoutGrid },
   ],
 }
 

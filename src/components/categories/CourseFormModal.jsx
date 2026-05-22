@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { BookOpen } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
@@ -64,6 +65,13 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
   const [form, setForm] = useState(() => buildForm(null, [], []))
   const [errors, setErrors] = useState({})
   const closingRef = useRef(false)
+  const itemRef = useRef(item)
+  itemRef.current = item
+  const programsRef = useRef(programs)
+  programsRef.current = programs
+  const examCategoriesRef = useRef(examCategories)
+  examCategoriesRef.current = examCategories
+  const editKey = getModalEditKey(item)
 
   useEffect(() => {
     const refreshPrograms = () => setPrograms(loadPrograms(activeCenters))
@@ -82,15 +90,11 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     }
   }, [activeCenters])
 
-  useEffect(() => {
-    if (!open) {
-      closingRef.current = false
-      return
-    }
+  useInitOnModalOpen(open, editKey, () => {
     closingRef.current = false
-    setForm(buildForm(item, programs, examCategories))
+    setForm(buildForm(itemRef.current, programsRef.current, examCategoriesRef.current))
     setErrors({})
-  }, [open, item, programs, examCategories])
+  })
 
   const centreOptions = useMemo(
     () =>

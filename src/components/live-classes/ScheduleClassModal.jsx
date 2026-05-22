@@ -18,9 +18,19 @@ import {
   createEmptyLessonForm,
   lessonRowToForm,
 } from '../../utils/liveClassesMappers'
+import {
+  createDefaultRecurrenceRule,
+  validateRecurrenceRule,
+  generateOccurrenceDates,
+} from '../../utils/recurrenceEngine'
+import { RECURRENCE_EDIT_SCOPES } from '../../constants/recurrence'
 import { useModalForm } from '../../hooks/useModalForm'
+import { useAuth } from '../../contexts/AuthContext'
 import SubjectSearchSelect from './SubjectSearchSelect'
 import VideoUploadSection from './VideoUploadSection'
+import RecurringScheduleSection from './RecurringScheduleSection'
+import ClassroomSelectField from '../classrooms/ClassroomSelectField'
+import { findClassroomConflict } from '../../utils/classroomBookings'
 
 function Toggle({ checked, onChange, label }) {
   return (
@@ -42,6 +52,9 @@ function Toggle({ checked, onChange, label }) {
 }
 
 export default function ScheduleClassModal({ open, onClose, item, onSubmit, lessons = [] }) {
+  const { user } = useAuth()
+  const actorName = user?.name || user?.email || 'Admin'
+
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
@@ -56,9 +69,26 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
 
   const isRecording = form.lessonType === 'Recording'
   const isLive = form.lessonType === 'Live'
+  const isRecurringEdit = isEditMode && Boolean(item?.recurrenceSeriesId)
 
   const handleSubject = ({ subjectId, subjectName, mainCategoryName }) => {
     setForm((f) => ({ ...f, subjectId, subjectName, mainCategoryName }))
+  }
+
+  const handleRecurringToggle = (enabled) => {
+    setForm((f) => ({
+      ...f,
+      recurring: enabled,
+      recurrence: enabled
+        ? f.recurrence?.enabled
+          ? f.recurrence
+          : createDefaultRecurrenceRule(f)
+        : null,
+    }))
+  }
+
+  const handleRecurrenceChange = (nextRule) => {
+    setForm((f) => ({ ...f, recurrence: nextRule }))
   }
 
   const validate = () => {
@@ -79,18 +109,63 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
         toast.error('Schedule date and time are required for live classes')
         return false
       }
-      const conflict = lessons.some(
-        (l) =>
-          l.id !== item?.id &&
-          l.lessonType === 'Live' &&
-          l.teacher === form.teacher &&
-          l.scheduledDate === form.scheduledDate &&
-          l.scheduledTime === form.scheduledTime &&
-          l.status !== 'Disabled',
-      )
-      if (conflict) {
-        toast.error('Schedule conflict: this teacher already has a class at that time')
+      if (!form.classroomId) {
+        toast.error('Select a classroom for live classes')
         return false
+      }
+      const excludeIds = isEditMode && item?.recurrenceSeriesId
+        ? lessons.filter((l) => l.recurrenceSeriesId === item.recurrenceSeriesId).map((l) => l.id)
+        : [item?.id].filter(Boolean)
+      const roomConflict = findClassroomConflict({
+        classroomId: form.classroomId,
+        date: form.scheduledDate,
+        startTime: form.scheduledTime,
+        durationMinutes: Number(form.duration) || 60,
+        excludeSourceIds: excludeIds,
+      })
+      if (roomConflict) {
+        toast.error('This classroom is already occupied during the selected time.')
+        return false
+      }
+      if (form.recurring && form.recurrence?.enabled) {
+        const recurrenceErrors = validateRecurrenceRule(form.recurrence, form)
+        if (recurrenceErrors.length) {
+          toast.error(recurrenceErrors[0])
+          return false
+        }
+        const dates = generateOccurrenceDates(form.recurrence, form.scheduledDate)
+        const excludeIds = isEditMode && item?.recurrenceSeriesId
+          ? lessons.filter((l) => l.recurrenceSeriesId === item.recurrenceSeriesId).map((l) => l.id)
+          : [item?.id].filter(Boolean)
+        const conflict = lessons.some((l) =>
+          dates.some(
+            (d) =>
+              !excludeIds.includes(l.id) &&
+              l.lessonType === 'Live' &&
+              l.teacher === form.teacher &&
+              l.scheduledDate === d &&
+              l.scheduledTime === form.scheduledTime &&
+              l.status !== 'Disabled',
+          ),
+        )
+        if (conflict) {
+          toast.error('Schedule conflict: teacher already booked for one or more recurring dates')
+          return false
+        }
+      } else {
+        const conflict = lessons.some(
+          (l) =>
+            l.id !== item?.id &&
+            l.lessonType === 'Live' &&
+            l.teacher === form.teacher &&
+            l.scheduledDate === form.scheduledDate &&
+            l.scheduledTime === form.scheduledTime &&
+            l.status !== 'Disabled',
+        )
+        if (conflict) {
+          toast.error('Schedule conflict: this teacher already has a class at that time')
+          return false
+        }
       }
     }
     if (isRecording && !form.videoFileName && !isEditMode) {
@@ -103,10 +178,19 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!validate()) return
-    onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
+    onSubmit?.(form, {
+      isEdit: isEditMode,
+      id: item?.id,
+      scope: form.recurrenceEditScope || 'series',
+      actor: actorName,
+    })
     toast.success(isEditMode ? 'Lesson updated' : 'Class scheduled')
     onClose()
   }
+
+  const excludeLessonIds = isEditMode && item?.recurrenceSeriesId
+    ? lessons.filter((l) => l.recurrenceSeriesId === item.recurrenceSeriesId).map((l) => l.id)
+    : [item?.id].filter(Boolean)
 
   return (
     <Modal open={open} onClose={onClose} size="full" title="Schedule class">
@@ -149,6 +233,19 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
                 ))}
               </CourseSelect>
             </CourseFormField>
+            {isLive && (
+              <CourseFormField label="Select Classroom" required className="sm:col-span-2">
+                <ClassroomSelectField
+                  value={form.classroomId}
+                  onChange={(id) => setForm((f) => ({ ...f, classroomId: id }))}
+                  date={form.scheduledDate}
+                  startTime={form.scheduledTime}
+                  durationMinutes={form.duration}
+                  excludeSourceIds={excludeLessonIds}
+                  required
+                />
+              </CourseFormField>
+            )}
             <CourseFormField label="Lesson type" required>
               <CourseSelect value={form.lessonType} onChange={update('lessonType')}>
                 <option value="Live">Live</option>
@@ -233,17 +330,70 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
                   />
                 </CourseFormField>
                 <CourseFormField label="Timezone">
-                  <CourseSelect value={form.timezone} onChange={update('timezone')}>
+                  <CourseSelect
+                    value={form.timezone}
+                    onChange={(e) => {
+                      const tz = e.target.value
+                      setForm((f) => ({
+                        ...f,
+                        timezone: tz,
+                        recurrence: f.recurrence ? { ...f.recurrence, timezone: tz } : f.recurrence,
+                      }))
+                    }}
+                  >
                     <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                     <option value="UTC">UTC</option>
-                    <option value="America/New_York">America/New_York</option>
+                    <option value="America/New_York">America/New_York (EST/EDT)</option>
+                    <option value="Europe/London">Europe/London (GMT/BST)</option>
                   </CourseSelect>
                 </CourseFormField>
               </div>
+
               <Toggle
                 checked={form.recurring}
-                onChange={(v) => setForm((f) => ({ ...f, recurring: v }))}
+                onChange={handleRecurringToggle}
                 label="Recurring session"
+              />
+
+              {isRecurringEdit && (
+                <div className="rounded-xl border border-[#cfe8f8] bg-[#f8fbff] px-4 py-3">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#246392]">
+                    Apply changes to
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {RECURRENCE_EDIT_SCOPES.map((opt) => (
+                      <label
+                        key={opt.value}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium"
+                      >
+                        <input
+                          type="radio"
+                          name="recurrenceEditScope"
+                          value={opt.value}
+                          checked={form.recurrenceEditScope === opt.value}
+                          onChange={() =>
+                            setForm((f) => ({ ...f, recurrenceEditScope: opt.value }))
+                          }
+                          className="accent-[#246392]"
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <RecurringScheduleSection
+                enabled={form.recurring}
+                recurrence={form.recurrence}
+                onRecurrenceChange={handleRecurrenceChange}
+                anchorDate={form.scheduledDate}
+                anchorTime={form.scheduledTime}
+                lessons={lessons}
+                excludeLessonIds={excludeLessonIds}
+                teacher={form.teacher}
+                subjectId={form.subjectId}
+                actorName={actorName}
               />
 
               <SectionBar title="Meeting details (integration-ready)" />

@@ -9,6 +9,7 @@ import {
   MOCK_GST_SETTINGS,
   MOCK_DASHBOARD,
   MOCK_VERIFICATION_QUEUE,
+  buildFinanceDashboardPayload,
 } from '../data/financeMockData'
 
 const USE_MOCK = import.meta.env.VITE_FINANCE_USE_MOCK !== 'false'
@@ -33,7 +34,88 @@ async function tryApi(fn, fallback) {
 export async function fetchFinanceDashboard(params = {}) {
   return tryApi(
     () => api.get('/finance/dashboard', { params }),
-    () => ({ ...MOCK_DASHBOARD }),
+    () => buildFinanceDashboardPayload(params),
+  )
+}
+
+export async function fetchOverallFinanceDashboard(params = {}) {
+  return tryApi(
+    () => api.get('/finance/payments/overall-dashboard', { params: { ...params, scope: 'overall' } }),
+    () => buildFinanceDashboardPayload({ ...params, scope: 'overall' }),
+  )
+}
+
+export async function fetchCenterFinanceDashboard(centerId, params = {}) {
+  return tryApi(
+    () => api.get(`/finance/payments/center/${centerId}`, { params }),
+    () =>
+      buildFinanceDashboardPayload({
+        ...params,
+        scope: 'center',
+        centerIds: centerId,
+      }),
+  )
+}
+
+export async function fetchCompareCentersFinance(params = {}) {
+  return tryApi(
+    () => api.get('/finance/payments/compare-centers', { params }),
+    () =>
+      buildFinanceDashboardPayload({
+        ...params,
+        scope: 'compare',
+      }),
+  )
+}
+
+export async function fetchCenterPerformance() {
+  return tryApi(
+    () => api.get('/finance/payments/center-performance'),
+    () => {
+      const d = buildFinanceDashboardPayload({ scope: 'overall' })
+      return { summaries: d.centerSummaries, performance: d.performance }
+    },
+  )
+}
+
+export async function fetchCenterRanking() {
+  return tryApi(
+    () => api.get('/finance/payments/center-ranking'),
+    () => buildFinanceDashboardPayload({ scope: 'overall' }).centerRanking,
+  )
+}
+
+/** Unified loader for Payment Dashboard — respects center filter from navbar */
+export async function fetchPaymentDashboardByScope(params = {}) {
+  const { scope = 'overall', centerIds, centerNames, course, month } = params
+
+  if (scope === 'compare' && centerNames) {
+    return tryApi(
+      () => api.get('/finance/payments/compare-centers', { params: { centerIds, centerNames, course, month } }),
+      () => buildFinanceDashboardPayload({ scope: 'compare', centerIds, centerNames, course, month }),
+    )
+  }
+
+  if (scope === 'center' && centerNames) {
+    return tryApi(
+      () =>
+        api.get(`/finance/payments/center/${String(centerIds).split(',')[0]}`, {
+          params: { centerNames, course, month },
+        }),
+      () => buildFinanceDashboardPayload({ scope: 'center', centerIds, centerNames, course, month }),
+    )
+  }
+
+  if (scope === 'multi' && centerNames) {
+    return tryApi(
+      () => api.get('/finance/payments/overall-dashboard', { params: { centerIds, centerNames, course, month, scope: 'multi' } }),
+      () => buildFinanceDashboardPayload({ scope: 'multi', centerIds, centerNames, course, month }),
+    )
+  }
+
+  return tryApi(
+    () => api.get('/finance/payments/overall-dashboard', { params: { course, month, scope: 'overall' } }),
+    () => buildFinanceDashboardPayload({ scope: 'overall', course, month }),
   )
 }
 

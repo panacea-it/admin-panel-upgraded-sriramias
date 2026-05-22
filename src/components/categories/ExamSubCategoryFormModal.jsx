@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { FolderTree } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
@@ -46,6 +47,9 @@ export default function ExamSubCategoryFormModal({ open, onClose, item, onSubmit
   const [form, setForm] = useState(buildForm(null))
   const [errors, setErrors] = useState({})
   const closingRef = useRef(false)
+  const itemRef = useRef(item)
+  itemRef.current = item
+  const editKey = getModalEditKey(item)
 
   useEffect(() => {
     const refreshPrograms = () => setPrograms(loadPrograms(activeCenters))
@@ -60,15 +64,11 @@ export default function ExamSubCategoryFormModal({ open, onClose, item, onSubmit
     }
   }, [activeCenters])
 
-  useEffect(() => {
-    if (!open) {
-      closingRef.current = false
-      return
-    }
+  useInitOnModalOpen(open, editKey, () => {
     closingRef.current = false
-    setForm(buildForm(item))
+    setForm(buildForm(itemRef.current))
     setErrors({})
-  }, [open, item])
+  })
 
   const centreOptions = useMemo(
     () =>

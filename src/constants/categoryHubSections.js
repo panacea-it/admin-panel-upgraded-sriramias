@@ -1,4 +1,4 @@
-import { Layers, GraduationCap, BookOpen, Users, FolderTree, LayoutGrid } from 'lucide-react'
+import { Layers, GraduationCap, BookOpen, Users, FolderTree, LayoutGrid, DoorOpen } from 'lucide-react'
 
 /** Tab order: Programs first, then full academic hierarchy */
 export const CATEGORY_HUB_TABS = [
@@ -9,6 +9,7 @@ export const CATEGORY_HUB_TABS = [
   { id: 'subject', label: 'Subject', path: '/academics/categories/subject' },
   { id: 'topic', label: 'Topic', path: '/academics/categories/topic' },
   { id: 'teachers', label: 'Teachers', path: '/academics/categories/teachers' },
+  { id: 'class-rooms', label: 'Class Rooms', path: '/academics/categories/class-rooms' },
 ]
 
 export const DEFAULT_CATEGORY_TAB = 'programs'
@@ -117,5 +118,18 @@ export const CATEGORY_HUB_SECTIONS = {
     filters: ['subject', 'status'],
     formFields: ['subject', 'name', 'description', 'status'],
     dateColumns: { created: 'Added On', modified: 'Modified On' },
+  },
+  'class-rooms': {
+    id: 'class-rooms',
+    icon: DoorOpen,
+    bannerTitle: 'Class Rooms',
+    bannerSubtitle: 'Physical rooms for live class scheduling',
+    addLabel: 'Add Classroom',
+    searchPlaceholder: 'Search classrooms...',
+    primaryColumn: 'Classroom Name',
+    emptyTitle: 'No Classrooms Found',
+    emptyDescription: 'Add classrooms to assign to live sessions.',
+    emptyCta: 'Add Classroom',
+    filters: ['status'],
   },
 }

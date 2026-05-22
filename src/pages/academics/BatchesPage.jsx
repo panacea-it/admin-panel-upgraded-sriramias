@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BookMarked, PlusCircle } from 'lucide-react'
 import PageBanner from '../../components/figma/PageBanner'
-import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import AddCourseModal from '../../components/courses/AddCourseModal'
 import ViewBatchModal from '../../components/courses/ViewBatchModal'
-import CategoryTableActions from '../../components/categories/CategoryTableActions'
-import CategoryStatusBadge from '../../components/categories/CategoryStatusBadge'
+import BatchManagementTable from '../../components/batch-management/BatchManagementTable'
 import { useEditModal } from '../../hooks/useEditModal'
+import { useBatchStudents } from '../../hooks/useBatchStudents'
 import { mapCourseToApiPayload } from '../../utils/coursesApiMappers'
-import { enrichBatchRow, nextBatchId, nextCourseId } from '../../utils/batchHelpers'
-import { formatCategoryDateTime } from '../../utils/formatDateTime'
+import {
+  enrichBatchRow,
+  mapBatchRowToTableFormat,
+  mapInitialBatchesToRows,
+  nextBatchId,
+  nextCourseId,
+} from '../../utils/batchHelpers'
 import {
   createCourse,
-  deleteCourse,
   fetchCourses,
   updateCourse,
 } from '../../api/coursesAPI'
-import { cn } from '../../utils/cn'
 import { toast, toastMessages } from '../../utils/toast'
 
 function BannerButton({ children, onClick }) {
@@ -33,24 +35,54 @@ function BannerButton({ children, onClick }) {
   )
 }
 
+function resolveStudentKey(row, getStudents) {
+  if (getStudents(row.id).length) return row.id
+  if (row.batchId && getStudents(row.batchId).length) return row.batchId
+  return row.id
+}
+
+function rowMatchesSearch(row, q) {
+  if (!q) return true
+  const courseName = row.linkedCourseName || row.program || 'Course'
+  const batchLabel = row.batchName || row.name || 'Batch'
+  const displayName = `${courseName} - ${batchLabel}`
+  const trainerName = row.formData?.trainerName || row.trainerName || ''
+  return (
+    String(row.batchId || '').toLowerCase().includes(q) ||
+    displayName.toLowerCase().includes(q) ||
+    courseName.toLowerCase().includes(q) ||
+    batchLabel.toLowerCase().includes(q) ||
+    trainerName.toLowerCase().includes(q)
+  )
+}
+
 export default function BatchesPage() {
-  const [batches, setBatches] = useState([])
+  const [apiBatches, setApiBatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [selectedIds, setSelectedIds] = useState([])
+  const [expandedBatchId, setExpandedBatchId] = useState(null)
   const modal = useEditModal()
   const [viewItem, setViewItem] = useState(null)
+
+  const {
+    getStudents,
+    addStudent,
+    updateStudent,
+    deleteStudent,
+    toggleStudentStatus,
+  } = useBatchStudents()
 
   const loadBatches = useCallback(async () => {
     setLoading(true)
     try {
       const rows = await fetchCourses()
-      setBatches(rows.map((row, i) => enrichBatchRow(row, i)))
+      setApiBatches(rows.map((row, i) => enrichBatchRow(row, i)))
     } catch (err) {
       const message =
         err.response?.data?.message || err.message || toastMessages.error.server
       toast.error(message)
+      setApiBatches([])
     } finally {
       setLoading(false)
     }
@@ -61,29 +93,38 @@ export default function BatchesPage() {
   }, [loadBatches])
 
   const existingCourseIds = useMemo(
-    () => batches.map((b) => b.courseId).filter(Boolean),
-    [batches],
+    () => apiBatches.map((b) => b.courseId).filter(Boolean),
+    [apiBatches],
   )
 
-  const filtered = useMemo(() => {
+  const sourceRows = useMemo(() => {
+    if (apiBatches.length > 0) return apiBatches
+    return mapInitialBatchesToRows()
+  }, [apiBatches])
+
+  const filteredRows = useMemo(() => {
     const q = search.toLowerCase().trim()
-    return batches.filter((row) => {
-      const matchSearch =
-        !q ||
-        row.batchName?.toLowerCase().includes(q) ||
-        row.batchId?.toLowerCase().includes(q) ||
-        row.courseId?.toLowerCase().includes(q) ||
-        row.durationLabel?.toLowerCase().includes(q)
+    return sourceRows.filter((row) => {
+      const matchSearch = rowMatchesSearch(row, q)
       const matchStatus = statusFilter === 'all' || row.status === statusFilter
       return matchSearch && matchStatus
     })
-  }, [batches, search, statusFilter])
+  }, [sourceRows, search, statusFilter])
+
+  const tableBatches = useMemo(
+    () =>
+      filteredRows.map((row) => {
+        const key = resolveStudentKey(row, getStudents)
+        return mapBatchRowToTableFormat(row, getStudents(key))
+      }),
+    [filteredRows, getStudents],
+  )
 
   const handleSaveBatch = async (form, { isEdit, id }) => {
-    const existing = isEdit ? batches.find((b) => b.id === id) : null
-    const batchId = form.batchId || existing?.batchId || nextBatchId(batches)
+    const existing = isEdit ? apiBatches.find((b) => b.id === id) : null
+    const batchId = form.batchId || existing?.batchId || nextBatchId(apiBatches)
     const courseId =
-      form.courseId || existing?.courseId || nextCourseId(batches)
+      form.courseId || existing?.courseId || nextCourseId(apiBatches)
     const payload = mapCourseToApiPayload(
       { ...form, batchId, courseId, status: form.status || 'Active' },
       existing,
@@ -99,131 +140,45 @@ export default function BatchesPage() {
     await loadBatches()
   }
 
-  const handleDelete = async (row) => {
-    if (!window.confirm(`Delete batch "${row.batchName || row.name}"?`)) return
-    try {
-      await deleteCourse(row.id)
-      setBatches((prev) => prev.filter((b) => b.id !== row.id))
-      setSelectedIds((prev) => prev.filter((sid) => sid !== row.id))
-      toast.success('Batch deleted')
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Delete failed')
-    }
+  const toggleBatch = useCallback((batchId) => {
+    setExpandedBatchId((prev) => (prev === batchId ? null : batchId))
+  }, [])
+
+  const studentKeyForTableBatch = (tableBatch) =>
+    resolveStudentKey(
+      tableBatch.apiRow ?? { id: tableBatch.id, batchId: tableBatch.batchId },
+      getStudents,
+    )
+
+  const handleAddStudent = (batchId, form) => {
+    const row = tableBatches.find((b) => b.id === batchId)
+    const key = row ? studentKeyForTableBatch(row) : batchId
+    addStudent(key, form)
+    toast.success(`${form.name} enrolled successfully`)
   }
 
-  const handleToggleStatus = async (row) => {
-    const next = row.status === 'Active' ? 'In Active' : 'Active'
-    const form = { ...(row.formData || {}), status: next, batchId: row.batchId }
-    try {
-      await updateCourse(row.id, mapCourseToApiPayload(form, row))
-      setBatches((prev) =>
-        prev.map((b) =>
-          b.id === row.id ? { ...b, status: next, modifiedAt: new Date().toISOString() } : b,
-        ),
-      )
-      toast.success(next === 'Active' ? 'Batch enabled' : 'Batch disabled')
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Update failed')
-    }
+  const handleUpdateStudent = (batchId, studentId, form) => {
+    const row = tableBatches.find((b) => b.id === batchId)
+    const key = row ? studentKeyForTableBatch(row) : batchId
+    updateStudent(key, studentId, form)
+    toast.success('Student updated')
   }
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === filtered.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(filtered.map((r) => r.id))
-    }
+  const handleDeleteStudent = (batchId, studentId) => {
+    const row = tableBatches.find((b) => b.id === batchId)
+    const key = row ? studentKeyForTableBatch(row) : batchId
+    deleteStudent(key, studentId)
+    toast.success('Student removed from batch')
   }
 
-  const columns = [
-    {
-      key: 'select',
-      label: '',
-      headerClassName: 'w-12 pl-6 sm:pl-10',
-      cellClassName: 'pl-6 sm:pl-10',
-      render: (row) => (
-        <input
-          type="checkbox"
-          checked={selectedIds.includes(row.id)}
-          onChange={() => {
-            setSelectedIds((prev) =>
-              prev.includes(row.id) ? prev.filter((x) => x !== row.id) : [...prev, row.id],
-            )
-          }}
-          className="h-4 w-4 rounded accent-[#246392]"
-          aria-label={`Select ${row.batchName}`}
-        />
-      ),
-    },
-    {
-      key: 'batchId',
-      label: 'Batch ID',
-      render: (row) => (
-        <span className="font-mono text-sm font-medium text-[#111]">{row.batchId || '—'}</span>
-      ),
-    },
-    {
-      key: 'batchName',
-      label: 'Batch Name',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#cbeeff] text-xs font-bold text-[#246392]">
-            {(row.batchName || row.name || 'B').slice(0, 2).toUpperCase()}
-          </span>
-          <span className="font-semibold text-[#111]">{row.batchName || row.name}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'program',
-      label: 'Program',
-      render: (row) => <span className="text-sm text-[#444]">{row.program || '—'}</span>,
-    },
-    {
-      key: 'examCategory',
-      label: 'Exam Category',
-      render: (row) => <span className="text-sm text-[#444]">{row.examCategory || '—'}</span>,
-    },
-    {
-      key: 'examSubCategory',
-      label: 'Exam Subcategory',
-      render: (row) => <span className="text-sm text-[#444]">{row.examSubCategory || '—'}</span>,
-    },
-    {
-      key: 'linkedCourseName',
-      label: 'Course Name',
-      render: (row) => (
-        <span className="text-sm font-medium text-[#444]">{row.linkedCourseName || '—'}</span>
-      ),
-    },
-    {
-      key: 'createdAt',
-      label: 'Created On',
-      render: (row) => (
-        <span className="whitespace-nowrap text-sm">
-          {formatCategoryDateTime(row.createdAt)}
-        </span>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => <CategoryStatusBadge status={row.status} />,
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (row) => (
-        <CategoryTableActions
-          status={row.status}
-          onView={() => setViewItem(row)}
-          onEdit={() => modal.openEdit(row)}
-          onDelete={() => handleDelete(row)}
-          onToggleStatus={() => handleToggleStatus(row)}
-        />
-      ),
-    },
-  ]
+  const handleToggleStudentStatus = (batchId, studentId) => {
+    const row = tableBatches.find((b) => b.id === batchId)
+    const key = row ? studentKeyForTableBatch(row) : batchId
+    const student = getStudents(key).find((s) => s.id === studentId)
+    const next = student?.status === 'Active' ? 'In Active' : 'Active'
+    toggleStudentStatus(key, studentId)
+    toast.success(next === 'Active' ? 'Student enabled' : 'Student disabled')
+  }
 
   return (
     <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-8 pt-6 sm:px-5 lg:px-6">
@@ -245,39 +200,22 @@ export default function BatchesPage() {
           onStatusChange={(e) => setStatusFilter(e.target.value)}
         />
 
-        {filtered.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-[#686868]">
-            <input
-              type="checkbox"
-              checked={selectedIds.length === filtered.length && filtered.length > 0}
-              onChange={toggleSelectAll}
-              className="h-4 w-4 rounded accent-[#246392]"
-            />
-            <span>Select all on this page</span>
-          </div>
-        )}
-
         {loading ? (
           <div className="rounded-2xl bg-white p-12 text-center shadow-[0_8px_28px_rgba(15,23,42,0.08)]">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#55ace7] border-t-transparent" />
             <p className="mt-4 text-sm text-[#686868]">Loading batches...</p>
           </div>
         ) : (
-          <div
-            className={cn(
-              'overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80',
-            )}
-          >
-            <PaginatedFigmaTable
-              columns={columns}
-              data={filtered}
-              emptyMessage="No batches found."
-              itemLabel="batches"
-              resetDeps={[search, statusFilter]}
-              rowClassName="transition-colors hover:bg-[#f8fbff]"
-              tableClassName="[&_thead]:sticky [&_thead]:top-[4.5rem] [&_thead]:z-10"
-            />
-          </div>
+          <BatchManagementTable
+            batches={tableBatches}
+            expandedBatchId={expandedBatchId}
+            onToggleBatch={toggleBatch}
+            onAddStudent={handleAddStudent}
+            onUpdateStudent={handleUpdateStudent}
+            onDeleteStudent={handleDeleteStudent}
+            onToggleStudentStatus={handleToggleStudentStatus}
+            resetDeps={[search, statusFilter]}
+          />
         )}
       </section>
 

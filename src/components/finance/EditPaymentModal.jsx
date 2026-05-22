@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { Wallet } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
@@ -20,19 +21,23 @@ const emptyForm = () => ({
 
 export default function EditPaymentModal({ open, onClose, payment, onSubmit }) {
   const [form, setForm] = useState(emptyForm)
+  const paymentRef = useRef(payment)
+  paymentRef.current = payment
+  const editKey = payment ? getModalEditKey(payment) : '__closed__'
 
-  useEffect(() => {
-    if (!open || !payment) return
+  useInitOnModalOpen(open, editKey, () => {
+    const p = paymentRef.current
+    if (!p) return
     setForm({
-      newStatus: payment.paymentStatus || 'Paid',
+      newStatus: p.paymentStatus || 'Paid',
       reason: PAYMENT_STATUS_REASONS[0],
       comment: '',
-      amount: String(payment.amountPaid ?? ''),
-      paymentDate: payment.paymentDate ? payment.paymentDate.slice(0, 10) : '',
-      paymentMode: payment.paymentMode || 'UPI',
-      transactionId: payment.transactionId || '',
+      amount: String(p.amountPaid ?? ''),
+      paymentDate: p.paymentDate ? p.paymentDate.slice(0, 10) : '',
+      paymentMode: p.paymentMode || 'UPI',
+      transactionId: p.transactionId || '',
     })
-  }, [open, payment])
+  })
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 

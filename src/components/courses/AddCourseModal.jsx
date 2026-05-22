@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from '@/utils/toast'
 import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import Modal from '../ui/Modal'
@@ -48,18 +48,25 @@ export default function AddCourseModal({
   )
   const [errors, setErrors] = useState({})
 
-  useEffect(() => {
-    if (open) setErrors({})
-  }, [open, item])
+  const existingIdsRef = useRef(existingCourseIds)
+  existingIdsRef.current = existingCourseIds
 
   useEffect(() => {
-    if (open && isBatch && !isEditMode) {
-      setForm((f) => {
-        if (f.courseId) return f
-        return { ...f, courseId: nextCourseId(existingCourseIds.map((id) => ({ courseId: id }))) }
-      })
-    }
-  }, [open, isBatch, isEditMode, existingCourseIds, setForm])
+    if (open) setErrors({})
+  }, [open])
+
+  useEffect(() => {
+    if (!open || !isBatch || isEditMode) return
+    setForm((f) => {
+      if (f.courseId) return f
+      return {
+        ...f,
+        courseId: nextCourseId(
+          existingIdsRef.current.map((id) => ({ courseId: id })),
+        ),
+      }
+    })
+  }, [open, isBatch, isEditMode, setForm])
 
   const subCategoryOptions = useMemo(() => {
     if (!form.category) return []

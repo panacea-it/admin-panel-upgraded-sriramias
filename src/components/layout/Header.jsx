@@ -4,7 +4,6 @@ import {
   ChevronDown,
   Download,
   LogOut,
-  MapPin,
   Menu,
   Plus,
   Search,
@@ -21,7 +20,7 @@ import { initialNotifications } from '../../data/notifications'
 import NotificationPanel from './NotificationPanel'
 import SriramLogo from '../brand/SriramLogo'
 import { cn } from '../../utils/cn'
-import { useCenters } from '../../contexts/CentersContext'
+import CenterSelectorDropdown from './CenterSelectorDropdown'
 import { ROLE_LABELS } from '../../constants/roles'
 import { usePermissions } from '../../hooks/usePermissions'
 
@@ -41,9 +40,8 @@ function IconAction({ icon: Icon, label, className }) {
 }
 
 export default function Header({ onMenuClick }) {
-  const { user, selectedCenter, setSelectedCenter, logout } = useAuth()
+  const { user, logout } = useAuth()
   const { isSuperAdmin, roleLabel } = usePermissions()
-  const { headerCenterOptions } = useCenters()
   const navigate = useNavigate()
   const [centerOpen, setCenterOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -60,16 +58,6 @@ export default function Header({ onMenuClick }) {
   const displayName = user?.name || 'Sriram Kumar'
   const displayRole = roleLabel || ROLE_LABELS[user?.role] || 'Admin'
   const initials = user?.avatar || 'SK'
-
-  useEffect(() => {
-    if (
-      selectedCenter &&
-      selectedCenter !== 'All Centers' &&
-      !headerCenterOptions.includes(selectedCenter)
-    ) {
-      setSelectedCenter('All Centers')
-    }
-  }, [headerCenterOptions, selectedCenter, setSelectedCenter])
 
   useEffect(() => {
     const handler = (e) => {
@@ -139,43 +127,17 @@ export default function Header({ onMenuClick }) {
           </div>
         )}
 
-        <div className="relative hidden sm:block">
-          <button
-            type="button"
-            onClick={() => {
+        {(isSuperAdmin || user?.role === 'center_admin' || user?.role === 'operation_admin') && (
+          <CenterSelectorDropdown
+            open={centerOpen}
+            onToggle={() => {
               setCenterOpen((v) => !v)
               setProfileOpen(false)
               setNotifOpen(false)
             }}
-            className="flex h-9 max-w-[min(42vw,200px)] items-center gap-2 rounded-lg border border-[#03045e]/10 bg-[#f4f6fb] px-3 text-[12px] font-semibold text-[#03045e] transition hover:border-[#03045e]/18 hover:bg-[#e8ecf7] sm:max-w-[220px] sm:px-3.5 sm:text-[13px]"
-          >
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-[#b91c1c]" strokeWidth={2.5} />
-            <span className="truncate text-slate-800">{selectedCenter}</span>
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500" strokeWidth={2.5} />
-          </button>
-          {centerOpen && (
-            <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(100vw-2rem,228px)] overflow-hidden rounded-xl border border-slate-200/90 bg-white py-1 shadow-[0_12px_32px_rgba(3,4,94,0.12)]">
-              {headerCenterOptions.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => {
-                    setSelectedCenter(c)
-                    setCenterOpen(false)
-                  }}
-                  className={cn(
-                    'block w-full px-4 py-2.5 text-left text-[13px] font-medium transition hover:bg-[#f4f6fb]',
-                    selectedCenter === c
-                      ? 'bg-[#eef1fa] font-semibold text-[#03045e]'
-                      : 'text-slate-800',
-                  )}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            onClose={() => setCenterOpen(false)}
+          />
+        )}
 
         <div className="relative">
           <button

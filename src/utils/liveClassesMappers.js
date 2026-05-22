@@ -1,9 +1,14 @@
+import { createDefaultRecurrenceRule } from './recurrenceEngine'
+import { findClassroomById } from './classroomsStorage'
+
 export function createEmptyLessonForm() {
   return {
     lessonName: '',
     topic: '',
     teacher: '',
     location: 'Delhi',
+    classroomId: '',
+    classroomName: '',
     lessonType: 'Live',
     subjectId: '',
     subjectName: '',
@@ -13,6 +18,8 @@ export function createEmptyLessonForm() {
     duration: 60,
     timezone: 'Asia/Kolkata',
     recurring: false,
+    recurrence: null,
+    recurrenceEditScope: 'series',
     status: 'Scheduled',
     meetingProvider: 'zoom',
     zoomMeetingId: '',
@@ -33,21 +40,36 @@ export function createEmptyLessonForm() {
 
 export function lessonRowToForm(row) {
   if (!row) return createEmptyLessonForm()
+  const recurring = Boolean(row.recurring)
   return {
     ...createEmptyLessonForm(),
     ...row,
     lessonName: row.lessonName ?? row.name ?? '',
+    recurring,
+    recurrence: row.recurrence
+      ? { ...row.recurrence }
+      : recurring
+        ? createDefaultRecurrenceRule(row)
+        : null,
+    recurrenceEditScope: 'series',
   }
 }
 
 export function lessonFormToRow(form, existing) {
   const now = new Date().toISOString()
+  const recurring = Boolean(form.recurring)
+  const recurrence = recurring && form.recurrence?.enabled ? form.recurrence : null
+  const classroomId = form.classroomId || existing?.classroomId || ''
+  const classroom = classroomId ? findClassroomById(classroomId) : null
+
   return {
     ...existing,
     lessonName: form.lessonName?.trim() || existing?.lessonName,
     topic: form.topic?.trim() ?? '',
     teacher: form.teacher?.trim() ?? '',
     location: form.location || 'Delhi',
+    classroomId,
+    classroomName: classroom?.name || form.classroomName || existing?.classroomName || '',
     lessonType: form.lessonType || 'Live',
     subjectId: form.subjectId,
     subjectName: form.subjectName,
@@ -56,7 +78,14 @@ export function lessonFormToRow(form, existing) {
     scheduledTime: form.scheduledTime,
     duration: Number(form.duration) || 60,
     timezone: form.timezone || 'Asia/Kolkata',
-    recurring: Boolean(form.recurring),
+    recurring,
+    recurrence,
+    recurrenceSeriesId: existing?.recurrenceSeriesId ?? null,
+    recurrenceParentId: existing?.recurrenceParentId ?? null,
+    isRecurrenceParent: existing?.isRecurrenceParent ?? false,
+    isRecurrenceOccurrence: existing?.isRecurrenceOccurrence ?? false,
+    occurrenceIndex: existing?.occurrenceIndex ?? null,
+    calendarPayload: recurrence ? form.calendarPayload : null,
     status: form.status || 'Scheduled',
     meetingProvider: form.meetingProvider || 'zoom',
     zoomMeetingId: form.zoomMeetingId ?? '',
@@ -81,5 +110,9 @@ export function duplicateLessonRow(row) {
   const copy = lessonRowToForm(row)
   copy.lessonName = `${copy.lessonName} (Copy)`
   delete copy.id
+  copy.recurrenceSeriesId = null
+  copy.recurrenceParentId = null
+  copy.isRecurrenceParent = false
+  copy.isRecurrenceOccurrence = false
   return copy
 }

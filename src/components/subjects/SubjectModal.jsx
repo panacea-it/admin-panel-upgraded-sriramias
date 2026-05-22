@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { useForm, Controller } from 'react-hook-form'
 import { BookOpen, Calendar, ChevronDown } from 'lucide-react'
 import SubjectModalShell from './SubjectModalShell'
@@ -6,11 +7,11 @@ import TimeDurationFields from './TimeDurationFields'
 import {
   CATEGORY_OPTIONS,
   CENTER_DROPDOWN_OPTIONS,
-  CLASSROOM_DROPDOWN_OPTIONS,
   SUBJECT_DROPDOWN_OPTIONS,
   TEACHER_DROPDOWN_OPTIONS,
   TOPIC_DROPDOWN_OPTIONS,
 } from '../../data/academicsSubjectsSeed'
+import ClassroomSelectField from '../classrooms/ClassroomSelectField'
 import {
   EMPTY_SUBJECT_FORM,
   clampTimeField,
@@ -96,18 +97,36 @@ export default function SubjectModal({
     formState: { errors },
   } = useForm({ defaultValues: EMPTY_SUBJECT_FORM })
 
-  useEffect(() => {
-    if (open) {
-      reset(subjectToForm(subject, liveClass))
-      clearErrors()
-    }
-  }, [open, subject, liveClass, reset, clearErrors])
+  const subjectRef = useRef(subject)
+  subjectRef.current = subject
+  const liveClassRef = useRef(liveClass)
+  liveClassRef.current = liveClass
+  const seedKey = `${mode}:${context}:${subject?.id ?? liveClass?.id ?? 'new'}`
+
+  useInitOnModalOpen(open, seedKey, () => {
+    reset(subjectToForm(subjectRef.current, liveClassRef.current))
+    clearErrors()
+  })
+
+  const watchedDate = watch('date')
+  const watchedTimeHrs = watch('timeHrs')
+  const watchedTimeMin = watch('timeMin')
+  const watchedTimeSec = watch('timeSec')
+  const watchedDurHrs = watch('durationHrs')
+  const watchedDurMin = watch('durationMin')
+  const watchedDurSec = watch('durationSec')
 
   const onFormSubmit = async (values) => {
-    const validationErrors = validateSubjectForm(values, {
-      liveClassOnly,
-      requireLiveClass: liveClassOnly,
-    })
+    const validationErrors = validateSubjectForm(
+      {
+        ...values,
+        _excludeSourceIds: liveClass?.id ? [liveClass.id] : [],
+      },
+      {
+        liveClassOnly,
+        requireLiveClass: liveClassOnly,
+      },
+    )
     if (Object.keys(validationErrors).length) {
       Object.entries(validationErrors).forEach(([key, message]) => {
         setError(key, { type: 'manual', message })
@@ -247,19 +266,27 @@ export default function SubjectModal({
                   <p className="mt-1 text-xs text-red-500">{errors.center.message}</p>
                 )}
               </div>
-              <div>
-                <FieldLabel required>Class Room</FieldLabel>
-                <FormSelect
-                  register={register}
-                  name="classRoom"
-                  error={errors.classRoom}
-                  options={CLASSROOM_DROPDOWN_OPTIONS}
-                  placeholder="Choose Class Room"
-                />
-                {errors.classRoom && (
-                  <p className="mt-1 text-xs text-red-500">{errors.classRoom.message}</p>
+              <Controller
+                control={control}
+                name="classroomId"
+                render={({ field }) => (
+                  <ClassroomSelectField
+                    value={field.value}
+                    onChange={field.onChange}
+                    date={watchedDate}
+                    timeHrs={watchedTimeHrs}
+                    timeMin={watchedTimeMin}
+                    timeSec={watchedTimeSec}
+                    durationHrs={watchedDurHrs}
+                    durationMin={watchedDurMin}
+                    durationSec={watchedDurSec}
+                    excludeSourceIds={liveClass?.id ? [liveClass.id] : []}
+                    error={errors.classRoom?.message}
+                    required
+                    label="Select Classroom"
+                  />
                 )}
-              </div>
+              />
               <div>
                 <FieldLabel required>Date</FieldLabel>
                 <div className="relative">

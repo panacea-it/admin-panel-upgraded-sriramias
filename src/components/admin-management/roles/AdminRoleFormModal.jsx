@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../../hooks/modalFormSync'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, X } from 'lucide-react'
@@ -27,6 +28,9 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
   const [loading, setLoading] = useState(false)
   const [label, setLabel] = useState('')
   const [roleCode, setRoleCode] = useState('')
+  const initialRoleRef = useRef(initialRole)
+  initialRoleRef.current = initialRole
+  const editKey = getModalEditKey(initialRole)
 
   useEffect(() => {
     if (!open) return
@@ -37,12 +41,12 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
     }
   }, [open])
 
-  useEffect(() => {
-    if (!open) return
-    if (initialRole) {
-      setLabel(initialRole.label || '')
+  useInitOnModalOpen(open, editKey, () => {
+    const role = initialRoleRef.current
+    if (role) {
+      setLabel(role.label || '')
       setRoleCode(
-        String(initialRole.id || '')
+        String(role.id || '')
           .replace(/-/g, '_')
           .toUpperCase(),
       )
@@ -50,7 +54,7 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
       setLabel('')
       setRoleCode('')
     }
-  }, [open, initialRole])
+  })
 
   useEffect(() => {
     const onKey = (e) => {

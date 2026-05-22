@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { FileText } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import Modal from '../ui/Modal'
@@ -29,16 +30,18 @@ export default function AddBlogModal({ open, onClose, blog, onSave }) {
   const isEdit = Boolean(blog?.id)
   const [form, setForm] = useState(createEmptyBlog)
   const [initialSnapshot, setInitialSnapshot] = useState(null)
+  const blogRef = useRef(blog)
+  blogRef.current = blog
+  const editKey = getModalEditKey(blog)
 
-  useEffect(() => {
-    if (!open) return
-    const next = blog ? cloneBlog(blog) : createEmptyBlog()
+  useInitOnModalOpen(open, editKey, () => {
+    const next = blogRef.current ? cloneBlog(blogRef.current) : createEmptyBlog()
     if (!next.sections?.length) {
       next.sections = [emptySection(next.id)]
     }
     setForm(next)
     setInitialSnapshot(cloneBlog(next))
-  }, [open, blog])
+  })
 
   const setField = (key) => (e) => {
     const value = e?.target ? e.target.value : e

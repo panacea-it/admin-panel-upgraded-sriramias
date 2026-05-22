@@ -3,6 +3,7 @@ import CategoryHubShell from '../components/categories/CategoryHubShell'
 import ProgramsPage from '../pages/academics/categories/ProgramsPage'
 import CategorySectionPage from '../pages/academics/categories/CategorySectionPage'
 import CategoryCoursesSection from '../pages/academics/categories/CategoryCoursesSection'
+import ClassRoomsPage from '../pages/academics/categories/ClassRoomsPage'
 
 export default function CategoriesLayout() {
   return (
@@ -18,6 +19,7 @@ export default function CategoriesLayout() {
         <Route path="subject" element={<CategorySectionPage />} />
         <Route path="topic" element={<CategorySectionPage />} />
         <Route path="teachers" element={<CategorySectionPage />} />
+        <Route path="class-rooms" element={<ClassRoomsPage />} />
         <Route path="*" element={<Navigate to="programs" replace />} />
       </Routes>
     </CategoryHubShell>

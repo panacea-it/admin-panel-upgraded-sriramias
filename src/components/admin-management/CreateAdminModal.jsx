@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, Mail, Phone, User, Hash, X } from 'lucide-react'
@@ -52,20 +53,23 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
   const [form, setForm] = useState(INITIAL)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const editingRef = useRef(editingRecord)
+  editingRef.current = editingRecord
+  const editKey = getModalEditKey(editingRecord)
 
-  useEffect(() => {
-    if (!open) return
-    if (editingRecord) {
+  useInitOnModalOpen(open, editKey, () => {
+    const editing = editingRef.current
+    if (editing) {
       setForm({
-        fullName: editingRecord.name || '',
-        email: editingRecord.email || '',
-        mobile: editingRecord.phone || '',
-        employeeId: editingRecord.employeeId || editingRecord.id || '',
-        adminType: editingRecord.role || '',
-        center: editingRecord.center || '',
+        fullName: editing.name || '',
+        email: editing.email || '',
+        mobile: editing.phone || '',
+        employeeId: editing.employeeId || editing.id || '',
+        adminType: editing.role || '',
+        center: editing.center || '',
         password: '',
         confirmPassword: '',
-        active: editingRecord.status !== 'inactive',
+        active: editing.status !== 'inactive',
         twoFactor: false,
         sessionTimeout: '60',
         loginAlert: true,
@@ -73,17 +77,13 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
       setErrors({})
       return
     }
-    setForm((f) => ({
+    setForm({
       ...INITIAL,
-      adminType: assignableForNewAdmin.some((r) => r.id === f.adminType)
-        ? f.adminType
-        : assignableForNewAdmin[0]?.id || '',
-      center: assignableCenterNames.includes(f.center)
-        ? f.center
-        : assignableCenterNames[0] || '',
-    }))
+      adminType: assignableForNewAdmin[0]?.id || '',
+      center: assignableCenterNames[0] || '',
+    })
     setErrors({})
-  }, [open, editingRecord, assignableCenterNames, assignableForNewAdmin])
+  })
 
   const selectedRole = useMemo(
     () => assignableForNewAdmin.find((r) => r.id === form.adminType),

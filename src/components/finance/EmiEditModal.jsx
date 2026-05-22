@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { CalendarClock, Plus, Trash2 } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
@@ -20,12 +21,15 @@ const emptyInstallment = (no) => ({
 export default function EmiEditModal({ open, onClose, plan, onSubmit }) {
   const [installments, setInstallments] = useState([])
   const isEdit = Boolean(plan?.id)
+  const planRef = useRef(plan)
+  planRef.current = plan
+  const editKey = getModalEditKey(plan)
 
-  useEffect(() => {
-    if (!open) return
-    if (plan?.installments?.length) {
+  useInitOnModalOpen(open, editKey, () => {
+    const current = planRef.current
+    if (current?.installments?.length) {
       setInstallments(
-        plan.installments.map((emi) => ({
+        current.installments.map((emi) => ({
           ...emi,
           emiAmount: String(emi.emiAmount ?? ''),
         })),
@@ -33,7 +37,7 @@ export default function EmiEditModal({ open, onClose, plan, onSubmit }) {
     } else {
       setInstallments([emptyInstallment(1)])
     }
-  }, [open, plan])
+  })
 
   const updateRow = (index, key, value) => {
     setInstallments((rows) =>

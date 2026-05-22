@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { LayoutGrid } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
@@ -41,16 +42,17 @@ export default function ProgramFormModal({ open, onClose, program, programs = []
   const [catalog, setCatalog] = useState([])
   const [loadingCourses, setLoadingCourses] = useState(false)
   const closingRef = useRef(false)
+  const programRef = useRef(program)
+  programRef.current = program
+  const programsRef = useRef(programs)
+  programsRef.current = programs
+  const editKey = getModalEditKey(program)
 
-  useEffect(() => {
-    if (!open) {
-      closingRef.current = false
-      return
-    }
+  useInitOnModalOpen(open, editKey, () => {
     closingRef.current = false
-    setForm(buildForm(program, programs))
+    setForm(buildForm(programRef.current, programsRef.current))
     setErrors({})
-  }, [open, program, programs])
+  })
 
   useEffect(() => {
     if (!open) return

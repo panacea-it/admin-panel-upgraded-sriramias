@@ -1,4 +1,12 @@
 import { Router } from 'express'
+import { financeRbac } from '../middleware/financeRbac.js'
+import {
+  centerDashboard,
+  centerPerformance,
+  centerRanking,
+  compareCentersHandler,
+  overallDashboard,
+} from '../controllers/financeCenterController.js'
 import {
   approveOfflinePayment,
   generateReceipt,
@@ -20,6 +28,13 @@ import {
 } from '../controllers/financeController.js'
 
 const router = Router()
+
+router.use('/payments', financeRbac)
+router.get('/payments/overall-dashboard', overallDashboard)
+router.get('/payments/center/:centerId', centerDashboard)
+router.get('/payments/compare-centers', compareCentersHandler)
+router.get('/payments/center-performance', centerPerformance)
+router.get('/payments/center-ranking', centerRanking)
 
 router.get('/dashboard', getFinanceDashboard)
 router.get('/reports', getPaymentReports)

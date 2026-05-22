@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Building2, X } from 'lucide-react'
@@ -52,26 +53,29 @@ export default function CenterFormDrawer({
 }) {
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
+  const initialRef = useRef(initial)
+  initialRef.current = initial
+  const editKey = mode === 'edit' ? getModalEditKey(initial) : '__create__'
 
-  useEffect(() => {
-    if (!open) return
-    if (mode === 'edit' && initial) {
+  useInitOnModalOpen(open, editKey, () => {
+    const row = initialRef.current
+    if (mode === 'edit' && row) {
       setForm({
-        centerName: initial.centerName || '',
-        centerCode: initial.centerCode || '',
-        address: initial.address || '',
-        state: initial.state || '',
-        city: initial.city || '',
-        contactNumber: initial.contactNumber || '',
-        email: initial.email || '',
-        status: initial.status === 'disabled' ? 'disabled' : 'active',
-        assignedAdminsText: (initial.assignedAdmins || []).join(', '),
+        centerName: row.centerName || '',
+        centerCode: row.centerCode || '',
+        address: row.address || '',
+        state: row.state || '',
+        city: row.city || '',
+        contactNumber: row.contactNumber || '',
+        email: row.email || '',
+        status: row.status === 'disabled' ? 'disabled' : 'active',
+        assignedAdminsText: (row.assignedAdmins || []).join(', '),
       })
     } else {
       setForm(emptyForm)
     }
     setErrors({})
-  }, [open, mode, initial])
+  })
 
   useEffect(() => {
     if (!open) return

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { BellRing, Globe } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import Modal from '../ui/Modal'
@@ -83,11 +84,14 @@ function formFromNotification(row) {
 
 export default function SendPushNotificationModal({ open, onClose, editing, onSubmit }) {
   const [form, setForm] = useState({ ...EMPTY_NOTIFICATION_FORM })
+  const editingRef = useRef(editing)
+  editingRef.current = editing
+  const editKey = getModalEditKey(editing)
 
-  useEffect(() => {
-    if (!open) return
-    setForm(editing ? formFromNotification(editing) : { ...EMPTY_NOTIFICATION_FORM })
-  }, [open, editing])
+  useInitOnModalOpen(open, editKey, () => {
+    const row = editingRef.current
+    setForm(row ? formFromNotification(row) : { ...EMPTY_NOTIFICATION_FORM })
+  })
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 

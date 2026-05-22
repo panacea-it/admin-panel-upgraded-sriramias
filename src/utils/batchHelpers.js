@@ -1,3 +1,4 @@
+import { INITIAL_BATCHES } from '../data/batchManagementData'
 import { formatSubjectLabel } from './subjectsStorage'
 
 export function nextBatchId(rows = []) {
@@ -46,6 +47,47 @@ export function enrichBatchRow(row, index = 0) {
     linkedSubjects: linked,
     createdAt: row.createdAt || fd.createdAt,
     modifiedAt: row.modifiedAt || fd.modifiedAt,
+  }
+}
+
+/** Demo batches → enriched rows when API returns nothing (local dev / offline). */
+export function mapInitialBatchesToRows() {
+  return INITIAL_BATCHES.map((b, i) =>
+    enrichBatchRow(
+      {
+        id: b.id,
+        batchId: b.batchId,
+        batchName: b.batchLabel,
+        linkedCourseName: b.courseName,
+        name: b.displayName,
+        status: b.status,
+        batchStartFrom: b.startDate,
+        batchEndTo: b.endDate,
+        formData: { trainerName: b.trainerName },
+      },
+      i,
+    ),
+  )
+}
+
+/** Maps API/enriched batch row + local students into the batch management table shape. */
+export function mapBatchRowToTableFormat(row, students = []) {
+  const fd = row.formData || {}
+  const courseName = row.linkedCourseName || row.program || 'Course'
+  const batchLabel = row.batchName || row.name || 'Batch'
+  return {
+    id: row.id,
+    batchId: row.batchId || fd.batchId || '—',
+    courseName,
+    batchLabel,
+    displayName: `${courseName} - ${batchLabel}`,
+    trainerName: fd.trainerName || row.trainerName || '—',
+    startDate: row.batchStartFrom || row.commencement || fd.batchStartFrom || '',
+    endDate: row.batchEndTo || fd.batchEndTo || '',
+    status: row.status || 'Active',
+    students,
+    totalStudents: students.length,
+    apiRow: row,
   }
 }
 

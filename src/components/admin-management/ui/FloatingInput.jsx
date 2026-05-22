@@ -34,10 +34,12 @@ export default function FloatingInput({
   className,
   type = 'text',
   size = 'default',
+  onFocus,
+  onBlur,
   ...props
 }) {
   const [focused, setFocused] = useState(false)
-  const hasValue = props.value !== undefined && props.value !== ''
+  const hasValue = String(props.value ?? '').length > 0
   const s = sizeStyles[size] || sizeStyles.default
 
   return (
@@ -53,6 +55,7 @@ export default function FloatingInput({
       <input
         id={id}
         type={type}
+        {...props}
         className={cn(
           'peer w-full rounded-xl border bg-white/80 text-slate-900 shadow-sm backdrop-blur-sm transition-all outline-none',
           'border-slate-200/80 placeholder-transparent',
@@ -61,11 +64,17 @@ export default function FloatingInput({
           Icon && s.iconPadding,
           error && 'border-rose-400 focus:border-rose-400 focus:ring-rose-500/15',
           s.input,
+          className,
         )}
         placeholder={label}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        {...props}
+        onFocus={(e) => {
+          setFocused(true)
+          onFocus?.(e)
+        }}
+        onBlur={(e) => {
+          setFocused(false)
+          onBlur?.(e)
+        }}
       />
       <label
         htmlFor={id}
