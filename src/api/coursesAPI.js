@@ -63,7 +63,6 @@ async function createCourseLocal(payload) {
       modifiedAt: now,
     }),
     id,
-    formData: payload.formData || payload,
     createdAt: now,
     modifiedAt: now,
   }
@@ -80,7 +79,6 @@ async function updateCourseLocal(id, payload) {
     const updated = {
       ...row,
       ...mapCourseFromApi({ ...row, ...payload, _id: id, modifiedAt: now }),
-      formData: payload.formData || payload,
       modifiedAt: now,
     }
     return updated

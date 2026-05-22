@@ -13,7 +13,6 @@ import {
   mapBatchRowToTableFormat,
   mapInitialBatchesToRows,
   nextBatchId,
-  nextCourseId,
 } from '../../utils/batchHelpers'
 import {
   createCourse,
@@ -120,10 +119,20 @@ export default function BatchesPage() {
   const handleSaveBatch = async (form, { isEdit, id }) => {
     const existing = isEdit ? apiBatches.find((b) => b.id === id) : null
     const batchId = form.batchId || existing?.batchId || nextBatchId(apiBatches)
-    const courseId =
-      form.courseId || existing?.courseId || nextCourseId(apiBatches)
+    const courseId = form.courseId || existing?.courseId
+    if (!courseId) {
+      toast.error('Please select a course')
+      return
+    }
     const payload = mapCourseToApiPayload(
-      { ...form, batchId, courseId, status: form.status || 'Active' },
+      {
+        ...form,
+        batchId,
+        courseId,
+        academicCourseId: form.academicCourseId,
+        courseName: form.courseName,
+        status: form.status || 'Active',
+      },
       existing,
     )
 
@@ -221,7 +230,6 @@ export default function BatchesPage() {
         onClose={modal.close}
         item={modal.selectedItem}
         onSubmit={handleSaveBatch}
-        variant="batch"
         existingCourseIds={existingCourseIds}
       />
 

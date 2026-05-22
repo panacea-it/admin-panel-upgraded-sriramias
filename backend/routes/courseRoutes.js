@@ -6,11 +6,13 @@ import {
   getCourses,
   updateCourse,
 } from '../controllers/courseController.js'
+import { syncAcademicCourses } from '../controllers/academicCourseController.js'
 import { validateCourseBody } from '../middleware/validateCourse.js'
 
 const router = Router()
 
 router.get('/', getCourses)
+router.post('/catalog/sync', syncAcademicCourses)
 router.get('/:id', getCourseById)
 router.post('/', validateCourseBody, createCourse)
 router.put('/:id', validateCourseBody, updateCourse)

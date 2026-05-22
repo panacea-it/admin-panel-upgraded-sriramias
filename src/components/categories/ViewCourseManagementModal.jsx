@@ -1,7 +1,12 @@
 import { BookOpen, X } from 'lucide-react'
 import Modal from '../ui/Modal'
 import CategoryStatusBadge from './CategoryStatusBadge'
+import SectionBar from '../courses/SectionBar'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
+import {
+  buildHowHelpsTitle,
+  buildWhyChooseTitle,
+} from '../../utils/academicCourseForm'
 
 function DetailItem({ label, children }) {
   return (
@@ -12,11 +17,46 @@ function DetailItem({ label, children }) {
   )
 }
 
+function ReadOnlyBlock({ title, children }) {
+  if (!children) return null
+  return (
+    <div className="space-y-3">
+      <SectionBar title={title} />
+      <div className="rounded-xl bg-white px-4 py-4 text-sm text-[#444] shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:px-6">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function formatFee(feeDetails) {
+  if (!feeDetails) return '—'
+  const { courseFee, discountFee, installmentAvailable, currency = 'INR' } = feeDetails
+  const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₹'
+  const parts = []
+  if (courseFee != null && courseFee !== '') {
+    parts.push(`Course fee: ${symbol}${Number(courseFee).toLocaleString()}`)
+  }
+  if (discountFee != null && discountFee !== '') {
+    parts.push(`Discount: ${symbol}${Number(discountFee).toLocaleString()}`)
+  }
+  if (installmentAvailable) parts.push('Installments available')
+  return parts.length ? parts.join(' · ') : '—'
+}
+
 export default function ViewCourseManagementModal({ open, onClose, item }) {
   if (!open || !item) return null
 
+  const subjects = (item.subjects || []).filter((s) => s?.subjectName)
+  const features = (item.keyFeatures || []).filter(Boolean)
+  const whyTitle = buildWhyChooseTitle({
+    examCategory: item.examCategory,
+    courseName: item.name,
+  })
+  const howTitle = buildHowHelpsTitle(item.name)
+
   return (
-    <Modal open={open} onClose={onClose} size="md" title={`View ${item.name}`}>
+    <Modal open={open} onClose={onClose} size="full" title={`View ${item.name}`}>
       <div className="overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
         <header className="flex items-start justify-between gap-3 bg-gradient-to-r from-[#55ace7] via-[#5a7ba8] to-[#1a3a5c] px-5 py-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
@@ -38,30 +78,83 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
           </button>
         </header>
 
-        <div className="space-y-4 p-5 sm:p-6">
-          <h3 className="border-b border-[#eef2fc] pb-2 text-sm font-bold uppercase tracking-wide text-[#246392]">
-            Course Details
-          </h3>
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <DetailItem label="Course ID">{item.courseId || '—'}</DetailItem>
-            <DetailItem label="Course Name">{item.name}</DetailItem>
-            <DetailItem label="Centre">{item.centerName || '—'}</DetailItem>
-            <DetailItem label="Program">{item.program || '—'}</DetailItem>
-            <DetailItem label="Exam Category">{item.examCategory || '—'}</DetailItem>
-            <DetailItem label="Exam Subcategory">{item.examSubCategory || '—'}</DetailItem>
-            <DetailItem label="Status">
-              <CategoryStatusBadge status={item.status} />
-            </DetailItem>
-            <DetailItem label="Created On">
-              {formatCategoryDateTime(item.createdAt)}
-            </DetailItem>
-            <DetailItem label="Modified On">
-              {formatCategoryDateTime(item.modifiedAt)}
-            </DetailItem>
-          </dl>
+        <div className="max-h-[70vh] space-y-5 overflow-y-auto bg-[#f0f4f8] p-5 sm:p-6">
+          <div className="rounded-xl bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:p-6">
+            <h3 className="mb-4 border-b border-[#eef2fc] pb-2 text-sm font-bold uppercase tracking-wide text-[#246392]">
+              Course Details
+            </h3>
+            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <DetailItem label="Course ID">{item.courseId || '—'}</DetailItem>
+              <DetailItem label="Course Name">{item.name}</DetailItem>
+              <DetailItem label="Centre">{item.centerName || '—'}</DetailItem>
+              <DetailItem label="Program">{item.program || '—'}</DetailItem>
+              <DetailItem label="Exam Category">{item.examCategory || '—'}</DetailItem>
+              <DetailItem label="Exam Subcategory">{item.examSubCategory || '—'}</DetailItem>
+              <DetailItem label="Status">
+                <CategoryStatusBadge status={item.status} />
+              </DetailItem>
+              <DetailItem label="Created On">
+                {formatCategoryDateTime(item.createdAt)}
+              </DetailItem>
+              <DetailItem label="Modified On">
+                {formatCategoryDateTime(item.modifiedAt)}
+              </DetailItem>
+            </dl>
+          </div>
+
+          <ReadOnlyBlock title="Subject Details">
+            {subjects.length ? (
+              <ul className="space-y-2">
+                {subjects.map((s, i) => (
+                  <li key={`${s.subjectName}-${i}`} className="rounded-lg bg-[#f8fafc] px-3 py-2">
+                    <span className="font-semibold text-[#111]">{s.subjectName}</span>
+                    {s.facultyName ? (
+                      <span className="text-[#686868]"> — {s.facultyName}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[#686868]">No subjects added</p>
+            )}
+          </ReadOnlyBlock>
+
+          <ReadOnlyBlock title="Fee Details">
+            <p>{formatFee(item.feeDetails)}</p>
+          </ReadOnlyBlock>
+
+          {item.courseOverview ? (
+            <ReadOnlyBlock title="Course Overview">
+              <p className="whitespace-pre-wrap">{item.courseOverview}</p>
+            </ReadOnlyBlock>
+          ) : null}
+
+          <ReadOnlyBlock title="Key Features Of Course">
+            {features.length ? (
+              <ul className="list-disc space-y-1 pl-5">
+                {features.map((f, i) => (
+                  <li key={`${f}-${i}`}>{f}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[#686868]">No features listed</p>
+            )}
+          </ReadOnlyBlock>
+
+          {item.whyChooseCourse ? (
+            <ReadOnlyBlock title={whyTitle}>
+              <p className="whitespace-pre-wrap">{item.whyChooseCourse}</p>
+            </ReadOnlyBlock>
+          ) : null}
+
+          {item.howCourseHelps ? (
+            <ReadOnlyBlock title={howTitle}>
+              <p className="whitespace-pre-wrap">{item.howCourseHelps}</p>
+            </ReadOnlyBlock>
+          ) : null}
         </div>
 
-        <footer className="border-t border-[#eef2fc] bg-[#fafafa] px-5 py-4 text-right sm:px-6">
+        <footer className="sticky bottom-0 border-t border-[#eef2fc] bg-[#fafafa] px-5 py-4 text-right sm:px-6">
           <button
             type="button"
             onClick={onClose}

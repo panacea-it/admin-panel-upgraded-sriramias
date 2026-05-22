@@ -18,6 +18,7 @@ import {
 import { CATEGORY_HUB_SECTIONS } from '../../../constants/categoryHubSections'
 import { useEditModal } from '../../../hooks/useEditModal'
 import { formatCategoryDateTime } from '../../../utils/formatDateTime'
+import { syncAcademicCoursesCatalog } from '../../../api/academicCoursesAPI'
 import { toast } from '../../../utils/toast'
 
 const section = CATEGORY_HUB_SECTIONS.courses
@@ -111,6 +112,12 @@ export default function CategoryCoursesSection() {
       examSubCategoryId: form.examSubCategoryId,
       examSubCategory: form.examSubCategory,
       status: form.status || 'Active',
+      subjects: form.subjects || [],
+      feeDetails: form.feeDetails || {},
+      courseOverview: form.courseOverview || '',
+      keyFeatures: form.keyFeatures || [],
+      whyChooseCourse: form.whyChooseCourse || '',
+      howCourseHelps: form.howCourseHelps || '',
       modifiedAt: now,
     }
 
@@ -130,6 +137,7 @@ export default function CategoryCoursesSection() {
         ]
       }
       saveAcademicCourses(next)
+      syncAcademicCoursesCatalog(next)
       return next
     })
     toast.success(isEdit ? 'Course updated' : 'Course created')

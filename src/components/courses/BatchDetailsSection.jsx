@@ -4,12 +4,14 @@ import {
   CourseInput,
 } from './CourseFormField'
 import BannerImageUpload from './BannerImageUpload'
+import CourseCatalogSelect from './CourseCatalogSelect'
 
 export default function BatchDetailsSection({
   form,
   setForm,
   errors,
   setErrors,
+  excludeCourseIds = [],
 }) {
   const clearError = (key) => {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }))
@@ -45,15 +47,22 @@ export default function BatchDetailsSection({
         {fieldError('batchName')}
       </CourseFormField>
 
-      <CourseFormField label="Course ID" required>
-        <CourseInput
-          value={form.courseId}
-          onChange={(e) => {
-            setForm((f) => ({ ...f, courseId: e.target.value.toUpperCase() }))
+      <CourseFormField label="Course" required className="sm:col-span-2">
+        <CourseCatalogSelect
+          value={form.academicCourseId || ''}
+          fallbackCourseId={form.courseId}
+          excludeCourseIds={excludeCourseIds}
+          error={errors.courseId}
+          required
+          onChange={({ academicCourseId, courseId, courseName }) => {
+            setForm((f) => ({
+              ...f,
+              academicCourseId,
+              courseId,
+              courseName,
+            }))
             clearError('courseId')
           }}
-          placeholder="CRS001"
-          className="font-mono"
         />
         {fieldError('courseId')}
       </CourseFormField>

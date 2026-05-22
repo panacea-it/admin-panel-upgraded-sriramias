@@ -1,52 +1,47 @@
-import { courseFormToRow } from './academicsFormMappers'
-
 /** MongoDB document → table row shape used by BatchesPage */
 export function mapCourseFromApi(doc) {
   if (!doc) return null
   const id = doc._id ?? doc.id
   const fd = doc.formData || {}
+  const catalogName = doc.linkedCourseName || fd.courseName || doc.catalogCourseName
+  const batchName = doc.batchName || fd.batchName || doc.courseName
   return {
     id,
-    name: doc.batchName || doc.courseName || fd.batchName,
+    name: batchName,
     batchId: doc.batchId || fd.batchId,
-    batchName: doc.batchName || fd.batchName || doc.courseName,
+    batchName,
     courseId: doc.courseId || fd.courseId,
+    academicCourseId: doc.academicCourseId || fd.academicCourseId,
+    courseName: catalogName,
+    linkedCourseName: catalogName,
     commencement: doc.commencement || fd.commencement,
     durationLabel: doc.durationLabel || fd.durationLabel,
     batchStartFrom: doc.batchStartFrom || fd.batchStartFrom,
     batchEndTo: doc.batchEndTo || fd.batchEndTo,
-    bannerPreview: doc.bannerPreview || fd.bannerUrl || fd.bannerPreview,
+    bannerPreview: doc.bannerUrl || doc.bannerPreview || fd.bannerPreview || fd.bannerUrl,
     bannerFileName: doc.bannerFileName || fd.bannerFileName,
-    linkedSubjects: doc.linkedSubjects || fd.linkedSubjects,
-    category: doc.category,
-    center: doc.center,
-    price: doc.price,
-    status: doc.status,
-    formData: doc.formData ?? null,
+    status: doc.status || fd.status || 'Active',
     createdAt: doc.createdAt,
     modifiedAt: doc.modifiedAt,
   }
 }
 
-/** Modal form → API request body */
+/** Batch modal form → API request body (batch fields only) */
 export function mapCourseToApiPayload(form, existing) {
-  const row = courseFormToRow(form, existing)
+  const batchName = form.batchName?.trim() || existing?.batchName || existing?.name
   return {
-    courseName: row.batchName || row.name,
-    batchId: row.batchId,
-    batchName: row.batchName,
-    courseId: row.courseId,
-    commencement: row.commencement,
-    durationLabel: row.durationLabel,
-    batchStartFrom: row.batchStartFrom,
-    batchEndTo: row.batchEndTo,
-    bannerUrl: row.bannerPreview,
-    bannerFileName: row.bannerFileName,
-    linkedSubjects: row.linkedSubjects,
-    category: row.category,
-    center: row.center,
-    price: row.price,
-    status: row.status,
-    formData: form,
+    courseName: batchName,
+    batchId: form.batchId || existing?.batchId,
+    batchName,
+    courseId: form.courseId || existing?.courseId,
+    academicCourseId: form.academicCourseId || existing?.academicCourseId,
+    linkedCourseName: form.courseName || existing?.courseName || existing?.linkedCourseName,
+    commencement: form.commencement,
+    durationLabel: form.durationLabel,
+    batchStartFrom: form.batchStartFrom,
+    batchEndTo: form.batchEndTo,
+    bannerUrl: form.bannerPreview || form.bannerUrl,
+    bannerFileName: form.bannerFileName,
+    status: form.status || 'Active',
   }
 }

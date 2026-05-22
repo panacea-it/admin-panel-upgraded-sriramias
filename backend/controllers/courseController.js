@@ -1,12 +1,5 @@
 import Course from '../models/Course.js'
-
-function buildPriceFromForm(formData) {
-  if (!formData) return null
-  const offline = String(formData.offlineFees || '').trim()
-  const online = String(formData.onlineFees || '').trim()
-  if (offline && online) return `${offline} - ${online}`
-  return offline || online || null
-}
+import { getCourseCatalog } from './academicCourseController.js'
 
 function buildListQuery(query) {
   const filter = {}
@@ -23,14 +16,49 @@ function buildListQuery(query) {
   if (search && String(search).trim()) {
     const q = String(search).trim()
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-    filter.$or = [{ courseName: regex }, { category: regex }, { center: regex }]
+    filter.$or = [
+      { courseName: regex },
+      { batchName: regex },
+      { batchId: regex },
+      { courseId: regex },
+      { linkedCourseName: regex },
+      { category: regex },
+      { center: regex },
+    ]
   }
 
   return filter
 }
 
+function pickBatchFields(body = {}) {
+  const batchName = (body.batchName || body.courseName || '').trim()
+  return {
+    courseName: batchName,
+    batchId: body.batchId?.trim() || '',
+    batchName,
+    courseId: body.courseId?.trim() || '',
+    academicCourseId: body.academicCourseId?.trim() || '',
+    linkedCourseName: body.linkedCourseName?.trim() || '',
+    commencement: body.commencement || '',
+    durationLabel: body.durationLabel?.trim() || '',
+    batchStartFrom: body.batchStartFrom || '',
+    batchEndTo: body.batchEndTo || '',
+    bannerUrl: body.bannerUrl || body.bannerPreview || '',
+    bannerFileName: body.bannerFileName?.trim() || '',
+    status: body.status || 'Active',
+    category: body.category?.trim() || 'Batch',
+    center: body.center?.trim() || '—',
+    price: body.price?.trim() || '—',
+    formData: body.formData ?? null,
+  }
+}
+
 export async function getCourses(req, res, next) {
   try {
+    if (req.query.purpose === 'catalog') {
+      return getCourseCatalog(req, res, next)
+    }
+
     const filter = buildListQuery(req.query)
     const courses = await Course.find(filter).sort({ createdAt: -1 }).lean()
 
@@ -58,21 +86,16 @@ export async function getCourseById(req, res, next) {
 
 export async function createCourse(req, res, next) {
   try {
-    const { courseName, category, center, price, status, formData } = req.body
-    const resolvedPrice = price?.trim() || buildPriceFromForm(formData) || '—'
+    const fields = pickBatchFields(req.body)
+    if (!fields.courseName) {
+      return res.status(400).json({ success: false, message: 'Batch name is required' })
+    }
 
-    const course = await Course.create({
-      courseName: courseName.trim(),
-      category: category.trim(),
-      center: center.trim(),
-      price: resolvedPrice,
-      status: status || 'Active',
-      formData: formData || null,
-    })
+    const course = await Course.create(fields)
 
     res.status(201).json({
       success: true,
-      message: 'Course created successfully',
+      message: 'Batch created successfully',
       data: course,
     })
   } catch (error) {
@@ -82,28 +105,14 @@ export async function createCourse(req, res, next) {
 
 export async function updateCourse(req, res, next) {
   try {
-    const { courseName, category, center, price, status, formData } = req.body
-    const resolvedPrice = price?.trim() || buildPriceFromForm(formData)
+    const fields = pickBatchFields(req.body)
+    const updates = { ...fields }
+    if (!updates.courseName) delete updates.courseName
 
-    const updates = {
-      courseName: courseName?.trim(),
-      category: category?.trim(),
-      center: center?.trim(),
-      status,
-      formData: formData ?? undefined,
-    }
-
-    if (resolvedPrice) {
-      updates.price = resolvedPrice
-    } else if (price) {
-      updates.price = String(price).trim()
-    }
-
-    const course = await Course.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true, runValidators: true },
-    )
+    const course = await Course.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    })
 
     if (!course) {
       return res.status(404).json({ success: false, message: 'Course not found' })
@@ -111,7 +120,7 @@ export async function updateCourse(req, res, next) {
 
     res.json({
       success: true,
-      message: 'Course updated successfully',
+      message: 'Batch updated successfully',
       data: course,
     })
   } catch (error) {
@@ -127,7 +136,7 @@ export async function deleteCourse(req, res, next) {
     }
     res.json({
       success: true,
-      message: 'Course deleted successfully',
+      message: 'Batch deleted successfully',
     })
   } catch (error) {
     next(error)

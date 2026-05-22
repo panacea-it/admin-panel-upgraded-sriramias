@@ -5,7 +5,8 @@ import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import BlogFilterToolbar from '../../components/blogs/BlogFilterToolbar'
 import AddBlogModal from '../../components/blogs/AddBlogModal'
-import { BannerButton, StatusBadge } from '../../components/academics/AcademicsUi'
+import BlogStatusBadge from '../../components/blogs/BlogStatusBadge'
+import { BannerButton } from '../../components/academics/AcademicsUi'
 import {
   formatBlogDate,
   formatBlogTime,
@@ -62,9 +63,20 @@ export default function BlogsPage() {
     setEditingBlog(null)
   }
 
-  const handleSave = (payload, { isEdit }) => {
-    if (isEdit) {
-      persist(blogs.map((b) => (b.id === payload.id ? payload : b)))
+  const handleSave = (payload, { isEdit, silent }) => {
+    const exists = blogs.some((b) => b.id === payload.id)
+    if (isEdit || exists) {
+      const next = blogs.map((b) => (b.id === payload.id ? payload : b))
+      persist(next)
+      if (silent) {
+        setEditingBlog(payload)
+        return
+      }
+    } else if (silent) {
+      const next = [...blogs, payload]
+      persist(next)
+      setEditingBlog(payload)
+      return
     } else {
       persist([...blogs, payload])
     }
@@ -73,7 +85,11 @@ export default function BlogsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return blogs.filter((row) => {
-      const matchSearch = !q || row.title.toLowerCase().includes(q)
+      const matchSearch =
+        !q ||
+        row.title.toLowerCase().includes(q) ||
+        (row.slug || '').toLowerCase().includes(q) ||
+        (row.tags || []).some((t) => t.toLowerCase().includes(q))
       const matchStatus = statusFilter === 'all' || row.status === statusFilter
       let matchDate = true
       if (dateRange === 'today') matchDate = isBlogToday(row.publishedAt)
@@ -112,7 +128,7 @@ export default function BlogsPage() {
       key: 'status',
       label: 'Status',
       cellClassName: 'align-middle',
-      render: (row) => <StatusBadge status={row.status} />,
+      render: (row) => <BlogStatusBadge status={row.status} />,
     },
     {
       key: 'actions',

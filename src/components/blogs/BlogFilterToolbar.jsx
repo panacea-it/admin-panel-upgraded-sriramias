@@ -57,8 +57,8 @@ export default function BlogFilterToolbar({
           onChange={onStatusChange}
           options={[
             { value: 'all', label: 'Status' },
-            { value: 'Active', label: 'Active' },
-            { value: 'In Active', label: 'In Active' },
+            { value: 'published', label: 'Published' },
+            { value: 'draft', label: 'Draft' },
           ]}
         />
       </div>

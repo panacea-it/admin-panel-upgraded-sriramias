@@ -32,19 +32,19 @@ export function normalizeLinkedSubjects(form = {}) {
 
 export function enrichBatchRow(row, index = 0) {
   const fd = row.formData || {}
-  const linked = normalizeLinkedSubjects(fd)
   return {
     ...row,
     batchId: row.batchId || fd.batchId || `BAT${String(index + 1).padStart(3, '0')}`,
     batchName: row.batchName || fd.batchName || row.name || '',
     courseId: row.courseId || fd.courseId || '—',
+    courseName: row.courseName || row.linkedCourseName || fd.courseName,
+    linkedCourseName: row.linkedCourseName || row.courseName || fd.courseName,
     commencement: row.commencement || fd.commencement || '',
     durationLabel: row.durationLabel || fd.durationLabel || fd.duration || '',
     batchStartFrom: row.batchStartFrom || fd.batchStartFrom || '',
     batchEndTo: row.batchEndTo || fd.batchEndTo || '',
     bannerPreview: row.bannerPreview || fd.bannerPreview || fd.bannerUrl || '',
     bannerFileName: row.bannerFileName || fd.bannerFileName || '',
-    linkedSubjects: linked,
     createdAt: row.createdAt || fd.createdAt,
     modifiedAt: row.modifiedAt || fd.modifiedAt,
   }

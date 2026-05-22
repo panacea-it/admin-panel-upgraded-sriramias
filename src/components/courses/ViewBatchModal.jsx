@@ -3,7 +3,6 @@ import Modal from '../ui/Modal'
 import SectionBar from './SectionBar'
 import CategoryStatusBadge from '../categories/CategoryStatusBadge'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
-import { formatLinkedSubjectDisplay, normalizeLinkedSubjects } from '../../utils/batchHelpers'
 
 function DetailItem({ label, children }) {
   return (
@@ -30,8 +29,8 @@ export default function ViewBatchModal({ open, onClose, item }) {
   if (!open || !item) return null
 
   const form = item.formData || {}
-  const linkedSubjects = normalizeLinkedSubjects({ ...form, linkedSubjects: item.linkedSubjects })
   const bannerSrc = item.bannerPreview || form.bannerPreview || form.bannerUrl
+  const catalogName = item.linkedCourseName || item.courseName || form.courseName
 
   return (
     <Modal open={open} onClose={onClose} size="full" title={`View ${item.batchName || item.name}`}>
@@ -66,6 +65,7 @@ export default function ViewBatchModal({ open, onClose, item }) {
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DetailItem label="Batch ID">{item.batchId || '—'}</DetailItem>
               <DetailItem label="Batch Name">{item.batchName || item.name}</DetailItem>
+              <DetailItem label="Linked Course">{catalogName || '—'}</DetailItem>
               <DetailItem label="Course ID">{item.courseId || '—'}</DetailItem>
               <DetailItem label="Date of Commencement">
                 {item.commencement || form.commencement || '—'}
@@ -101,37 +101,6 @@ export default function ViewBatchModal({ open, onClose, item }) {
             ) : null}
           </div>
 
-          <ReadOnlyBlock title="Linked Subjects">
-            {linkedSubjects.length ? (
-              <ul className="flex flex-wrap gap-2">
-                {linkedSubjects.map((s) => (
-                  <li
-                    key={s.subjectId}
-                    className="rounded-full bg-[#e8f4fc] px-3 py-1.5 text-xs font-semibold text-[#246392]"
-                  >
-                    {formatLinkedSubjectDisplay(s)}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[#686868]">No subjects linked</p>
-            )}
-          </ReadOnlyBlock>
-
-          {(form.onlineFees || form.offlineFees) && (
-            <ReadOnlyBlock title="Fee Details">
-              <div className="grid gap-2 sm:grid-cols-2">
-                {form.onlineFees ? <p>Online: {form.onlineFees}</p> : null}
-                {form.offlineFees ? <p>Offline: {form.offlineFees}</p> : null}
-              </div>
-            </ReadOnlyBlock>
-          )}
-
-          {form.overview ? (
-            <ReadOnlyBlock title="Course Overview">
-              <p className="whitespace-pre-wrap">{form.overview}</p>
-            </ReadOnlyBlock>
-          ) : null}
         </div>
 
         <footer className="sticky bottom-0 border-t border-[#eef2fc] bg-[#fafafa] px-5 py-4 text-right sm:px-6">

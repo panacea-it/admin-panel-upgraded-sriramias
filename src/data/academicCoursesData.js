@@ -14,6 +14,28 @@ export const ACADEMIC_COURSES_INITIAL = [
     examSubCategoryId: 'SUB001',
     examSubCategory: 'SUB001 - Foundation',
     status: 'Active',
+    subjects: [
+      { subjectName: 'Indian Polity', facultyName: 'Dr. Sharma' },
+      { subjectName: 'Indian Economy', facultyName: 'Prof. Mehta' },
+    ],
+    feeDetails: {
+      courseFee: 85000,
+      discountFee: 75000,
+      installmentAvailable: true,
+      currency: 'INR',
+    },
+    courseOverview:
+      'Comprehensive GS Foundation program covering Prelims and Mains syllabus with structured modules, weekly tests, and mentor support. Designed for first-time and repeat aspirants seeking a strong conceptual base across all general studies papers.',
+    keyFeatures: [
+      'Complete syllabus coverage',
+      'Weekly mock tests',
+      'Dedicated mentor support',
+      'Printed study material included',
+    ],
+    whyChooseCourse:
+      'Structured learning path with experienced faculty, proven results, and flexible online/offline modes.',
+    howCourseHelps:
+      'Builds exam readiness through concept clarity, answer writing practice, and continuous performance tracking.',
     createdAt: ts,
     modifiedAt: ts,
   },
@@ -30,6 +52,18 @@ export const ACADEMIC_COURSES_INITIAL = [
     examSubCategoryId: 'SUB001',
     examSubCategory: 'SUB001 - Foundation',
     status: 'Active',
+    subjects: [{ subjectName: 'NCERT History', facultyName: 'Priya Sharma' }],
+    feeDetails: {
+      courseFee: 45000,
+      discountFee: 40000,
+      installmentAvailable: false,
+      currency: 'INR',
+    },
+    courseOverview:
+      'NCERT-focused foundation course aligning core textbooks with UPSC demand. Ideal for beginners who need strong fundamentals before advancing to standard reference books and test series.',
+    keyFeatures: ['NCERT line-by-line coverage', 'Summary notes', 'Chapter-wise quizzes'],
+    whyChooseCourse: 'Simplifies NCERT for exam relevance with expert faculty guidance.',
+    howCourseHelps: 'Strengthens basics so advanced topics become easier to grasp in later phases.',
     createdAt: ts,
     modifiedAt: ts,
   },
@@ -46,6 +80,23 @@ export const ACADEMIC_COURSES_INITIAL = [
     examSubCategoryId: 'SUB003',
     examSubCategory: 'SUB003 - Mains',
     status: 'In Active',
+    subjects: [
+      { subjectName: 'Answer Writing', facultyName: 'Rajesh Kumar' },
+      { subjectName: 'Interview Prep', facultyName: '' },
+    ],
+    feeDetails: {
+      courseFee: 120000,
+      discountFee: 105000,
+      installmentAvailable: true,
+      currency: 'INR',
+    },
+    courseOverview:
+      'Personalized mentorship for serious aspirants targeting Mains and Interview stages. Includes one-on-one sessions, test evaluation, and strategy planning tailored to individual strengths and gaps.',
+    keyFeatures: ['1:1 mentor sessions', 'Mains answer evaluation', 'Interview mock panels'],
+    whyChooseCourse:
+      'Focused guidance from senior mentors with proven track records in state PSC selections.',
+    howCourseHelps:
+      'Accelerates preparation through targeted feedback, accountability, and structured milestone planning.',
     createdAt: ts,
     modifiedAt: ts,
   },

@@ -2,34 +2,35 @@ import mongoose from 'mongoose'
 
 const courseSchema = new mongoose.Schema(
   {
+    /** Display title — batch name for Academics → Batches */
     courseName: {
       type: String,
-      required: [true, 'Course name is required'],
+      required: [true, 'Batch name is required'],
       trim: true,
-      maxlength: [300, 'Course name cannot exceed 300 characters'],
+      maxlength: [300, 'Name cannot exceed 300 characters'],
     },
-    category: {
-      type: String,
-      required: [true, 'Category is required'],
-      trim: true,
-    },
-    center: {
-      type: String,
-      required: [true, 'Center is required'],
-      trim: true,
-      default: 'Delhi',
-    },
-    price: {
-      type: String,
-      required: [true, 'Price is required'],
-      trim: true,
-    },
+    batchId: { type: String, trim: true, default: '' },
+    batchName: { type: String, trim: true, default: '' },
+    /** Catalog course id from Categories → Courses */
+    courseId: { type: String, trim: true, default: '' },
+    academicCourseId: { type: String, trim: true, default: '' },
+    linkedCourseName: { type: String, trim: true, default: '' },
+    commencement: { type: String, default: '' },
+    durationLabel: { type: String, default: '' },
+    batchStartFrom: { type: String, default: '' },
+    batchEndTo: { type: String, default: '' },
+    bannerUrl: { type: String, default: '' },
+    bannerFileName: { type: String, default: '' },
+    /** Legacy list fields — kept optional for older documents */
+    category: { type: String, trim: true, default: 'Batch' },
+    center: { type: String, trim: true, default: '—' },
+    price: { type: String, trim: true, default: '—' },
     status: {
       type: String,
       enum: ['Active', 'In Active', 'Draft'],
       default: 'Active',
     },
-    /** Full modal form payload for edit prefill */
+    /** Batch-only snapshot for edit prefill */
     formData: {
       type: mongoose.Schema.Types.Mixed,
       default: null,

@@ -4,8 +4,10 @@ import { BookOpen } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
 import SectionBar from '../courses/SectionBar'
+import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import { CourseFormField, CourseInput } from '../courses/CourseFormField'
 import SearchableSelect from './SearchableSelect'
+import CourseContentSections from './CourseContentSections'
 import { useCenters } from '../../contexts/CentersContext'
 import {
   formatExamCategoryLabel,
@@ -22,6 +24,12 @@ import {
   getProgramsForCentre,
   loadPrograms,
 } from '../../utils/programsStorage'
+import {
+  academicCourseItemToContent,
+  createEmptyAcademicCourseContent,
+  serializeAcademicCourseContent,
+  validateAcademicCourseContent,
+} from '../../utils/academicCourseForm'
 import { toast } from '../../utils/toast'
 
 function resolveCenterIdFromItem(item, programs, examCategories) {
@@ -35,7 +43,7 @@ function resolveCenterIdFromItem(item, programs, examCategories) {
   return program?.centerIds?.[0] ? String(program.centerIds[0]) : ''
 }
 
-function buildForm(item, programs, examCategories) {
+function buildHierarchyForm(item, programs, examCategories) {
   if (item) {
     return {
       name: item.name || '',
@@ -56,14 +64,25 @@ function buildForm(item, programs, examCategories) {
   }
 }
 
+function buildFullForm(item, programs, examCategories) {
+  return {
+    ...buildHierarchyForm(item, programs, examCategories),
+    ...academicCourseItemToContent(item),
+  }
+}
+
 export default function CourseFormModal({ open, onClose, item, onSubmit }) {
   const isEdit = Boolean(item)
   const { activeCenters } = useCenters()
   const [programs, setPrograms] = useState(() => loadPrograms(activeCenters))
   const [examCategories, setExamCategories] = useState(() => loadExamCategories())
   const [examSubCategories, setExamSubCategories] = useState(() => loadExamSubCategories())
-  const [form, setForm] = useState(() => buildForm(null, [], []))
+  const [form, setForm] = useState(() => ({
+    ...buildHierarchyForm(null, [], []),
+    ...createEmptyAcademicCourseContent(),
+  }))
   const [errors, setErrors] = useState({})
+  const [contentErrors, setContentErrors] = useState({})
   const closingRef = useRef(false)
   const itemRef = useRef(item)
   itemRef.current = item
@@ -92,8 +111,9 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
 
   useInitOnModalOpen(open, editKey, () => {
     closingRef.current = false
-    setForm(buildForm(itemRef.current, programsRef.current, examCategoriesRef.current))
+    setForm(buildFullForm(itemRef.current, programsRef.current, examCategoriesRef.current))
     setErrors({})
+    setContentErrors({})
   })
 
   const centreOptions = useMemo(
@@ -157,10 +177,18 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     [subCategoriesForSelection],
   )
 
+  const selectedCategoryLabel = useMemo(() => {
+    const c = categoriesForSelection.find(
+      (x) => (x.categoryId || x.id) === form.examCategoryId,
+    )
+    return c ? formatExamCategoryLabel(c) : ''
+  }, [categoriesForSelection, form.examCategoryId])
+
   const handleClose = () => {
     if (closingRef.current) return
     closingRef.current = true
     setErrors({})
+    setContentErrors({})
     onClose()
   }
 
@@ -172,16 +200,10 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
       examCategoryId: '',
       examSubCategoryId: '',
     }))
-    setErrors((e) => ({
-      ...e,
-      centerId: undefined,
-      programId: undefined,
-      examCategoryId: undefined,
-      examSubCategoryId: undefined,
-    }))
+    setErrors({})
   }
 
-  const validate = () => {
+  const validateHierarchy = () => {
     const next = {}
     if (!form.name.trim()) next.name = 'Course name is required'
     if (!form.centerId) next.centerId = 'Centre is required'
@@ -194,10 +216,14 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!validate()) {
+    const hierarchyOk = validateHierarchy()
+    const contentErrs = validateAcademicCourseContent(form, { courseName: form.name })
+    setContentErrors(contentErrs)
+    if (!hierarchyOk || Object.keys(contentErrs).length) {
       toast.error('Please fix the highlighted fields')
       return
     }
+
     const centre = activeCenters.find((c) => String(c.centerId) === String(form.centerId))
     const program = programsForCentre.find((p) => (p.programId || p.id) === form.programId)
     const category = categoriesForSelection.find(
@@ -206,6 +232,7 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     const sub = subCategoriesForSelection.find(
       (s) => (s.subcategoryId || s.id) === form.examSubCategoryId,
     )
+
     onSubmit(
       {
         name: form.name.trim(),
@@ -218,6 +245,7 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
         examSubCategoryId: form.examSubCategoryId,
         examSubCategory: formatExamSubCategoryLabel(sub),
         status: form.status,
+        ...serializeAcademicCourseContent(form),
       },
       { isEdit, id: item?.id },
     )
@@ -229,10 +257,10 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
   const title = isEdit ? 'Edit Course' : 'Add Course'
 
   return (
-    <Modal open={open} onClose={handleClose} size="md" title={title}>
+    <Modal open={open} onClose={handleClose} size="full" title={title}>
       <form
         onSubmit={handleSubmit}
-        className="overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="flex max-h-[min(92vh,960px)] flex-col overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
         <ModalPanelHeader
           title={title}
@@ -241,131 +269,112 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
           iconClassName="text-[#246392]"
         />
 
-        <div className="space-y-5 px-4 py-5 sm:px-6 sm:py-6">
-          <SectionBar title="Course Details" />
+        <div className="flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-7">
+          <div className="space-y-4">
+            <SectionBar title="Course Details" />
+            <div className="grid gap-4 rounded-xl bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:grid-cols-2 sm:px-6 sm:py-6">
+              <CourseFormField label="Course Name" required>
+                <CourseInput
+                  value={form.name}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                    if (errors.name) setErrors((err) => ({ ...err, name: undefined }))
+                  }}
+                  placeholder="e.g. UPSC Foundation"
+                />
+                {errors.name && (
+                  <p className="text-xs font-medium text-[#dc2626]">{errors.name}</p>
+                )}
+              </CourseFormField>
 
-          <div className="grid gap-4 rounded-xl bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:grid-cols-2 sm:px-6 sm:py-6">
-            <CourseFormField label="Course Name" required>
-              <CourseInput
-                value={form.name}
-                onChange={(e) => {
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                  if (errors.name) setErrors((err) => ({ ...err, name: undefined }))
-                }}
-                placeholder="e.g. GS Foundation Batch"
-              />
-            </CourseFormField>
-            {errors.name && (
-              <p className="text-xs font-medium text-[#dc2626]">{errors.name}</p>
-            )}
+              <CourseFormField label="Center" required>
+                <SearchableSelect
+                  options={centreOptions}
+                  value={form.centerId}
+                  onChange={handleCentreChange}
+                  placeholder="Select centre"
+                  emptyMessage="No centres available"
+                  error={errors.centerId}
+                />
+              </CourseFormField>
 
-            <CourseFormField label="Center" required>
-              <SearchableSelect
-                options={centreOptions}
-                value={form.centerId}
-                onChange={handleCentreChange}
-                placeholder="Select centre"
-                emptyMessage="No centres available"
-                error={errors.centerId}
-              />
-            </CourseFormField>
-            {errors.centerId && (
-              <p className="text-xs font-medium text-[#dc2626] sm:col-start-2">{errors.centerId}</p>
-            )}
-
-            <CourseFormField label="Program" required>
-              <SearchableSelect
-                options={programOptions}
-                value={form.programId}
-                onChange={(programId) => {
-                  setForm((f) => ({
-                    ...f,
-                    programId,
-                    examCategoryId: '',
-                    examSubCategoryId: '',
-                  }))
-                  setErrors((e) => ({
-                    ...e,
-                    programId: undefined,
-                    examCategoryId: undefined,
-                    examSubCategoryId: undefined,
-                  }))
-                }}
-                placeholder={form.centerId ? 'Select program' : 'Select centre first'}
-                emptyMessage={
-                  form.centerId
-                    ? 'No programs for this centre'
-                    : 'Select a centre first'
-                }
-                disabled={!form.centerId}
-                error={errors.programId}
-              />
-            </CourseFormField>
-
-            <CourseFormField label="Exam Category" required>
-              <SearchableSelect
-                options={examCategoryOptions}
-                value={form.examCategoryId}
-                onChange={(examCategoryId) => {
-                  setForm((f) => ({ ...f, examCategoryId, examSubCategoryId: '' }))
-                  setErrors((e) => ({
-                    ...e,
-                    examCategoryId: undefined,
-                    examSubCategoryId: undefined,
-                  }))
-                }}
-                placeholder={
-                  form.programId ? 'Select exam category' : 'Select program first'
-                }
-                emptyMessage={
-                  form.programId
-                    ? 'No exam categories for this centre & program'
-                    : 'Select a program first'
-                }
-                disabled={!form.programId}
-                error={errors.examCategoryId}
-              />
-            </CourseFormField>
-
-            <CourseFormField label="Exam Subcategory" required className="sm:col-span-2">
-              <SearchableSelect
-                options={examSubCategoryOptions}
-                value={form.examSubCategoryId}
-                onChange={(examSubCategoryId) => {
-                  setForm((f) => ({ ...f, examSubCategoryId }))
-                  if (errors.examSubCategoryId) {
-                    setErrors((e) => ({ ...e, examSubCategoryId: undefined }))
+              <CourseFormField label="Program" required>
+                <SearchableSelect
+                  options={programOptions}
+                  value={form.programId}
+                  onChange={(programId) => {
+                    setForm((f) => ({
+                      ...f,
+                      programId,
+                      examCategoryId: '',
+                      examSubCategoryId: '',
+                    }))
+                    setErrors({})
+                  }}
+                  placeholder={form.centerId ? 'Select program' : 'Select centre first'}
+                  emptyMessage={
+                    form.centerId ? 'No programs for this centre' : 'Select a centre first'
                   }
-                }}
-                placeholder={
-                  form.examCategoryId ? 'Select subcategory' : 'Select exam category first'
-                }
-                emptyMessage={
-                  form.examCategoryId
-                    ? 'No subcategories for this centre & category'
-                    : 'Select an exam category first'
-                }
-                disabled={!form.examCategoryId}
-                error={errors.examSubCategoryId}
-              />
-            </CourseFormField>
+                  disabled={!form.centerId}
+                  error={errors.programId}
+                />
+              </CourseFormField>
+
+              <CourseFormField label="Exam Category" required>
+                <SearchableSelect
+                  options={examCategoryOptions}
+                  value={form.examCategoryId}
+                  onChange={(examCategoryId) => {
+                    setForm((f) => ({ ...f, examCategoryId, examSubCategoryId: '' }))
+                    setErrors({})
+                  }}
+                  placeholder={
+                    form.programId ? 'Select exam category' : 'Select program first'
+                  }
+                  disabled={!form.programId}
+                  error={errors.examCategoryId}
+                />
+              </CourseFormField>
+
+              <CourseFormField label="Exam Subcategory" required className="sm:col-span-2">
+                <SearchableSelect
+                  options={examSubCategoryOptions}
+                  value={form.examSubCategoryId}
+                  onChange={(examSubCategoryId) => {
+                    setForm((f) => ({ ...f, examSubCategoryId }))
+                    setErrors({})
+                  }}
+                  placeholder={
+                    form.examCategoryId ? 'Select subcategory' : 'Select exam category first'
+                  }
+                  disabled={!form.examCategoryId}
+                  error={errors.examSubCategoryId}
+                />
+              </CourseFormField>
+            </div>
           </div>
 
-          <div className="sticky bottom-0 flex flex-wrap justify-end gap-3 border-t border-[#e5eaf2] bg-[#f0f4f8]/95 pt-4 backdrop-blur-sm">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="min-w-[100px] rounded-lg border border-[#d4e4f4] bg-white px-6 py-2.5 text-sm font-semibold text-[#444] transition hover:bg-[#f8fbff]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="min-w-[120px] rounded-lg bg-gradient-to-r from-[#1a3a5c] to-[#03045e] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(3,4,94,0.35)] transition hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Save Course
-            </button>
-          </div>
+          <CourseContentSections
+            form={form}
+            setForm={setForm}
+            errors={contentErrors}
+            courseName={form.name}
+            examCategoryLabel={selectedCategoryLabel}
+          />
+        </div>
+
+        <div className="sticky bottom-0 z-10 shrink-0 border-t border-[#e5eaf2] bg-[#f0f4f8]/95 px-4 py-4 backdrop-blur-md sm:px-6">
+          <FormModalSubmitBar
+            isEditMode={isEdit}
+            onReset={() => {
+              setForm(buildFullForm(item, programs, examCategories))
+              setErrors({})
+              setContentErrors({})
+            }}
+            createLabel="Save Course"
+            updateLabel="Update Course"
+            className="border-t-0 pt-2"
+          />
         </div>
       </form>
     </Modal>

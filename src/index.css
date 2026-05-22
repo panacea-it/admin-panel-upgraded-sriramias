@@ -114,6 +114,15 @@ body {
   background: rgba(255, 255, 255, 0.32);
 }
 
+.blog-rich-editor:focus {
+  outline: none;
+}
+
+.blog-rich-editor pre,
+.blog-rich-editor code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 .table-responsive {
   width: 100%;
   overflow-x: auto;
