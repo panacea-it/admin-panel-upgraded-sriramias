@@ -67,6 +67,10 @@ export function validateMongoUri(uri) {
 }
 
 export async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection
+  }
+
   const uri = process.env.MONGO_URI_DIRECT || process.env.MONGO_URI
   const check = validateMongoUri(uri)
 

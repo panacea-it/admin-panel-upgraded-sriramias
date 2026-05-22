@@ -8,11 +8,14 @@ export function resolveApiBaseUrl() {
     return '/api'
   }
 
-  const raw = (
-    import.meta.env.VITE_API_BASE_URL || 'https://new-sriramias.onrender.com'
-  ).replace(/\/$/, '')
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (configured) {
+    const raw = configured.replace(/\/$/, '')
+    return raw.endsWith('/api') ? raw : `${raw}/api`
+  }
 
-  return raw.endsWith('/api') ? raw : `${raw}/api`
+  // Production on Vercel (or any same-origin host): API is served at /api
+  return '/api'
 }
 
 const api = axios.create({

@@ -13,7 +13,14 @@ import {
 } from '../utils/classroomBookings'
 import { minutesToTimeString } from '../utils/classroomTime'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { resolveApiBaseUrl } from './axiosInstance.js'
+
+function resolveApiRoot() {
+  const base = resolveApiBaseUrl()
+  return base.replace(/\/api\/?$/, '') || ''
+}
+
+const API_BASE = resolveApiRoot()
 const USE_API = import.meta.env.VITE_USE_CLASSROOM_API !== 'false'
 
 const DELAY = 180
