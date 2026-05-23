@@ -160,6 +160,36 @@ export function buildHowHelpsTitle(courseName) {
   return `How Will the ${name} Helps You ?`
 }
 
+export function buildDefaultSectionTitles({ examCategory = '', courseName = '' } = {}) {
+  return {
+    sectionTitleOverview: 'Course Overview',
+    sectionTitleKeyFeatures: 'Key Features Of Course',
+    sectionTitleWhyChoose: buildWhyChooseTitle({ examCategory, courseName }),
+    sectionTitleHowHelps: buildHowHelpsTitle(courseName),
+  }
+}
+
+export function getCourseMarketingSectionTitles(course = {}, meta = {}) {
+  const examCategory =
+    meta.examCategory ??
+    course.examCategory?.split(' - ').pop() ??
+    course.examCategory ??
+    ''
+  const courseName = meta.courseName ?? course.name ?? course.courseName ?? ''
+  const defaults = buildDefaultSectionTitles({ examCategory, courseName })
+
+  return {
+    overview:
+      course.sectionTitleOverview?.trim() || defaults.sectionTitleOverview,
+    keyFeatures:
+      course.sectionTitleKeyFeatures?.trim() || defaults.sectionTitleKeyFeatures,
+    whyChoose:
+      course.sectionTitleWhyChoose?.trim() || defaults.sectionTitleWhyChoose,
+    howHelps:
+      course.sectionTitleHowHelps?.trim() || defaults.sectionTitleHowHelps,
+  }
+}
+
 /** Batch dialog had no required-field validation on marketing sections at submit. */
 export function validateAcademicCourseContent() {
   return {}
@@ -177,8 +207,7 @@ export function serializeAcademicCourseContent(
     whyChooseFeatures: form.whyChooseFeatures,
   })
   const howWill = form.howWill || []
-  const sectionTitleWhyChoose = buildWhyChooseTitle({ examCategory, courseName })
-  const sectionTitleHowHelps = buildHowHelpsTitle(courseName)
+  const titles = getCourseMarketingSectionTitles(form, { examCategory, courseName })
 
   return {
     subjects: normalizeSubjects(form.subjects).filter((s) => s.subjectName),
@@ -189,16 +218,11 @@ export function serializeAcademicCourseContent(
     howWill,
     whyChooseCourse: serializeWhyChooseForApi(whyChooseFeatures),
     howCourseHelps: deriveHowCourseHelpsText(howWill),
-    sectionTitleOverview: 'Course Overview',
-    sectionTitleKeyFeatures: 'Key Features Of Course',
-    sectionTitleWhyChoose,
-    sectionTitleHowHelps,
-    sectionTitles: {
-      overview: 'Course Overview',
-      keyFeatures: 'Key Features Of Course',
-      whyChoose: sectionTitleWhyChoose,
-      howHelps: sectionTitleHowHelps,
-    },
+    sectionTitleOverview: titles.overview,
+    sectionTitleKeyFeatures: titles.keyFeatures,
+    sectionTitleWhyChoose: titles.whyChoose,
+    sectionTitleHowHelps: titles.howHelps,
+    sectionTitles: titles,
     courseFormData: {
       overview,
       keyFeatures: form.keyFeatures || [],
