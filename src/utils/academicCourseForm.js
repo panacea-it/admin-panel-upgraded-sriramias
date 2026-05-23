@@ -1,4 +1,8 @@
-import { emptyWhyChooseFeature, normalizeWhyChooseFeatures } from './whyChooseFeatures'
+import {
+  emptyWhyChooseFeature,
+  mapWhyChooseFeaturesForWebsite,
+  normalizeWhyChooseFeatures,
+} from './whyChooseFeatures'
 
 /** Categories → Courses form state (course-level content, not batch) */
 
@@ -80,6 +84,20 @@ function deriveWhyChooseCourseText(features) {
   return parts.join('\n\n')
 }
 
+function serializeWhyChooseForApi(features) {
+  const normalized = normalizeWhyChooseFeatures({ whyChooseFeatures: features })
+  const hasRich = normalized.some(
+    (f) =>
+      f.title ||
+      f.description ||
+      f.icon ||
+      f.iconPreview ||
+      f.isHighlighted,
+  )
+  if (hasRich) return JSON.stringify(normalized)
+  return deriveWhyChooseCourseText(normalized)
+}
+
 function deriveHowCourseHelpsText(howWill) {
   const slots = howWill || []
   const labels = slots
@@ -159,13 +177,42 @@ export function serializeAcademicCourseContent(form) {
     subjects: normalizeSubjects(form.subjects).filter((s) => s.subjectName),
     courseOverview: String(form.overview || '').trim(),
     keyFeatures: keyFeatureTexts,
-    whyChooseCourse: deriveWhyChooseCourseText(whyChooseFeatures),
+    whyChooseCourse: serializeWhyChooseForApi(whyChooseFeatures),
     howCourseHelps: deriveHowCourseHelpsText(form.howWill),
     courseFormData: {
       overview: String(form.overview || '').trim(),
       keyFeatures: form.keyFeatures || [],
       whyChooseFeatures,
       howWill: form.howWill || [],
+    },
+  }
+}
+
+/** Student website payload from a stored academic course row */
+export function mapAcademicCourseForWebsite(courseRow) {
+  const content = academicCourseItemToContent(courseRow || {})
+  const keyFeatureTexts = (content.keyFeatures || [])
+    .map((s) => String(s?.text || '').trim())
+    .filter(Boolean)
+  const heroImageFileName = content.keyFeatures?.[0]?.fileName || ''
+
+  return {
+    courseOverview: content.overview || courseRow?.courseOverview || '',
+    keyFeatures: keyFeatureTexts.length ? keyFeatureTexts : courseRow?.keyFeatures || [],
+    keyFeatureHeroImageFileName: heroImageFileName,
+    whyChooseFeatures: mapWhyChooseFeaturesForWebsite({
+      whyChooseFeatures: content.whyChooseFeatures,
+    }),
+    howWillMedia: (content.howWill || []).filter(
+      (s) => s.fileName || s.placeholder,
+    ),
+    howCourseHelps: courseRow?.howCourseHelps || deriveHowCourseHelpsText(content.howWill),
+    sectionTitles: {
+      whyChoose: buildWhyChooseTitle({
+        examCategory: courseRow?.examCategory,
+        courseName: courseRow?.name,
+      }),
+      howHelps: buildHowHelpsTitle(courseRow?.name),
     },
   }
 }

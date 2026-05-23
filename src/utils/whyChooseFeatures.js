@@ -12,10 +12,36 @@ export function emptyWhyChooseFeature(order = 1) {
   }
 }
 
+function tryParseWhyChooseJson(raw) {
+  if (!raw || typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) return null
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed)) return parsed
+  } catch {
+    /* plain text */
+  }
+  return null
+}
+
 /** Migrate legacy whyChoose slots → whyChooseFeatures */
 export function normalizeWhyChooseFeatures(form) {
   if (form?.whyChooseFeatures?.length) {
     return form.whyChooseFeatures.map((f, i) => ({
+      id: f.id || `wcf-${i}`,
+      icon: f.icon || f.iconPreview || '',
+      iconPreview: f.iconPreview || f.icon || '',
+      iconFileName: f.iconFileName || '',
+      title: f.title || '',
+      description: f.description || '',
+      isHighlighted: Boolean(f.isHighlighted),
+      order: Number(f.order) || i + 1,
+    }))
+  }
+  const parsed = tryParseWhyChooseJson(form?.whyChooseCourse)
+  if (parsed?.length) {
+    return parsed.map((f, i) => ({
       id: f.id || `wcf-${i}`,
       icon: f.icon || f.iconPreview || '',
       iconPreview: f.iconPreview || f.icon || '',
