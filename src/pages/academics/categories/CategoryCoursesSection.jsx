@@ -120,6 +120,11 @@ export default function CategoryCoursesSection() {
       howWill: form.howWill || [],
       whyChooseCourse: form.whyChooseCourse || '',
       howCourseHelps: form.howCourseHelps || '',
+      sectionTitleOverview: form.sectionTitleOverview || '',
+      sectionTitleKeyFeatures: form.sectionTitleKeyFeatures || '',
+      sectionTitleWhyChoose: form.sectionTitleWhyChoose || '',
+      sectionTitleHowHelps: form.sectionTitleHowHelps || '',
+      sectionTitles: form.sectionTitles || null,
       modifiedAt: now,
     }
 

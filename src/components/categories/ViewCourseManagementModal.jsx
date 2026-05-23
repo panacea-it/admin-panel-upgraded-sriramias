@@ -6,8 +6,7 @@ import BatchFormSection from '../courses/BatchFormSection'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import {
   academicCourseItemToContent,
-  buildHowHelpsTitle,
-  buildWhyChooseTitle,
+  getCourseMarketingSectionTitles,
 } from '../../utils/academicCourseForm'
 import { normalizeWhyChooseFeatures } from '../../utils/whyChooseFeatures'
 
@@ -34,11 +33,7 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
   if (!open || !item) return null
 
   const content = academicCourseItemToContent(item)
-  const whyTitle = buildWhyChooseTitle({
-    examCategory: item.examCategory,
-    courseName: item.name,
-  })
-  const howTitle = buildHowHelpsTitle(item.name)
+  const sectionTitles = getCourseMarketingSectionTitles(item)
   const whyFeatures = normalizeWhyChooseFeatures({ whyChooseFeatures: content.whyChooseFeatures })
   const keySlots = content.keyFeatures || []
   const textFeatures = keySlots.slice(1).map((s) => s.text).filter(Boolean)
@@ -92,13 +87,13 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
           </div>
 
           {content.overview ? (
-            <ReadOnlyBlock title="Course Overview">
+            <ReadOnlyBlock title={sectionTitles.overview}>
               <p className="whitespace-pre-wrap text-sm text-[#444]">{content.overview}</p>
             </ReadOnlyBlock>
           ) : null}
 
           {(keySlots[0]?.fileName || textFeatures.length > 0) && (
-            <ReadOnlyBlock title="Key Features Of Course">
+            <ReadOnlyBlock title={sectionTitles.keyFeatures}>
               <div className="space-y-3 text-sm text-[#444]">
                 {keySlots[0]?.fileName ? (
                   <p>
@@ -118,7 +113,7 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
           )}
 
           {whyFeatures.some((f) => f.title || f.description) ? (
-            <ReadOnlyBlock title={whyTitle}>
+            <ReadOnlyBlock title={sectionTitles.whyChoose}>
               <div className="grid gap-4 md:grid-cols-2">
                 {whyFeatures.map((f) => (
                   <div
@@ -146,7 +141,7 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
           ) : null}
 
           {howSlots.length ? (
-            <ReadOnlyBlock title={howTitle}>
+            <ReadOnlyBlock title={sectionTitles.howHelps}>
               <ul className="space-y-2 text-sm text-[#444]">
                 {howSlots.map((slot) => (
                   <li key={slot.id}>

@@ -241,7 +241,10 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
         examSubCategoryId: form.examSubCategoryId,
         examSubCategory: formatExamSubCategoryLabel(sub),
         status: form.status,
-        ...serializeAcademicCourseContent(form),
+        ...serializeAcademicCourseContent(form, {
+          examCategory: formatExamCategoryLabel(category),
+          courseName: form.name.trim(),
+        }),
       },
       { isEdit, id: item?.id },
     )

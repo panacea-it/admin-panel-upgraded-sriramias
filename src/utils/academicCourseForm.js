@@ -1,6 +1,10 @@
 /** Categories → Courses form state (course-level marketing content from legacy batch dialog) */
 
-import { emptyWhyChooseFeature, normalizeWhyChooseFeatures } from './whyChooseFeatures'
+import {
+  emptyWhyChooseFeature,
+  mapWhyChooseFeaturesForWebsite,
+  normalizeWhyChooseFeatures,
+} from './whyChooseFeatures'
 
 const makeSlots = (count, factory) => Array.from({ length: count }, (_, i) => factory(i))
 
@@ -22,13 +26,26 @@ export function createDefaultHowWillSlots() {
   }))
 }
 
-export function createEmptyAcademicCourseContent() {
+export const DEFAULT_SECTION_TITLE_OVERVIEW = 'Course Overview'
+export const DEFAULT_SECTION_TITLE_KEY_FEATURES = 'Key Features Of Course'
+
+export function buildDefaultSectionTitles({ examCategory = '', courseName = '' } = {}) {
+  return {
+    sectionTitleOverview: DEFAULT_SECTION_TITLE_OVERVIEW,
+    sectionTitleKeyFeatures: DEFAULT_SECTION_TITLE_KEY_FEATURES,
+    sectionTitleWhyChoose: buildWhyChooseTitle({ examCategory, courseName }),
+    sectionTitleHowHelps: buildHowHelpsTitle(courseName),
+  }
+}
+
+export function createEmptyAcademicCourseContent(meta = {}) {
   return {
     subjects: [],
     overview: '',
     keyFeatures: createDefaultKeyFeatureSlots(),
     whyChooseFeatures: [emptyWhyChooseFeature(1)],
     howWill: createDefaultHowWillSlots(),
+    ...buildDefaultSectionTitles(meta),
   }
 }
 
@@ -107,12 +124,64 @@ export function academicCourseItemToContent(item) {
     }))
   }
 
+  const defaults = buildDefaultSectionTitles({
+    examCategory: item.examCategory,
+    courseName: item.name,
+  })
+
   return {
     subjects: normalizeSubjects(item.subjects),
     overview,
     keyFeatures,
     whyChooseFeatures,
     howWill,
+    sectionTitleOverview:
+      item.sectionTitleOverview?.trim() || defaults.sectionTitleOverview,
+    sectionTitleKeyFeatures:
+      item.sectionTitleKeyFeatures?.trim() || defaults.sectionTitleKeyFeatures,
+    sectionTitleWhyChoose:
+      item.sectionTitleWhyChoose?.trim() || defaults.sectionTitleWhyChoose,
+    sectionTitleHowHelps:
+      item.sectionTitleHowHelps?.trim() || defaults.sectionTitleHowHelps,
+  }
+}
+
+/** Resolved headings for admin view modal and student website */
+/** Payload for student website course detail sections */
+export function mapCourseMarketingForWebsite(course = {}) {
+  const content = academicCourseItemToContent(course)
+  const sectionTitles = getCourseMarketingSectionTitles(course)
+
+  return {
+    sectionTitles,
+    overview: content.overview,
+    keyFeatures: content.keyFeatures,
+    whyChooseFeatures: mapWhyChooseFeaturesForWebsite({
+      whyChooseFeatures: content.whyChooseFeatures,
+    }),
+    howWill: content.howWill,
+  }
+}
+
+export function getCourseMarketingSectionTitles(course = {}, meta = {}) {
+  const examCategory =
+    meta.examCategory ?? course.examCategory?.split(' - ').pop() ?? course.examCategory ?? ''
+  const courseName = meta.courseName ?? course.name ?? course.courseName ?? ''
+  const defaults = buildDefaultSectionTitles({ examCategory, courseName })
+
+  return {
+    overview:
+      course.sectionTitleOverview?.trim() ||
+      defaults.sectionTitleOverview,
+    keyFeatures:
+      course.sectionTitleKeyFeatures?.trim() ||
+      defaults.sectionTitleKeyFeatures,
+    whyChoose:
+      course.sectionTitleWhyChoose?.trim() ||
+      defaults.sectionTitleWhyChoose,
+    howHelps:
+      course.sectionTitleHowHelps?.trim() ||
+      defaults.sectionTitleHowHelps,
   }
 }
 
@@ -152,7 +221,7 @@ function legacyHowCourseHelpsSummary(slots) {
     .join(', ')
 }
 
-export function serializeAcademicCourseContent(form) {
+export function serializeAcademicCourseContent(form, meta = {}) {
   const overview = String(form.overview ?? form.courseOverview ?? '').trim()
   const keyFeatures = normalizeKeyFeatureSlots(form.keyFeatures)
   const whyChooseFeatures = normalizeWhyChooseFeatures(form)
@@ -164,15 +233,33 @@ export function serializeAcademicCourseContent(form) {
     preview: slot.preview || '',
   }))
 
+  const titles = getCourseMarketingSectionTitles(form, {
+    examCategory: meta.examCategory ?? form.examCategory,
+    courseName: meta.courseName ?? form.name ?? form.courseName,
+  })
+
   return {
     subjects: normalizeSubjects(form.subjects).filter((s) => s.subjectName),
     overview,
     keyFeatures,
     whyChooseFeatures,
     howWill,
+    sectionTitleOverview: String(
+      form.sectionTitleOverview ?? titles.overview,
+    ).trim(),
+    sectionTitleKeyFeatures: String(
+      form.sectionTitleKeyFeatures ?? titles.keyFeatures,
+    ).trim(),
+    sectionTitleWhyChoose: String(
+      form.sectionTitleWhyChoose ?? titles.whyChoose,
+    ).trim(),
+    sectionTitleHowHelps: String(
+      form.sectionTitleHowHelps ?? titles.howHelps,
+    ).trim(),
     courseOverview: overview,
     keyFeaturesText: legacyKeyFeatureStrings(keyFeatures),
     whyChooseCourse: legacyWhyChooseSummary(whyChooseFeatures),
     howCourseHelps: legacyHowCourseHelpsSummary(howWill),
+    sectionTitles: titles,
   }
 }

@@ -2,6 +2,7 @@ import { fetchCourses } from '../api/coursesAPI'
 import { INITIAL_COURSES, SUB_CATEGORIES_BY_CATEGORY } from '../data/coursesData'
 import { CATEGORIES_HUB_INITIAL } from '../data/categoriesHubData'
 import { loadAcademicCourses } from './academicCoursesStorage'
+import { getCourseMarketingSectionTitles } from './academicCourseForm'
 
 /** Map course category name to exam category / subcategory for program linking UI */
 function resolveExamHierarchy(categoryName) {
@@ -25,6 +26,7 @@ function resolveExamHierarchy(categoryName) {
 }
 
 function mapHubCourseToCatalog(row) {
+  const sectionTitles = getCourseMarketingSectionTitles(row)
   return {
     id: row.id,
     courseId: row.courseId,
@@ -35,6 +37,8 @@ function mapHubCourseToCatalog(row) {
     center: 'Delhi',
     price: '—',
     status: row.status || 'Active',
+    sectionTitles,
+    marketingSectionTitles: sectionTitles,
   }
 }
 
