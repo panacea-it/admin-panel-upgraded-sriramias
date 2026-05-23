@@ -4,9 +4,11 @@ import CategoryStatusBadge from './CategoryStatusBadge'
 import SectionBar from '../courses/SectionBar'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import {
+  academicCourseItemToContent,
   buildHowHelpsTitle,
   buildWhyChooseTitle,
 } from '../../utils/academicCourseForm'
+import { cn } from '../../utils/cn'
 
 function DetailItem({ label, children }) {
   return (
@@ -29,15 +31,52 @@ function ReadOnlyBlock({ title, children }) {
   )
 }
 
+function WhyChooseFeatureCard({ feature }) {
+  const icon = feature.icon || feature.iconPreview
+  return (
+    <article
+      className={cn(
+        'rounded-2xl border bg-white p-4 shadow-sm',
+        feature.isHighlighted ? 'border-[#55ace7]/50 ring-1 ring-[#55ace7]/20' : 'border-gray-200/90',
+      )}
+    >
+      <div className="flex gap-3">
+        {icon ? (
+          <img src={icon} alt="" className="h-14 w-14 shrink-0 rounded-xl object-contain" />
+        ) : (
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-[#fafcff] text-xs text-gray-400">
+            No icon
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          {feature.title ? (
+            <h4 className="text-sm font-bold text-[#246392]">{feature.title}</h4>
+          ) : null}
+          {feature.description ? (
+            <p className="mt-1 whitespace-pre-wrap text-sm text-[#444]">{feature.description}</p>
+          ) : null}
+          {feature.isHighlighted ? (
+            <p className="mt-2 text-xs font-semibold text-[#55ace7]">Highlighted on website</p>
+          ) : null}
+        </div>
+      </div>
+    </article>
+  )
+}
+
 export default function ViewCourseManagementModal({ open, onClose, item }) {
   if (!open || !item) return null
 
-  const features = (item.keyFeatures || []).filter(Boolean)
+  const content = academicCourseItemToContent(item)
   const whyTitle = buildWhyChooseTitle({
     examCategory: item.examCategory,
     courseName: item.name,
   })
   const howTitle = buildHowHelpsTitle(item.name)
+
+  const keySlots = content.keyFeatures || []
+  const keyTexts = keySlots.map((s) => s.text).filter(Boolean)
+  const firstSlot = keySlots[0]
 
   return (
     <Modal open={open} onClose={onClose} size="full" title={`View ${item.name}`}>
@@ -86,31 +125,67 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
             </dl>
           </div>
 
-          {item.courseOverview ? (
+          {content.overview ? (
             <ReadOnlyBlock title="Course Overview">
-              <p className="whitespace-pre-wrap">{item.courseOverview}</p>
+              <p className="whitespace-pre-wrap">{content.overview}</p>
             </ReadOnlyBlock>
           ) : null}
 
           <ReadOnlyBlock title="Key Features Of Course">
-            {features.length ? (
-              <ul className="list-disc space-y-1 pl-5">
-                {features.map((f, i) => (
-                  <li key={`${f}-${i}`}>{f}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[#686868]">No features listed</p>
-            )}
+            <div className="space-y-4">
+              {firstSlot?.fileName ? (
+                <p className="text-sm text-[#686868]">
+                  Hero image: <span className="font-semibold text-[#111]">{firstSlot.fileName}</span>
+                </p>
+              ) : null}
+              {keyTexts.length ? (
+                <ul className="list-disc space-y-1 pl-5">
+                  {keyTexts.map((f, i) => (
+                    <li key={`${f}-${i}`}>{f}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[#686868]">No features listed</p>
+              )}
+            </div>
           </ReadOnlyBlock>
 
-          {item.whyChooseCourse ? (
+          {content.whyChooseFeatures?.length ? (
+            <div className="space-y-3">
+              <SectionBar title={whyTitle} />
+              <div className="grid gap-4 md:grid-cols-2">
+                {content.whyChooseFeatures.map((feature) => (
+                  <WhyChooseFeatureCard key={feature.id} feature={feature} />
+                ))}
+              </div>
+            </div>
+          ) : item.whyChooseCourse ? (
             <ReadOnlyBlock title={whyTitle}>
               <p className="whitespace-pre-wrap">{item.whyChooseCourse}</p>
             </ReadOnlyBlock>
           ) : null}
 
-          {item.howCourseHelps ? (
+          {(content.howWill || []).some((s) => s.fileName || s.placeholder) ? (
+            <ReadOnlyBlock title={howTitle}>
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {content.howWill.map((slot) =>
+                  slot.fileName || slot.placeholder ? (
+                    <li
+                      key={slot.id}
+                      className="rounded-xl border border-gray-100 bg-[#fafcff] px-3 py-3 text-sm"
+                    >
+                      <p className="text-xs font-bold uppercase tracking-wide text-[#246392]">
+                        {slot.kind === 'video' ? 'Video' : 'Image'}
+                      </p>
+                      <p className="mt-1 font-semibold text-[#111]">
+                        {slot.fileName || slot.placeholder}
+                      </p>
+                    </li>
+                  ) : null,
+                )}
+              </ul>
+            </ReadOnlyBlock>
+          ) : item.howCourseHelps ? (
             <ReadOnlyBlock title={howTitle}>
               <p className="whitespace-pre-wrap">{item.howCourseHelps}</p>
             </ReadOnlyBlock>

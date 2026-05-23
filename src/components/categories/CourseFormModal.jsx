@@ -7,7 +7,7 @@ import SectionBar from '../courses/SectionBar'
 import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import { CourseFormField, CourseInput } from '../courses/CourseFormField'
 import SearchableSelect from './SearchableSelect'
-import CourseContentSections from './CourseContentSections'
+import CourseMarketingSections from './CourseMarketingSections'
 import { useCenters } from '../../contexts/CentersContext'
 import {
   formatExamCategoryLabel,
@@ -82,7 +82,6 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     ...createEmptyAcademicCourseContent(),
   }))
   const [errors, setErrors] = useState({})
-  const [contentErrors, setContentErrors] = useState({})
   const closingRef = useRef(false)
   const itemRef = useRef(item)
   itemRef.current = item
@@ -113,7 +112,6 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     closingRef.current = false
     setForm(buildFullForm(itemRef.current, programsRef.current, examCategoriesRef.current))
     setErrors({})
-    setContentErrors({})
   })
 
   const centreOptions = useMemo(
@@ -188,7 +186,6 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     if (closingRef.current) return
     closingRef.current = true
     setErrors({})
-    setContentErrors({})
     onClose()
   }
 
@@ -218,7 +215,6 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     e.preventDefault()
     const hierarchyOk = validateHierarchy()
     const contentErrs = validateAcademicCourseContent(form, { courseName: form.name })
-    setContentErrors(contentErrs)
     if (!hierarchyOk || Object.keys(contentErrs).length) {
       toast.error('Please fix the highlighted fields')
       return
@@ -354,10 +350,9 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
             </div>
           </div>
 
-          <CourseContentSections
+          <CourseMarketingSections
             form={form}
             setForm={setForm}
-            errors={contentErrors}
             courseName={form.name}
             examCategoryLabel={selectedCategoryLabel}
           />
@@ -369,7 +364,6 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
             onReset={() => {
               setForm(buildFullForm(item, programs, examCategories))
               setErrors({})
-              setContentErrors({})
             }}
             createLabel="Save Course"
             updateLabel="Update Course"

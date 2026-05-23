@@ -1,84 +1,171 @@
-/** Categories → Courses form state (course-level content, not batch) */
-
-export function emptySubjectRow() {
-  return { subjectName: '', facultyName: '' }
-}
-
-export function createEmptyAcademicCourseContent() {
-  return {
-    subjects: [],
-    courseOverview: '',
-    keyFeatures: [''],
-    whyChooseCourse: '',
-    howCourseHelps: '',
-  }
-}
-
-export function normalizeSubjects(list) {
-  const rows = (list || []).map((s) => ({
-    subjectName: String(s?.subjectName || '').trim(),
-    facultyName: String(s?.facultyName || '').trim(),
-  }))
-  return rows.length ? rows : [emptySubjectRow()]
-}
-
-export function normalizeKeyFeatures(list) {
-  const rows = (list || []).map((t) => String(t || '').trim()).filter(Boolean)
-  return rows.length ? rows : ['']
-}
-
-export function academicCourseItemToContent(item) {
-  if (!item) return createEmptyAcademicCourseContent()
-  return {
-    subjects: normalizeSubjects(item.subjects),
-    courseOverview: item.courseOverview || '',
-    keyFeatures: normalizeKeyFeatures(item.keyFeatures),
-    whyChooseCourse: item.whyChooseCourse || '',
-    howCourseHelps: item.howCourseHelps || '',
-  }
-}
-
-export function buildWhyChooseTitle({ examCategory, courseName }) {
-  const cat = examCategory?.trim() || 'Category'
-  const name = courseName?.trim() || 'Course Name'
-  return `Why Choose ${cat} ${name} Course Help You?`
-}
-
-export function buildHowHelpsTitle(courseName) {
-  const name = courseName?.trim() || 'Course Name'
-  return `How Will the ${name} Helps You?`
-}
-
-export function validateAcademicCourseContent(form, { courseName } = {}) {
-  const errors = {}
-
-  const overview = String(form.courseOverview || '').trim()
-  if (overview.length < 100) {
-    errors.courseOverview = `Overview must be at least 100 characters (${overview.length}/100)`
-  }
-
-  const features = normalizeKeyFeatures(form.keyFeatures)
-  if (!features.length) {
-    errors.keyFeatures = 'Add at least one key feature'
-  }
-
-  if (!String(form.whyChooseCourse || '').trim()) {
-    errors.whyChooseCourse = 'This section is required'
-  }
-  if (!String(form.howCourseHelps || '').trim()) {
-    errors.howCourseHelps = 'This section is required'
-  }
-
-  void courseName
-  return errors
-}
-
-export function serializeAcademicCourseContent(form) {
-  return {
-    subjects: normalizeSubjects(form.subjects).filter((s) => s.subjectName),
-    courseOverview: String(form.courseOverview || '').trim(),
-    keyFeatures: normalizeKeyFeatures(form.keyFeatures),
-    whyChooseCourse: String(form.whyChooseCourse || '').trim(),
-    howCourseHelps: String(form.howCourseHelps || '').trim(),
-  }
-}
+import { emptyWhyChooseFeature, normalizeWhyChooseFeatures } from './whyChooseFeatures'
+
+/** Categories → Courses form state (course-level content, not batch) */
+
+const makeSlots = (count, factory) => Array.from({ length: count }, (_, i) => factory(i))
+
+export function emptySubjectRow() {
+  return { subjectName: '', facultyName: '' }
+}
+
+export function createEmptyKeyFeatureSlots() {
+  return makeSlots(6, (i) => ({ id: `kf-${i}`, fileName: '', text: '' }))
+}
+
+export function createEmptyHowWillSlots() {
+  return makeSlots(6, (i) => ({
+    id: `hw-${i}`,
+    kind: i === 0 || i === 3 ? 'video' : 'image',
+    fileName: '',
+    placeholder:
+      i === 0 || i === 3
+        ? 'Video to be played for motion effect'
+        : 'Image to be displayed',
+  }))
+}
+
+export function createEmptyAcademicCourseContent() {
+  return {
+    subjects: [],
+    overview: '',
+    keyFeatures: createEmptyKeyFeatureSlots(),
+    whyChooseFeatures: [emptyWhyChooseFeature(1)],
+    howWill: createEmptyHowWillSlots(),
+  }
+}
+
+export function normalizeSubjects(list) {
+  const rows = (list || []).map((s) => ({
+    subjectName: String(s?.subjectName || '').trim(),
+    facultyName: String(s?.facultyName || '').trim(),
+  }))
+  return rows.length ? rows : [emptySubjectRow()]
+}
+
+function normalizeKeyFeatureSlots(list) {
+  if (!list?.length) return createEmptyKeyFeatureSlots()
+  if (typeof list[0] === 'string') {
+    const texts = list.map((t) => String(t || '').trim()).filter(Boolean)
+    const slots = createEmptyKeyFeatureSlots()
+    texts.forEach((text, i) => {
+      if (i < slots.length) slots[i] = { ...slots[i], text }
+    })
+    return slots
+  }
+  return list.map((slot, i) => ({
+    id: slot.id || `kf-${i}`,
+    fileName: slot.fileName || '',
+    text: slot.text || '',
+  }))
+}
+
+function tryParseWhyChooseFeatures(raw) {
+  if (!raw || typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) return null
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed)) return parsed
+  } catch {
+    /* legacy plain text */
+  }
+  return null
+}
+
+function deriveWhyChooseCourseText(features) {
+  const normalized = normalizeWhyChooseFeatures({ whyChooseFeatures: features })
+  const parts = normalized
+    .map((f) => [f.title, f.description].filter(Boolean).join(': '))
+    .filter(Boolean)
+  return parts.join('\n\n')
+}
+
+function deriveHowCourseHelpsText(howWill) {
+  const slots = howWill || []
+  const labels = slots
+    .map((s) => s.fileName || s.placeholder || '')
+    .map((t) => String(t).trim())
+    .filter(Boolean)
+  return labels.join('\n')
+}
+
+export function academicCourseItemToContent(item) {
+  if (!item) return createEmptyAcademicCourseContent()
+
+  const stored = item.courseFormData || {}
+  const overview =
+    stored.overview != null ? stored.overview : item.courseOverview || ''
+  const keyFeatures = normalizeKeyFeatureSlots(
+    stored.keyFeatures ?? item.keyFeatures,
+  )
+  let whyChooseFeatures = stored.whyChooseFeatures
+  if (!whyChooseFeatures?.length) {
+    const parsed = tryParseWhyChooseFeatures(item.whyChooseCourse)
+    if (parsed?.length) {
+      whyChooseFeatures = parsed
+    } else if (item.whyChooseCourse) {
+      whyChooseFeatures = [
+        {
+          ...emptyWhyChooseFeature(1),
+          description: item.whyChooseCourse,
+        },
+      ]
+    }
+  }
+  const howWill =
+    stored.howWill?.length > 0 ? stored.howWill : createEmptyHowWillSlots()
+
+  return {
+    subjects: normalizeSubjects(item.subjects),
+    overview,
+    keyFeatures,
+    whyChooseFeatures: normalizeWhyChooseFeatures({
+      whyChooseFeatures: whyChooseFeatures || [emptyWhyChooseFeature(1)],
+    }),
+    howWill: howWill.map((slot, i) => ({
+      id: slot.id || `hw-${i}`,
+      kind: slot.kind || 'image',
+      fileName: slot.fileName || '',
+      placeholder: slot.placeholder || 'Image to be displayed',
+    })),
+  }
+}
+
+export function buildWhyChooseTitle({ examCategory, courseName }) {
+  const cat = examCategory?.trim() || 'Category'
+  const name = courseName?.trim() || 'Course Name'
+  return `Why Choose ${cat} ${name} Course Help You?`
+}
+
+export function buildHowHelpsTitle(courseName) {
+  const name = courseName?.trim() || 'Course Name'
+  return `How Will the ${name} Helps You ?`
+}
+
+/** Batch dialog had no required-field validation on marketing sections at submit. */
+export function validateAcademicCourseContent() {
+  return {}
+}
+
+export function serializeAcademicCourseContent(form) {
+  const keyFeatureTexts = (form.keyFeatures || [])
+    .map((s) => String(s?.text || '').trim())
+    .filter(Boolean)
+  const whyChooseFeatures = normalizeWhyChooseFeatures({
+    whyChooseFeatures: form.whyChooseFeatures,
+  })
+
+  return {
+    subjects: normalizeSubjects(form.subjects).filter((s) => s.subjectName),
+    courseOverview: String(form.overview || '').trim(),
+    keyFeatures: keyFeatureTexts,
+    whyChooseCourse: deriveWhyChooseCourseText(whyChooseFeatures),
+    howCourseHelps: deriveHowCourseHelpsText(form.howWill),
+    courseFormData: {
+      overview: String(form.overview || '').trim(),
+      keyFeatures: form.keyFeatures || [],
+      whyChooseFeatures,
+      howWill: form.howWill || [],
+    },
+  }
+}

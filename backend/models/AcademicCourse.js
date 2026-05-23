@@ -44,6 +44,8 @@ const academicCourseSchema = new mongoose.Schema(
     keyFeatures: [{ type: String }],
     whyChooseCourse: { type: String, default: '' },
     howCourseHelps: { type: String, default: '' },
+    /** Rich marketing UI state (overview slots, feature cards, media grid) */
+    courseFormData: { type: mongoose.Schema.Types.Mixed, default: null },
   },
   { timestamps: true },
 )

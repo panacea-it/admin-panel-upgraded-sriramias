@@ -117,6 +117,7 @@ export default function CategoryCoursesSection() {
       keyFeatures: form.keyFeatures || [],
       whyChooseCourse: form.whyChooseCourse || '',
       howCourseHelps: form.howCourseHelps || '',
+      courseFormData: form.courseFormData || null,
       modifiedAt: now,
     }
 

@@ -57,6 +57,7 @@ export async function syncAcademicCourses(req, res, next) {
             keyFeatures: row.keyFeatures || [],
             whyChooseCourse: row.whyChooseCourse || '',
             howCourseHelps: row.howCourseHelps || '',
+            courseFormData: row.courseFormData || null,
           },
         },
         upsert: true,
