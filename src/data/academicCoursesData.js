@@ -21,8 +21,23 @@ export const ACADEMIC_COURSES_INITIAL = [
     feeDetails: {
       courseFee: 85000,
       discountFee: 75000,
-      installmentAvailable: true,
       currency: 'INR',
+      onlinePaymentAmount: 75000,
+      offlinePaymentAmount: 80000,
+      onlinePaymentBullets: [
+        'Pay via UPI, card, or net banking',
+        'Instant enrollment confirmation',
+        'GST invoice emailed automatically',
+        'Secure payment gateway',
+        'EMI options via partner banks',
+      ],
+      offlinePaymentBullets: [
+        'Pay at centre front desk',
+        'Cash, cheque, or demand draft accepted',
+        'Receipt issued on the same day',
+        'Seat confirmed after payment clearance',
+        'Contact accounts for payment plans',
+      ],
     },
     courseOverview:
       'Comprehensive GS Foundation program covering Prelims and Mains syllabus with structured modules, weekly tests, and mentor support. Designed for first-time and repeat aspirants seeking a strong conceptual base across all general studies papers.',
@@ -56,8 +71,11 @@ export const ACADEMIC_COURSES_INITIAL = [
     feeDetails: {
       courseFee: 45000,
       discountFee: 40000,
-      installmentAvailable: false,
       currency: 'INR',
+      onlinePaymentAmount: 40000,
+      offlinePaymentAmount: 42000,
+      onlinePaymentBullets: [],
+      offlinePaymentBullets: [],
     },
     courseOverview:
       'NCERT-focused foundation course aligning core textbooks with UPSC demand. Ideal for beginners who need strong fundamentals before advancing to standard reference books and test series.',
@@ -87,8 +105,11 @@ export const ACADEMIC_COURSES_INITIAL = [
     feeDetails: {
       courseFee: 120000,
       discountFee: 105000,
-      installmentAvailable: true,
       currency: 'INR',
+      onlinePaymentAmount: 105000,
+      offlinePaymentAmount: 110000,
+      onlinePaymentBullets: [],
+      offlinePaymentBullets: [],
     },
     courseOverview:
       'Personalized mentorship for serious aspirants targeting Mains and Interview stages. Includes one-on-one sessions, test evaluation, and strategy planning tailored to individual strengths and gaps.',

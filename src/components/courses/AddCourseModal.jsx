@@ -5,8 +5,16 @@ import Modal from '../ui/Modal'
 import ModalPanelHeader from './ModalPanelHeader'
 import SectionBar from './SectionBar'
 import BatchDetailsSection from './BatchDetailsSection'
+import BatchFeeDetailsSection from './BatchFeeDetailsSection'
+import BatchSubjectDetailsSection from './BatchSubjectDetailsSection'
+import BatchSeoSection from './BatchSeoSection'
+import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
 import BatchFormSection from './BatchFormSection'
-import { batchRowToForm, createEmptyBatchForm } from '../../utils/batchFormMappers'
+import {
+  batchRowToForm,
+  createEmptyBatchForm,
+  validateBatchFee,
+} from '../../utils/batchFormMappers'
 import { useModalForm } from '../../hooks/useModalForm'
 
 /** Batch create/edit only — course marketing content lives in Categories → Courses */
@@ -17,6 +25,7 @@ export default function AddCourseModal({
   onSubmit,
   existingCourseIds = [],
 }) {
+  const { subjects } = useAcademicsSubjects()
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
@@ -47,6 +56,7 @@ export default function AddCourseModal({
     if (!form.bannerPreview && !form.bannerFileName) {
       next.bannerPreview = 'Banner image is required'
     }
+    Object.assign(next, validateBatchFee(form))
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -72,7 +82,7 @@ export default function AddCourseModal({
     <Modal open={open} onClose={handleClose} size="full" title={modalTitle}>
       <form
         onSubmit={handleSubmit}
-        className="flex max-h-[min(92vh,720px)] flex-col overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="flex max-h-[min(92vh,820px)] flex-col overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
         <ModalPanelHeader title={modalTitle} onBack={handleClose} />
 
@@ -88,6 +98,10 @@ export default function AddCourseModal({
                 excludeCourseIds={isEditMode ? [] : existingCourseIds}
               />
             </BatchFormSection>
+
+            <BatchFeeDetailsSection form={form} setForm={setForm} errors={errors} />
+            <BatchSubjectDetailsSection form={form} setForm={setForm} subjects={subjects} />
+            <BatchSeoSection form={form} setForm={setForm} errors={errors} />
           </div>
         </div>
 

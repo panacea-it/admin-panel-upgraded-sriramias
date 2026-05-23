@@ -113,7 +113,6 @@ export default function CategoryCoursesSection() {
       examSubCategory: form.examSubCategory,
       status: form.status || 'Active',
       subjects: form.subjects || [],
-      feeDetails: form.feeDetails || {},
       courseOverview: form.courseOverview || '',
       keyFeatures: form.keyFeatures || [],
       whyChooseCourse: form.whyChooseCourse || '',

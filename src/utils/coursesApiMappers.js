@@ -1,3 +1,5 @@
+import { serializeBatchContent } from './batchFormMappers'
+
 /** MongoDB document → table row shape used by BatchesPage */
 export function mapCourseFromApi(doc) {
   if (!doc) return null
@@ -21,14 +23,21 @@ export function mapCourseFromApi(doc) {
     bannerPreview: doc.bannerUrl || doc.bannerPreview || fd.bannerPreview || fd.bannerUrl,
     bannerFileName: doc.bannerFileName || fd.bannerFileName,
     status: doc.status || fd.status || 'Active',
+    feeDetails: doc.feeDetails || fd.feeDetails,
+    seo: doc.seo || fd.seo,
+    linkedSubjects: doc.linkedSubjects || fd.linkedSubjects || [],
+    formData: fd,
     createdAt: doc.createdAt,
     modifiedAt: doc.modifiedAt,
   }
 }
 
-/** Batch modal form → API request body (batch fields only) */
+/** Batch modal form → API request body (no faculty-subject fields) */
 export function mapCourseToApiPayload(form, existing) {
   const batchName = form.batchName?.trim() || existing?.batchName || existing?.name
+  const content = serializeBatchContent(form)
+  const { subjects: _legacy, ...formWithoutSubjects } = form
+  void _legacy
   return {
     courseName: batchName,
     batchId: form.batchId || existing?.batchId,
@@ -43,5 +52,13 @@ export function mapCourseToApiPayload(form, existing) {
     bannerUrl: form.bannerPreview || form.bannerUrl,
     bannerFileName: form.bannerFileName,
     status: form.status || 'Active',
+    feeDetails: content.feeDetails,
+    seo: content.seo,
+    linkedSubjects: form.linkedSubjects || [],
+    formData: {
+      ...formWithoutSubjects,
+      feeDetails: content.feeDetails,
+      seo: content.seo,
+    },
   }
 }

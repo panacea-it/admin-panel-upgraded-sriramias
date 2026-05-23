@@ -8,16 +8,28 @@ import SubjectModal from '../../components/subjects/SubjectModal'
 import SubjectEmptyState from '../../components/subjects/SubjectEmptyState'
 import ConfirmDeleteDialog from '../../components/subjects/ConfirmDeleteDialog'
 import {
-  buildLiveClassFromForm,
   buildSubjectFromForm,
 } from '../../components/subjects/subjectFormUtils'
+import { useAuth } from '../../contexts/AuthContext'
 import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
+import {
+  buildLiveClassesFromRecurrence,
+  isLiveClassCategory,
+} from '../../utils/academicsSubjectsRecurrence'
 import { toast } from '../../utils/toast'
 import { cn } from '../../utils/cn'
+import { facultySubjectLabels } from '../../data/facultySubjectLabels'
 
 export default function SubjectsPage() {
   const navigate = useNavigate()
-  const { subjects, upsertSubject, deleteSubject, upsertLiveClass } = useAcademicsSubjects()
+  const { user } = useAuth()
+  const {
+    subjects,
+    upsertSubject,
+    deleteSubject,
+    upsertLiveClass,
+    upsertLiveClassesBatch,
+  } = useAcademicsSubjects()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -63,21 +75,30 @@ export default function SubjectsPage() {
   }
 
   const handleModalSubmit = async (form) => {
+    const actorName = user?.name || user?.email || 'Admin'
+
     if (modalContext === 'liveClass' && activeSubject) {
-      const liveClass = buildLiveClassFromForm(form, null, activeSubject)
-      upsertLiveClass(activeSubject.id, liveClass)
-      toast.success('Live class added')
+      const rows = buildLiveClassesFromRecurrence(form, activeSubject, null, actorName)
+      if (rows.length > 1) {
+        upsertLiveClassesBatch(activeSubject.id, rows)
+        toast.success(`${rows.length} live classes scheduled`)
+      } else {
+        upsertLiveClass(activeSubject.id, rows[0])
+        toast.success('Live class added')
+      }
       return
     }
 
     const existing = modalMode === 'edit' ? activeSubject : null
-    const subject = buildSubjectFromForm(form, existing, subjects)
-    if (form.classTitle?.trim()) {
-      const liveClass = buildLiveClassFromForm(form, null, subject)
-      subject.liveClasses = [...(existing?.liveClasses || []), liveClass]
+    const subjectRow = buildSubjectFromForm(form, existing, subjects)
+    const showLive =
+      isLiveClassCategory(form.category) && form.classTitle?.trim()
+    if (showLive) {
+      const rows = buildLiveClassesFromRecurrence(form, subjectRow, null, actorName)
+      subjectRow.liveClasses = [...(existing?.liveClasses || []), ...rows]
     }
-    upsertSubject(subject)
-    toast.success(modalMode === 'edit' ? 'Subject updated' : 'Subject created')
+    upsertSubject(subjectRow)
+    toast.success(modalMode === 'edit' ? facultySubjectLabels.updated : facultySubjectLabels.created)
   }
 
   const handleDeleteConfirm = async () => {
@@ -85,7 +106,7 @@ export default function SubjectsPage() {
     setDeleteLoading(true)
     try {
       deleteSubject(deleteTarget.id)
-      toast.success('Subject deleted')
+      toast.success(facultySubjectLabels.deleted)
       setDeleteTarget(null)
     } finally {
       setDeleteLoading(false)
@@ -97,9 +118,9 @@ export default function SubjectsPage() {
       <section className="mx-auto max-w-screen-2xl space-y-5 sm:space-y-6">
         <SubjectHeader
           icon={Layers}
-          title="Subjects"
+          title={facultySubjectLabels.plural}
           onAdd={openCreate}
-          addLabel="Add Subject"
+          addLabel={facultySubjectLabels.add}
           iconClassName="text-[#246392]"
         />
 
@@ -112,7 +133,7 @@ export default function SubjectsPage() {
 
         {filtered.length === 0 && subjects.length === 0 ? (
           <SubjectEmptyState
-            description="Create your first subject using the Add Subject button above."
+            description={`Create your first subject using the ${facultySubjectLabels.add} button above.`}
           />
         ) : (
           <div
@@ -139,12 +160,13 @@ export default function SubjectsPage() {
         mode={modalMode}
         context={modalContext}
         subject={activeSubject}
+        subjects={subjects}
         onSubmit={handleModalSubmit}
       />
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
-        title="Delete subject?"
+        title={`Delete ${facultySubjectLabels.singular.toLowerCase()}?`}
         message={
           deleteTarget
             ? `Remove "${deleteTarget.subjectName}" and all linked live classes? This cannot be undone.`

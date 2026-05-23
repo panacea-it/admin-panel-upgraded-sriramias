@@ -29,25 +29,9 @@ function ReadOnlyBlock({ title, children }) {
   )
 }
 
-function formatFee(feeDetails) {
-  if (!feeDetails) return '—'
-  const { courseFee, discountFee, installmentAvailable, currency = 'INR' } = feeDetails
-  const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₹'
-  const parts = []
-  if (courseFee != null && courseFee !== '') {
-    parts.push(`Course fee: ${symbol}${Number(courseFee).toLocaleString()}`)
-  }
-  if (discountFee != null && discountFee !== '') {
-    parts.push(`Discount: ${symbol}${Number(discountFee).toLocaleString()}`)
-  }
-  if (installmentAvailable) parts.push('Installments available')
-  return parts.length ? parts.join(' · ') : '—'
-}
-
 export default function ViewCourseManagementModal({ open, onClose, item }) {
   if (!open || !item) return null
 
-  const subjects = (item.subjects || []).filter((s) => s?.subjectName)
   const features = (item.keyFeatures || []).filter(Boolean)
   const whyTitle = buildWhyChooseTitle({
     examCategory: item.examCategory,
@@ -101,27 +85,6 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
               </DetailItem>
             </dl>
           </div>
-
-          <ReadOnlyBlock title="Subject Details">
-            {subjects.length ? (
-              <ul className="space-y-2">
-                {subjects.map((s, i) => (
-                  <li key={`${s.subjectName}-${i}`} className="rounded-lg bg-[#f8fafc] px-3 py-2">
-                    <span className="font-semibold text-[#111]">{s.subjectName}</span>
-                    {s.facultyName ? (
-                      <span className="text-[#686868]"> — {s.facultyName}</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[#686868]">No subjects added</p>
-            )}
-          </ReadOnlyBlock>
-
-          <ReadOnlyBlock title="Fee Details">
-            <p>{formatFee(item.feeDetails)}</p>
-          </ReadOnlyBlock>
 
           {item.courseOverview ? (
             <ReadOnlyBlock title="Course Overview">

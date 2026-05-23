@@ -73,6 +73,62 @@ export function useAcademicsSubjects() {
     [persist, subjects],
   )
 
+  const upsertLiveClassesBatch = useCallback(
+    (subjectId, rows, { removeSeriesId, scope, fromDate } = {}) => {
+      persist(
+        subjects.map((s) => {
+          if (s.id !== subjectId) return s
+          let list = [...(s.liveClasses || [])]
+          if (removeSeriesId) {
+            if (scope === 'series') {
+              list = list.filter((lc) => lc.recurrenceSeriesId !== removeSeriesId)
+            } else if (scope === 'future' && fromDate) {
+              list = list.filter(
+                (lc) =>
+                  lc.recurrenceSeriesId !== removeSeriesId ||
+                  !lc.date ||
+                  lc.date < fromDate,
+              )
+            }
+          }
+          for (const row of rows) {
+            const idx = list.findIndex((lc) => lc.id === row.id)
+            if (idx >= 0) list[idx] = row
+            else list.push(row)
+          }
+          return { ...s, liveClasses: list }
+        }),
+      )
+    },
+    [persist, subjects],
+  )
+
+  const deleteLiveClassWithScope = useCallback(
+    (subjectId, liveClass, scope = 'this') => {
+      const seriesId = liveClass?.recurrenceSeriesId
+      persist(
+        subjects.map((s) => {
+          if (s.id !== subjectId) return s
+          let list = s.liveClasses || []
+          if (!seriesId || scope === 'this') {
+            list = list.filter((lc) => lc.id !== liveClass.id)
+          } else if (scope === 'series') {
+            list = list.filter((lc) => lc.recurrenceSeriesId !== seriesId)
+          } else if (scope === 'future' && liveClass.date) {
+            list = list.filter(
+              (lc) =>
+                lc.recurrenceSeriesId !== seriesId ||
+                !lc.date ||
+                lc.date < liveClass.date,
+            )
+          }
+          return { ...s, liveClasses: list }
+        }),
+      )
+    },
+    [persist, subjects],
+  )
+
   return {
     subjects,
     setSubjects: persist,
@@ -81,5 +137,7 @@ export function useAcademicsSubjects() {
     deleteSubject,
     upsertLiveClass,
     deleteLiveClass,
+    upsertLiveClassesBatch,
+    deleteLiveClassWithScope,
   }
 }

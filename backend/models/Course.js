@@ -30,6 +30,12 @@ const courseSchema = new mongoose.Schema(
       enum: ['Active', 'In Active', 'Draft'],
       default: 'Active',
     },
+    feeDetails: {
+      courseFee: { type: Number, default: 0 },
+      discountFee: { type: Number, default: 0 },
+      installmentAvailable: { type: Boolean, default: false },
+      currency: { type: String, default: 'INR' },
+    },
     /** Batch-only snapshot for edit prefill */
     formData: {
       type: mongoose.Schema.Types.Mixed,

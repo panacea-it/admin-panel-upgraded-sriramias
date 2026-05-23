@@ -42,6 +42,8 @@ export const AdminManagementPage = lazy(() => import('../pages/users/AdminManage
 export const AdminAccessTypesPage = lazy(() => import('../pages/users/AdminAccessTypesPage'))
 export const RoleAccessMatrixPage = lazy(() => import('../pages/users/RoleAccessMatrixPage'))
 export const CenterManagementPage = lazy(() => import('../pages/users/CenterManagementPage'))
+export const ManageUsersPage = lazy(() => import('../pages/users/ManageUsersPage'))
+export const StudentDetailPage = lazy(() => import('../pages/users/StudentDetailPage'))
 export const ModuleListPage = lazy(() => import('../pages/ModuleListPage'))
 export const FinanceLayout = lazy(() => import('../layouts/FinanceLayout'))
 export const SalesAnalyticsLayout = lazy(() => import('../layouts/SalesAnalyticsLayout'))

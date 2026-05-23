@@ -106,7 +106,7 @@ export default function CourseCatalogSelect({
         onClick={() => setOpen((o) => !o)}
         className={cn(
           'flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-transparent bg-[#e8f4fc] px-4 text-left text-sm shadow-sm transition focus:border-[#55ace7] focus:ring-2 focus:ring-[#55ace7]/25',
-          !selected && 'text-[#9ca0a8]',
+          selected ? 'font-medium text-gray-900' : 'text-[#9ca0a8]',
           error && 'ring-2 ring-red-400',
           (disabled || loading) && 'opacity-70',
         )}
@@ -144,7 +144,7 @@ export default function CourseCatalogSelect({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search course name or ID…"
-                className="h-10 w-full rounded-lg bg-[#eef2fc] pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#55ace7]/30"
+                className="h-10 w-full rounded-lg bg-[#eef2fc] pl-9 pr-3 text-sm text-gray-800 caret-[#246392] placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#55ace7]/30"
                 autoFocus
               />
             </div>

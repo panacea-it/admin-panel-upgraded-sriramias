@@ -1,4 +1,5 @@
 import PaginatedFigmaTable from '../figma/PaginatedFigmaTable'
+import { facultySubjectLabels } from '../../data/facultySubjectLabels'
 import StatusBadge from './StatusBadge'
 import { SubjectRowActions } from './ActionButtons'
 
@@ -19,7 +20,7 @@ export default function SubjectTable({
   onDelete,
   search,
   statusFilter,
-  emptyMessage = 'No subjects found.',
+  emptyMessage = `No ${facultySubjectLabels.plural.toLowerCase()} found.`,
 }) {
   const columns = [
     {
@@ -29,7 +30,7 @@ export default function SubjectTable({
     },
     {
       key: 'subjectName',
-      label: 'Subject',
+      label: facultySubjectLabels.singular,
       render: (row) => (
         <span className="font-semibold text-[#111]">{row.subjectName}</span>
       ),

@@ -1,18 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
 import SectionBar from '../courses/SectionBar'
-import {
-  CourseAddMoreLink,
-  CourseFormField,
-  CourseInput,
-  CourseSelect,
-  CourseTextarea,
-} from '../courses/CourseFormField'
-import {
-  buildHowHelpsTitle,
-  buildWhyChooseTitle,
-  COURSE_CURRENCIES,
-  emptySubjectRow,
-} from '../../utils/academicCourseForm'
+import { CourseInput, CourseTextarea } from '../courses/CourseFormField'
+import { buildHowHelpsTitle, buildWhyChooseTitle } from '../../utils/academicCourseForm'
 import { cn } from '../../utils/cn'
 
 function FieldError({ message }) {
@@ -33,38 +22,7 @@ export default function CourseContentSections({
   })
   const howTitle = buildHowHelpsTitle(courseName || form.name)
 
-  const updateFee = (key, value) => {
-    setForm((f) => ({
-      ...f,
-      feeDetails: { ...f.feeDetails, [key]: value },
-    }))
-  }
-
-  const subjects = form.subjects?.length ? form.subjects : [emptySubjectRow()]
   const keyFeatures = form.keyFeatures?.length ? form.keyFeatures : ['']
-
-  const updateSubject = (index, patch) => {
-    setForm((f) => {
-      const next = [...(f.subjects || [emptySubjectRow()])]
-      next[index] = { ...next[index], ...patch }
-      return { ...f, subjects: next }
-    })
-  }
-
-  const addSubject = () => {
-    setForm((f) => ({
-      ...f,
-      subjects: [...(f.subjects || []).filter((s) => s.subjectName), emptySubjectRow()],
-    }))
-  }
-
-  const removeSubject = (index) => {
-    setForm((f) => {
-      const next = [...(f.subjects || [])]
-      next.splice(index, 1)
-      return { ...f, subjects: next.length ? next : [emptySubjectRow()] }
-    })
-  }
 
   const updateFeature = (index, value) => {
     setForm((f) => {
@@ -90,97 +48,6 @@ export default function CourseContentSections({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <SectionBar title="Subject Details" />
-        <div className="space-y-4 rounded-xl bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:px-6">
-          {subjects.map((row, idx) => (
-            <div
-              key={`subj-${idx}`}
-              className="grid gap-4 border-b border-[#eef2fc] pb-4 last:border-0 last:pb-0 sm:grid-cols-2"
-            >
-              <CourseFormField label="Subject Name" required>
-                <CourseInput
-                  value={row.subjectName}
-                  onChange={(e) => updateSubject(idx, { subjectName: e.target.value })}
-                  placeholder="e.g. Indian Polity"
-                />
-              </CourseFormField>
-              <CourseFormField label="Faculty Name">
-                <CourseInput
-                  value={row.facultyName}
-                  onChange={(e) => updateSubject(idx, { facultyName: e.target.value })}
-                  placeholder="Optional"
-                />
-              </CourseFormField>
-              {subjects.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeSubject(idx)}
-                  className="flex items-center gap-1 text-xs font-semibold text-[#c96565] hover:underline sm:col-span-2"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Remove subject
-                </button>
-              )}
-            </div>
-          ))}
-          <div className="flex justify-end pt-2">
-            <CourseAddMoreLink onClick={addSubject} variant="pill" />
-          </div>
-          <FieldError message={errors.subjects} />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <SectionBar title="Fee Details" />
-        <div className="grid gap-4 rounded-xl bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:grid-cols-2 sm:px-6">
-          <CourseFormField label="Currency">
-            <CourseSelect
-              value={form.feeDetails?.currency || 'INR'}
-              onChange={(e) => updateFee('currency', e.target.value)}
-            >
-              {COURSE_CURRENCIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </CourseSelect>
-          </CourseFormField>
-          <CourseFormField label="Course Fee" required>
-            <CourseInput
-              type="number"
-              min={0}
-              value={form.feeDetails?.courseFee ?? ''}
-              onChange={(e) => updateFee('courseFee', e.target.value)}
-              placeholder="e.g. 75000"
-            />
-            <FieldError message={errors.courseFee} />
-          </CourseFormField>
-          <CourseFormField label="Discount Fee">
-            <CourseInput
-              type="number"
-              min={0}
-              value={form.feeDetails?.discountFee ?? ''}
-              onChange={(e) => updateFee('discountFee', e.target.value)}
-              placeholder="Optional discounted amount"
-            />
-          </CourseFormField>
-          <CourseFormField label="Installment Option" className="sm:col-span-2">
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#e8f4fc] bg-[#fafcff] px-4 py-3">
-              <input
-                type="checkbox"
-                checked={Boolean(form.feeDetails?.installmentAvailable)}
-                onChange={(e) => updateFee('installmentAvailable', e.target.checked)}
-                className="h-4 w-4 rounded accent-[#246392]"
-              />
-              <span className="text-sm font-medium text-[#333]">
-                Installment payment available for this course
-              </span>
-            </label>
-          </CourseFormField>
-        </div>
-      </div>
-
       <div className="space-y-4">
         <SectionBar title="Course Overview" />
         <div className="rounded-xl bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:px-6">

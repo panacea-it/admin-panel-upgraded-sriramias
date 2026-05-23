@@ -7,10 +7,11 @@ import TopicTable from '../../components/subjects/TopicTable'
 import SubjectModal from '../../components/subjects/SubjectModal'
 import SubjectEmptyState from '../../components/subjects/SubjectEmptyState'
 import ConfirmDeleteDialog from '../../components/subjects/ConfirmDeleteDialog'
-import {
-  buildLiveClassFromForm,
-} from '../../components/subjects/subjectFormUtils'
+import RecurrenceScopeDialog from '../../components/live-classes/RecurrenceScopeDialog'
+import { RECURRENCE_DELETE_SCOPES } from '../../constants/recurrence'
+import { useAuth } from '../../contexts/AuthContext'
 import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
+import { buildLiveClassesFromRecurrence } from '../../utils/academicsSubjectsRecurrence'
 import { formatSubjectViewTitle } from '../../utils/academicsSubjectsStorage'
 import { toast } from '../../utils/toast'
 import { cn } from '../../utils/cn'
@@ -18,7 +19,14 @@ import { cn } from '../../utils/cn'
 export default function SubjectViewListPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getSubjectById, upsertLiveClass, deleteLiveClass } = useAcademicsSubjects()
+  const { user } = useAuth()
+  const {
+    subjects,
+    getSubjectById,
+    upsertLiveClass,
+    upsertLiveClassesBatch,
+    deleteLiveClassWithScope,
+  } = useAcademicsSubjects()
   const subject = getSubjectById(id)
 
   const [search, setSearch] = useState('')
@@ -29,6 +37,7 @@ export default function SubjectViewListPage() {
   const [activeLiveClass, setActiveLiveClass] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [recurrenceDialog, setRecurrenceDialog] = useState(null)
 
   const liveClasses = subject?.liveClasses || []
 
@@ -63,22 +72,63 @@ export default function SubjectViewListPage() {
   }
 
   const handleModalSubmit = async (form) => {
-    const liveClass = buildLiveClassFromForm(
-      form,
-      modalMode === 'edit' ? activeLiveClass : null,
-      subject,
-    )
-    upsertLiveClass(subject.id, liveClass)
-    toast.success(modalMode === 'edit' ? 'Live class updated' : 'Live class added')
+    const actorName = user?.name || user?.email || 'Admin'
+    const existing = modalMode === 'edit' ? activeLiveClass : null
+    const scope = form.recurrenceEditScope || 'series'
+    const rows = buildLiveClassesFromRecurrence(form, subject, existing, actorName, { scope })
+
+    if (existing?.recurrenceSeriesId && form.recurring && scope !== 'this') {
+      upsertLiveClassesBatch(subject.id, rows, {
+        removeSeriesId: existing.recurrenceSeriesId,
+        scope,
+        fromDate: existing.date,
+      })
+      toast.success(
+        rows.length > 1
+          ? `Recurring schedule updated — ${rows.length} sessions`
+          : 'Live class updated',
+      )
+      return
+    }
+
+    if (rows.length > 1) {
+      upsertLiveClassesBatch(subject.id, rows)
+      toast.success(`${rows.length} live classes scheduled`)
+    } else {
+      upsertLiveClass(subject.id, rows[0])
+      toast.success(modalMode === 'edit' ? 'Live class updated' : 'Live class added')
+    }
+  }
+
+  const handleDeleteRequest = (row) => {
+    if (row.recurrenceSeriesId) {
+      setRecurrenceDialog({ row })
+      return
+    }
+    setDeleteTarget(row)
   }
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
     setDeleteLoading(true)
     try {
-      deleteLiveClass(subject.id, deleteTarget.id)
+      deleteLiveClassWithScope(subject.id, deleteTarget, 'this')
       toast.success('Live class deleted')
       setDeleteTarget(null)
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  const handleRecurrenceDeleteConfirm = async (scope) => {
+    if (!recurrenceDialog?.row) return
+    setDeleteLoading(true)
+    try {
+      deleteLiveClassWithScope(subject.id, recurrenceDialog.row, scope)
+      toast.success(
+        scope === 'series' ? 'Recurring series deleted' : 'Selected sessions removed',
+      )
+      setRecurrenceDialog(null)
     } finally {
       setDeleteLoading(false)
     }
@@ -122,7 +172,7 @@ export default function SubjectViewListPage() {
               statusFilter={statusFilter}
               categoryFilter={categoryFilter}
               onEdit={openEdit}
-              onDelete={(row) => setDeleteTarget(row)}
+              onDelete={handleDeleteRequest}
             />
           </div>
         )}
@@ -145,7 +195,19 @@ export default function SubjectViewListPage() {
         context="liveClass"
         subject={subject}
         liveClass={activeLiveClass}
+        subjects={subjects}
         onSubmit={handleModalSubmit}
+      />
+
+      <RecurrenceScopeDialog
+        open={Boolean(recurrenceDialog)}
+        mode="delete"
+        title="Delete recurring live class"
+        lessonName={recurrenceDialog?.row?.classTitle}
+        scopes={RECURRENCE_DELETE_SCOPES}
+        loading={deleteLoading}
+        onConfirm={handleRecurrenceDeleteConfirm}
+        onCancel={() => setRecurrenceDialog(null)}
       />
 
       <ConfirmDeleteDialog

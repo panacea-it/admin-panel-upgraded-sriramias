@@ -31,7 +31,15 @@ export default function TopicTable({
       key: 'classTitle',
       label: 'Class Title',
       render: (row) => (
-        <span className="font-semibold text-[#111]">{row.classTitle}</span>
+        <div>
+          <span className="font-semibold text-[#111]">{row.classTitle}</span>
+          {row.recurring || row.recurrenceSeriesId ? (
+            <span className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-[#246392]">
+              Recurring
+              {row.occurrenceCount ? ` · ${row.occurrenceCount} sessions` : ''}
+            </span>
+          ) : null}
+        </div>
       ),
     },
     {

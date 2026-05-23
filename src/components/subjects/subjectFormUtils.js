@@ -6,6 +6,12 @@ import {
 import { findClassroomById } from '../../utils/classroomsStorage'
 import { durationFromHms, minutesToTimeString, timePartsToMinutes } from '../../utils/classroomTime'
 import { findClassroomConflict } from '../../utils/classroomBookings'
+import {
+  createRecurrenceFromSubjectForm,
+  isLiveClassCategory,
+  validateSubjectRecurrence,
+} from '../../utils/academicsSubjectsRecurrence'
+import { createDefaultRecurrenceRule } from '../../utils/recurrenceEngine'
 
 export const EMPTY_SUBJECT_FORM = {
   subjectName: '',
@@ -25,6 +31,10 @@ export const EMPTY_SUBJECT_FORM = {
   durationMin: '00',
   durationSec: '00',
   status: 'Active',
+  recurring: false,
+  recurrence: null,
+  recurrenceEditScope: 'series',
+  timezone: 'Asia/Kolkata',
 }
 
 function parseTimeToFormParts(timeStr) {
@@ -58,6 +68,17 @@ export function subjectToForm(subject, liveClass = null) {
     durationMin: '00',
     durationSec: '00',
     status: liveClass?.status || subject?.status || 'Active',
+    recurring: Boolean(liveClass?.recurring),
+    recurrence: liveClass?.recurrence
+      ? { ...liveClass.recurrence }
+      : liveClass?.recurring
+        ? createDefaultRecurrenceRule({
+            scheduledDate: liveClass?.date || '',
+            timezone: liveClass?.recurrence?.timezone || 'Asia/Kolkata',
+          })
+        : null,
+    recurrenceEditScope: 'series',
+    timezone: liveClass?.recurrence?.timezone || 'Asia/Kolkata',
   }
 }
 
@@ -108,6 +129,15 @@ export function buildLiveClassFromForm(form, existingLiveClass, subject) {
       form.durationSec,
     ),
     status: form.status || 'Active',
+    recurring: Boolean(form.recurring),
+    recurrence: form.recurring && form.recurrence?.enabled ? form.recurrence : null,
+    recurrenceSeriesId: existingLiveClass?.recurrenceSeriesId ?? null,
+    recurrenceParentId: existingLiveClass?.recurrenceParentId ?? null,
+    isRecurrenceParent: false,
+    isRecurrenceOccurrence: Boolean(form.recurring),
+    occurrenceIndex: existingLiveClass?.occurrenceIndex ?? null,
+    occurrenceCount: existingLiveClass?.occurrenceCount ?? null,
+    calendarPayload: null,
   }
 }
 
@@ -118,9 +148,20 @@ export function clampTimeField(value, max = 59) {
   return String(n).padStart(2, '0')
 }
 
+export function shouldShowLiveClassSection(values, { liveClassOnly = false } = {}) {
+  if (liveClassOnly) return true
+  return isLiveClassCategory(values.category)
+}
+
 export function validateSubjectForm(
   values,
-  { liveClassOnly = false, requireLiveClass = false } = {},
+  {
+    liveClassOnly = false,
+    requireLiveClass = false,
+    allSubjects = [],
+    subjectId = '',
+    excludeLessonIds = [],
+  } = {},
 ) {
   const errors = {}
   if (!liveClassOnly) {
@@ -131,6 +172,7 @@ export function validateSubjectForm(
   const needsLiveClass =
     requireLiveClass ||
     liveClassOnly ||
+    isLiveClassCategory(values.category) ||
     Boolean(values.classTitle?.trim() || values.center?.trim() || values.date?.trim())
   if (needsLiveClass) {
     if (!values.classTitle?.trim()) errors.classTitle = 'Class title is required'
@@ -158,6 +200,14 @@ export function validateSubjectForm(
           'This classroom is already occupied during the selected time.'
       }
     }
+    Object.assign(
+      errors,
+      validateSubjectRecurrence(values, {
+        allSubjects,
+        subjectId,
+        excludeIds: excludeLessonIds,
+      }),
+    )
   }
   return errors
 }

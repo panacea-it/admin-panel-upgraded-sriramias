@@ -30,8 +30,20 @@ function buildListQuery(query) {
   return filter
 }
 
+function normalizeFeeDetails(fee = {}) {
+  return {
+    courseFee: Number(fee.courseFee) || 0,
+    discountFee: Number(fee.discountFee) || 0,
+    installmentAvailable: Boolean(fee.installmentAvailable),
+    currency: fee.currency || 'INR',
+  }
+}
+
 function pickBatchFields(body = {}) {
   const batchName = (body.batchName || body.courseName || '').trim()
+  const feeDetails = normalizeFeeDetails(body.feeDetails ?? body.formData?.feeDetails)
+  const { subjects: _legacySubjects, ...formDataRest } = body.formData || {}
+  void _legacySubjects
   return {
     courseName: batchName,
     batchId: body.batchId?.trim() || '',
@@ -49,7 +61,8 @@ function pickBatchFields(body = {}) {
     category: body.category?.trim() || 'Batch',
     center: body.center?.trim() || '—',
     price: body.price?.trim() || '—',
-    formData: body.formData ?? null,
+    feeDetails,
+    formData: body.formData ? { ...formDataRest, feeDetails } : { feeDetails },
   }
 }
 

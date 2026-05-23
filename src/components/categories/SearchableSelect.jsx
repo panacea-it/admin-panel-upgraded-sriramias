@@ -65,7 +65,7 @@ export default function SearchableSelect({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="h-9 w-full rounded-lg bg-[#eef2fc] pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#55ace7]"
+              className="h-9 w-full rounded-lg bg-[#eef2fc] pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#55ace7]"
               autoFocus
             />
           </div>

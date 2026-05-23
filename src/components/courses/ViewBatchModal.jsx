@@ -3,6 +3,8 @@ import Modal from '../ui/Modal'
 import SectionBar from './SectionBar'
 import CategoryStatusBadge from '../categories/CategoryStatusBadge'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
+import { normalizeLinkedSubjects } from '../../utils/batchHelpers'
+import { formatFacultySubjectOption } from '../../utils/subjectProvisioning'
 
 function DetailItem({ label, children }) {
   return (
@@ -10,6 +12,30 @@ function DetailItem({ label, children }) {
       <p className="text-xs font-medium text-[#686868]">{label}</p>
       <div className="mt-1 text-sm font-semibold text-[#111]">{children}</div>
     </div>
+  )
+}
+
+function formatMoney(amount, currency = 'INR') {
+  if (amount == null || amount === '') return null
+  const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₹'
+  return `${symbol}${Number(amount).toLocaleString()}`
+}
+
+function hasFeeDetails(feeDetails) {
+  if (!feeDetails) return false
+  const {
+    discountFee,
+    onlinePaymentAmount,
+    offlinePaymentAmount,
+    onlinePaymentBullets = [],
+    offlinePaymentBullets = [],
+  } = feeDetails
+  return (
+    (discountFee != null && discountFee !== '') ||
+    (onlinePaymentAmount != null && onlinePaymentAmount !== '') ||
+    (offlinePaymentAmount != null && offlinePaymentAmount !== '') ||
+    onlinePaymentBullets.length > 0 ||
+    offlinePaymentBullets.length > 0
   )
 }
 
@@ -31,6 +57,31 @@ export default function ViewBatchModal({ open, onClose, item }) {
   const form = item.formData || {}
   const bannerSrc = item.bannerPreview || form.bannerPreview || form.bannerUrl
   const catalogName = item.linkedCourseName || item.courseName || form.courseName
+  const feeDetails = item.feeDetails || form.feeDetails
+  const linkedSubjects = (() => {
+    const list = normalizeLinkedSubjects({
+      linkedSubjects: item.linkedSubjects || form.linkedSubjects,
+    })
+    if (list.length) return list
+    const legacyId = item.linkedSubjectId || form.linkedSubjectId
+    if (!legacyId) return []
+    return [
+      {
+        subjectId: String(legacyId),
+        subjectName: item.linkedSubjectName || form.linkedSubjectName || '',
+      },
+    ]
+  })()
+  const seo = item.seo || form.seo
+  const showFee = hasFeeDetails(feeDetails)
+  const showSeo =
+    seo &&
+    (seo.metaTitle ||
+      seo.metaDescription ||
+      (seo.focusKeywords || []).length ||
+      (seo.tags || []).length ||
+      seo.formattedContent)
+  const currency = feeDetails?.currency || 'INR'
 
   return (
     <Modal open={open} onClose={onClose} size="full" title={`View ${item.batchName || item.name}`}>
@@ -88,6 +139,24 @@ export default function ViewBatchModal({ open, onClose, item }) {
               <DetailItem label="Modified On">
                 {formatCategoryDateTime(item.modifiedAt)}
               </DetailItem>
+              <div className="sm:col-span-2 lg:col-span-3">
+                <DetailItem label="Linked Subjects">
+                  {linkedSubjects.length ? (
+                    <ul className="mt-1 space-y-1">
+                      {linkedSubjects.map((s) => (
+                        <li key={s.subjectId} className="text-sm font-semibold text-[#111]">
+                          {formatFacultySubjectOption({
+                            id: s.subjectId,
+                            subjectName: s.subjectName,
+                          })}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    '—'
+                  )}
+                </DetailItem>
+              </div>
             </dl>
             {bannerSrc ? (
               <div className="mt-4">
@@ -101,6 +170,99 @@ export default function ViewBatchModal({ open, onClose, item }) {
             ) : null}
           </div>
 
+          {showFee ? (
+            <ReadOnlyBlock title="Fee Details">
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <DetailItem label="Currency">{currency}</DetailItem>
+                <DetailItem label="Discount Fee">
+                  {formatMoney(feeDetails.discountFee, currency) || '—'}
+                </DetailItem>
+                <DetailItem label="Online Payment Amount">
+                  {formatMoney(feeDetails.onlinePaymentAmount, currency) || '—'}
+                </DetailItem>
+                <DetailItem label="Offline Payment Amount">
+                  {formatMoney(feeDetails.offlinePaymentAmount, currency) || '—'}
+                </DetailItem>
+              </dl>
+              {(feeDetails.onlinePaymentBullets || []).length > 0 ? (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold text-[#246392]">
+                    Online Payment – Bullet Points
+                  </p>
+                  <ul className="space-y-1">
+                    {feeDetails.onlinePaymentBullets.map((line, i) => (
+                      <li key={`on-${i}`} className="flex gap-2 text-sm">
+                        <span className="text-[#55ace7]">•</span>
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {(feeDetails.offlinePaymentBullets || []).length > 0 ? (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold text-[#246392]">
+                    Offline Payment – Bullet Points
+                  </p>
+                  <ul className="space-y-1">
+                    {feeDetails.offlinePaymentBullets.map((line, i) => (
+                      <li key={`off-${i}`} className="flex gap-2 text-sm">
+                        <span className="text-[#55ace7]">•</span>
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </ReadOnlyBlock>
+          ) : null}
+
+          {showSeo ? (
+            <ReadOnlyBlock title="SEO & Content">
+              {seo.metaTitle ? (
+                <DetailItem label="Meta Title">{seo.metaTitle}</DetailItem>
+              ) : null}
+              {seo.metaDescription ? (
+                <p className="mt-3 whitespace-pre-wrap text-sm">{seo.metaDescription}</p>
+              ) : null}
+              {(seo.focusKeywords || []).length > 0 ? (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold text-[#246392]">Focus Keywords</p>
+                  <div className="flex flex-wrap gap-2">
+                    {seo.focusKeywords.map((k) => (
+                      <span
+                        key={k}
+                        className="rounded-full bg-[#e8f4fc] px-3 py-1 text-xs font-medium text-[#1a3a5c]"
+                      >
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {(seo.tags || []).length > 0 ? (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold text-[#246392]">Tags</p>
+                  <div className="flex flex-wrap gap-2">
+                    {seo.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full bg-[#f0f7fc] px-3 py-1 text-xs font-medium text-[#246392] ring-1 ring-[#93c5fd]/40"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {seo.formattedContent ? (
+                <div
+                  className="prose prose-sm mt-4 max-w-none text-[#333]"
+                  dangerouslySetInnerHTML={{ __html: seo.formattedContent }}
+                />
+              ) : null}
+            </ReadOnlyBlock>
+          ) : null}
         </div>
 
         <footer className="sticky bottom-0 border-t border-[#eef2fc] bg-[#fafafa] px-5 py-4 text-right sm:px-6">

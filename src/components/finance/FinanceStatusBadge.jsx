@@ -16,6 +16,9 @@ const STYLES = {
   Refunded: 'bg-slate-500 text-white',
   'Pending Payment': 'bg-[#55ace7] text-white',
   Completed: 'bg-[#246392] text-white',
+  Scheduled: 'bg-[#8b98bb] text-white',
+  Credit: 'bg-emerald-500 text-white',
+  Debit: 'bg-rose-500 text-white',
   Expired: 'bg-slate-400 text-white',
   'Access Extended': 'bg-[#8b98bb] text-white',
 }
