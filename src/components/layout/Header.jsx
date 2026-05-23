@@ -23,14 +23,34 @@ import { cn } from '../../utils/cn'
 import CenterSelectorDropdown from './CenterSelectorDropdown'
 import { ROLE_LABELS } from '../../constants/roles'
 import { usePermissions } from '../../hooks/usePermissions'
+import { SIDEBAR_DASHBOARD, SIDEBAR_GROUPS } from '../../constants/navigation'
+import { downloadDashboardSummary } from '../../utils/exportDashboardSummary'
+import { toast } from '@/utils/toast'
 
-function IconAction({ icon: Icon, label, className }) {
+function flattenNavLinks() {
+  const links = [{ label: SIDEBAR_DASHBOARD.label, path: SIDEBAR_DASHBOARD.path }]
+  SIDEBAR_GROUPS.forEach((group) => {
+    ;(group.children || []).forEach((child) => {
+      if (child.path) links.push({ label: `${group.label} → ${child.label}`, path: child.path })
+      ;(child.children || []).forEach((sub) => {
+        if (sub.path) links.push({ label: `${child.label} → ${sub.label}`, path: sub.path })
+      })
+    })
+  })
+  return links
+}
+
+const NAV_QUICK_LINKS = flattenNavLinks()
+
+function IconAction({ icon: Icon, label, className, onClick, disabled }) {
   return (
     <button
       type="button"
       aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
       className={cn(
-        'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#03045e]/8 bg-[#f4f6fb] text-[#03045e] transition hover:border-[#03045e]/15 hover:bg-[#e8ecf7]',
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#03045e]/8 bg-[#f4f6fb] text-[#03045e] transition hover:border-[#03045e]/15 hover:bg-[#e8ecf7] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
     >
@@ -48,7 +68,10 @@ export default function Header({ onMenuClick }) {
   const [notifOpen, setNotifOpen] = useState(false)
   const { isDark, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState(initialNotifications)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [headerSearch, setHeaderSearch] = useState('')
   const headerRef = useRef(null)
+  const searchRef = useRef(null)
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -65,16 +88,63 @@ export default function Header({ onMenuClick }) {
         setProfileOpen(false)
         setCenterOpen(false)
         setNotifOpen(false)
+        setSearchOpen(false)
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const searchResults = useMemo(() => {
+    const q = headerSearch.trim().toLowerCase()
+    if (!q) return NAV_QUICK_LINKS.slice(0, 8)
+    return NAV_QUICK_LINKS.filter(
+      (link) =>
+        link.label.toLowerCase().includes(q) || link.path.toLowerCase().includes(q),
+    ).slice(0, 12)
+  }, [headerSearch])
+
   const closeMenus = () => {
     setProfileOpen(false)
     setCenterOpen(false)
     setNotifOpen(false)
+    setSearchOpen(false)
+  }
+
+  const handleHeaderAdd = () => {
+    closeMenus()
+    navigate('/academics/categories/courses')
+  }
+
+  const handleHeaderTeam = () => {
+    closeMenus()
+    navigate('/users/manage')
+  }
+
+  const handleHeaderDownload = () => {
+    closeMenus()
+    try {
+      downloadDashboardSummary()
+      toast.success('Dashboard summary downloaded')
+    } catch {
+      toast.error('Could not export dashboard summary')
+    }
+  }
+
+  const handleHeaderSearchToggle = () => {
+    setSearchOpen((v) => !v)
+    setProfileOpen(false)
+    setCenterOpen(false)
+    setNotifOpen(false)
+    if (!searchOpen) {
+      requestAnimationFrame(() => searchRef.current?.focus())
+    }
+  }
+
+  const handleSearchNavigate = (path) => {
+    closeMenus()
+    setHeaderSearch('')
+    navigate(path)
   }
 
   const handleLogout = () => {
@@ -119,11 +189,65 @@ export default function Header({ onMenuClick }) {
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         {isSuperAdmin && (
-          <div className="hidden items-center gap-1.5 sm:flex md:gap-2">
-            <IconAction icon={Plus} label="Add" />
-            <IconAction icon={Users} label="Team" className="hidden md:flex" />
-            <IconAction icon={Download} label="Download" className="hidden lg:flex" />
-            <IconAction icon={Search} label="Search" className="hidden xl:flex" />
+          <div className="relative hidden items-center gap-1.5 sm:flex md:gap-2">
+            <IconAction icon={Plus} label="Add course" onClick={handleHeaderAdd} />
+            <IconAction
+              icon={Users}
+              label="Manage users"
+              className="hidden md:flex"
+              onClick={handleHeaderTeam}
+            />
+            <IconAction
+              icon={Download}
+              label="Download dashboard summary"
+              className="hidden lg:flex"
+              onClick={handleHeaderDownload}
+            />
+            <IconAction
+              icon={Search}
+              label="Search navigation"
+              className="hidden xl:flex"
+              onClick={handleHeaderSearchToggle}
+            />
+            {searchOpen && (
+              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(100vw-2rem,320px)] overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_16px_40px_rgba(3,4,94,0.14)]">
+                <div className="border-b border-slate-100 p-3">
+                  <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
+                    <Search className="h-4 w-4 text-slate-400" />
+                    <input
+                      ref={searchRef}
+                      type="search"
+                      value={headerSearch}
+                      onChange={(e) => setHeaderSearch(e.target.value)}
+                      placeholder="Search pages…"
+                      className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                    />
+                  </div>
+                </div>
+                <ul className="max-h-[280px] overflow-y-auto py-1">
+                  {searchResults.length ? (
+                    searchResults.map((link) => (
+                      <li key={link.path}>
+                        <button
+                          type="button"
+                          onClick={() => handleSearchNavigate(link.path)}
+                          className="flex w-full flex-col px-3 py-2 text-left transition hover:bg-[#f4f6fb]"
+                        >
+                          <span className="text-[13px] font-semibold text-[#03045e]">
+                            {link.label}
+                          </span>
+                          <span className="text-[11px] text-slate-500">{link.path}</span>
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-3 py-4 text-center text-sm text-slate-500">
+                      No matching pages
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

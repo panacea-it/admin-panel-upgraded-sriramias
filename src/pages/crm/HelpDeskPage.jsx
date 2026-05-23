@@ -66,6 +66,13 @@ export default function HelpDeskPage() {
     setViewTicketId(null)
   }
 
+  const handleStatusChange = (ticketId, nextStatus) => {
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticketId ? { ...t, status: nextStatus } : t)),
+    )
+    toast.success(`Status updated to ${nextStatus}`)
+  }
+
   const handleSendReply = () => {
     if (!activeTicket || !replyText.trim()) return
     setSending(true)
@@ -125,7 +132,12 @@ export default function HelpDeskPage() {
       label: 'Status',
       headerClassName: 'w-[140px] min-w-[140px] text-center',
       cellClassName: 'w-[140px] min-w-[140px] align-middle',
-      render: (row) => <HelpDeskStatusCell status={row.status} />,
+      render: (row) => (
+        <HelpDeskStatusCell
+          status={row.status}
+          onStatusChange={(nextStatus) => handleStatusChange(row.id, nextStatus)}
+        />
+      ),
     },
     {
       key: 'action',

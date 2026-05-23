@@ -1,6 +1,7 @@
 import { CornerUpRight } from 'lucide-react'
-import HelpDeskStatusBadge from './HelpDeskStatusBadge'
 import { DateTimeInline } from '../website/websiteUi'
+
+export { default as HelpDeskStatusCell } from './HelpDeskStatusCell'
 
 export function HelpDeskContactCell({ email, mobile }) {
   return (
@@ -15,14 +16,6 @@ export function HelpDeskDateCell({ time, date }) {
   return (
     <div className="flex min-w-[168px] items-center">
       <DateTimeInline time={time} date={date} />
-    </div>
-  )
-}
-
-export function HelpDeskStatusCell({ status }) {
-  return (
-    <div className="flex w-full items-center justify-center">
-      <HelpDeskStatusBadge status={status} />
     </div>
   )
 }

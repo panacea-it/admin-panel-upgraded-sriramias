@@ -63,7 +63,7 @@ export default function ClassroomFormModal({ open, onClose, classroom, onSave, s
           icon={DoorOpen}
           title={classroom ? 'Edit Classroom' : 'Add Classroom'}
           subtitle="Manage room details and capacity"
-          onClose={onClose}
+          onBack={onClose}
         />
         <div className="space-y-4 px-5 py-4 sm:px-6">
           <div>

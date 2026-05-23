@@ -225,6 +225,7 @@ export function mapCourseMarketingForWebsite(course = {}) {
     }),
     howWill: content.howWill,
     howCourseHelps: course.howCourseHelps || legacyHowCourseHelpsSummary(content.howWill),
+    sectionTitles: getCourseMarketingSectionTitles(course),
   }
 }
 
