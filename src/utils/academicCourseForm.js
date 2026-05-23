@@ -165,25 +165,45 @@ export function validateAcademicCourseContent() {
   return {}
 }
 
-export function serializeAcademicCourseContent(form) {
+export function serializeAcademicCourseContent(
+  form,
+  { examCategory = '', courseName = '' } = {},
+) {
+  const overview = String(form.overview || '').trim()
   const keyFeatureTexts = (form.keyFeatures || [])
     .map((s) => String(s?.text || '').trim())
     .filter(Boolean)
   const whyChooseFeatures = normalizeWhyChooseFeatures({
     whyChooseFeatures: form.whyChooseFeatures,
   })
+  const howWill = form.howWill || []
+  const sectionTitleWhyChoose = buildWhyChooseTitle({ examCategory, courseName })
+  const sectionTitleHowHelps = buildHowHelpsTitle(courseName)
 
   return {
     subjects: normalizeSubjects(form.subjects).filter((s) => s.subjectName),
-    courseOverview: String(form.overview || '').trim(),
-    keyFeatures: keyFeatureTexts,
+    overview,
+    courseOverview: overview,
+    keyFeatures: form.keyFeatures || [],
+    whyChooseFeatures,
+    howWill,
     whyChooseCourse: serializeWhyChooseForApi(whyChooseFeatures),
-    howCourseHelps: deriveHowCourseHelpsText(form.howWill),
+    howCourseHelps: deriveHowCourseHelpsText(howWill),
+    sectionTitleOverview: 'Course Overview',
+    sectionTitleKeyFeatures: 'Key Features Of Course',
+    sectionTitleWhyChoose,
+    sectionTitleHowHelps,
+    sectionTitles: {
+      overview: 'Course Overview',
+      keyFeatures: 'Key Features Of Course',
+      whyChoose: sectionTitleWhyChoose,
+      howHelps: sectionTitleHowHelps,
+    },
     courseFormData: {
-      overview: String(form.overview || '').trim(),
+      overview,
       keyFeatures: form.keyFeatures || [],
       whyChooseFeatures,
-      howWill: form.howWill || [],
+      howWill,
     },
   }
 }

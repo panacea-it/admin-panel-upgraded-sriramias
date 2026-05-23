@@ -41,9 +41,42 @@ const academicCourseSchema = new mongoose.Schema(
       currency: { type: String, default: 'INR' },
     },
     courseOverview: { type: String, default: '' },
-    keyFeatures: [{ type: String }],
+    overview: { type: String, default: '' },
+    /** Legacy text bullets; may also store slot objects from admin UI */
+    keyFeatures: { type: [mongoose.Schema.Types.Mixed], default: [] },
     whyChooseCourse: { type: String, default: '' },
     howCourseHelps: { type: String, default: '' },
+    whyChooseFeatures: {
+      type: [
+        {
+          id: String,
+          icon: String,
+          iconPreview: String,
+          iconFileName: String,
+          title: String,
+          description: String,
+          isHighlighted: Boolean,
+          order: Number,
+        },
+      ],
+      default: [],
+    },
+    howWill: {
+      type: [
+        {
+          id: String,
+          kind: String,
+          fileName: String,
+          placeholder: String,
+          preview: String,
+        },
+      ],
+      default: [],
+    },
+    sectionTitleOverview: { type: String, default: '' },
+    sectionTitleKeyFeatures: { type: String, default: '' },
+    sectionTitleWhyChoose: { type: String, default: '' },
+    sectionTitleHowHelps: { type: String, default: '' },
     /** Rich marketing UI state (overview slots, feature cards, media grid) */
     courseFormData: { type: mongoose.Schema.Types.Mixed, default: null },
   },

@@ -241,7 +241,10 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
         examSubCategoryId: form.examSubCategoryId,
         examSubCategory: formatExamSubCategoryLabel(sub),
         status: form.status,
-        ...serializeAcademicCourseContent(form),
+        ...serializeAcademicCourseContent(form, {
+          examCategory: formatExamCategoryLabel(category),
+          courseName: form.name.trim(),
+        }),
       },
       { isEdit, id: item?.id },
     )
@@ -256,7 +259,7 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     <Modal open={open} onClose={handleClose} size="full" title={title}>
       <form
         onSubmit={handleSubmit}
-        className="flex max-h-[min(92vh,960px)] flex-col overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="flex max-h-[min(92vh,820px)] flex-col overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
         <ModalPanelHeader
           title={title}
@@ -265,8 +268,8 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
           iconClassName="text-[#246392]"
         />
 
-        <div className="flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-7">
-          <div className="space-y-4">
+        <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-5 sm:px-8 sm:py-7">
+          <div className="space-y-6">
             <SectionBar title="Course Details" />
             <div className="grid gap-4 rounded-xl bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:grid-cols-2 sm:px-6 sm:py-6">
               <CourseFormField label="Course Name" required>
@@ -358,16 +361,16 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
           />
         </div>
 
-        <div className="sticky bottom-0 z-10 shrink-0 border-t border-[#e5eaf2] bg-[#f0f4f8]/95 px-4 py-4 backdrop-blur-md sm:px-6">
+        <div className="sticky bottom-0 z-10 shrink-0 border-t border-[#e5eaf2] bg-[#f0f4f8]/95 px-4 py-5 backdrop-blur-md sm:px-8">
           <FormModalSubmitBar
             isEditMode={isEdit}
             onReset={() => {
               setForm(buildFullForm(item, programs, examCategories))
               setErrors({})
             }}
-            createLabel="Save Course"
-            updateLabel="Update Course"
-            className="border-t-0 pt-2"
+            createLabel="Create"
+            updateLabel="Update"
+            className="border-t-0 pt-4"
           />
         </div>
       </form>
