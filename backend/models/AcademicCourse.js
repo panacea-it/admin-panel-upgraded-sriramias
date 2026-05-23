@@ -41,9 +41,38 @@ const academicCourseSchema = new mongoose.Schema(
       currency: { type: String, default: 'INR' },
     },
     courseOverview: { type: String, default: '' },
-    keyFeatures: [{ type: String }],
+    /** Legacy text bullets; may also store slot objects from admin UI */
+    keyFeatures: { type: [mongoose.Schema.Types.Mixed], default: [] },
     whyChooseCourse: { type: String, default: '' },
     howCourseHelps: { type: String, default: '' },
+    whyChooseFeatures: {
+      type: [
+        {
+          id: String,
+          icon: String,
+          iconPreview: String,
+          iconFileName: String,
+          title: String,
+          description: String,
+          isHighlighted: Boolean,
+          order: Number,
+        },
+      ],
+      default: [],
+    },
+    howWill: {
+      type: [
+        {
+          id: String,
+          kind: String,
+          fileName: String,
+          placeholder: String,
+          preview: String,
+        },
+      ],
+      default: [],
+    },
+    overview: { type: String, default: '' },
   },
   { timestamps: true },
 )

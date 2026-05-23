@@ -2,11 +2,14 @@ import { BookOpen, X } from 'lucide-react'
 import Modal from '../ui/Modal'
 import CategoryStatusBadge from './CategoryStatusBadge'
 import SectionBar from '../courses/SectionBar'
+import BatchFormSection from '../courses/BatchFormSection'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import {
+  academicCourseItemToContent,
   buildHowHelpsTitle,
   buildWhyChooseTitle,
 } from '../../utils/academicCourseForm'
+import { normalizeWhyChooseFeatures } from '../../utils/whyChooseFeatures'
 
 function DetailItem({ label, children }) {
   return (
@@ -20,11 +23,9 @@ function DetailItem({ label, children }) {
 function ReadOnlyBlock({ title, children }) {
   if (!children) return null
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       <SectionBar title={title} />
-      <div className="rounded-xl bg-white px-4 py-4 text-sm text-[#444] shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:px-6">
-        {children}
-      </div>
+      <BatchFormSection>{children}</BatchFormSection>
     </div>
   )
 }
@@ -32,12 +33,16 @@ function ReadOnlyBlock({ title, children }) {
 export default function ViewCourseManagementModal({ open, onClose, item }) {
   if (!open || !item) return null
 
-  const features = (item.keyFeatures || []).filter(Boolean)
+  const content = academicCourseItemToContent(item)
   const whyTitle = buildWhyChooseTitle({
     examCategory: item.examCategory,
     courseName: item.name,
   })
   const howTitle = buildHowHelpsTitle(item.name)
+  const whyFeatures = normalizeWhyChooseFeatures({ whyChooseFeatures: content.whyChooseFeatures })
+  const keySlots = content.keyFeatures || []
+  const textFeatures = keySlots.slice(1).map((s) => s.text).filter(Boolean)
+  const howSlots = (content.howWill || []).filter((s) => s.fileName || s.preview)
 
   return (
     <Modal open={open} onClose={onClose} size="full" title={`View ${item.name}`}>
@@ -62,7 +67,7 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
           </button>
         </header>
 
-        <div className="max-h-[70vh] space-y-5 overflow-y-auto bg-[#f0f4f8] p-5 sm:p-6">
+        <div className="max-h-[70vh] space-y-6 overflow-y-auto bg-[#f0f4f8] p-5 sm:p-6">
           <div className="rounded-xl bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:p-6">
             <h3 className="mb-4 border-b border-[#eef2fc] pb-2 text-sm font-bold uppercase tracking-wide text-[#246392]">
               Course Details
@@ -86,33 +91,72 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
             </dl>
           </div>
 
-          {item.courseOverview ? (
+          {content.overview ? (
             <ReadOnlyBlock title="Course Overview">
-              <p className="whitespace-pre-wrap">{item.courseOverview}</p>
+              <p className="whitespace-pre-wrap text-sm text-[#444]">{content.overview}</p>
             </ReadOnlyBlock>
           ) : null}
 
-          <ReadOnlyBlock title="Key Features Of Course">
-            {features.length ? (
-              <ul className="list-disc space-y-1 pl-5">
-                {features.map((f, i) => (
-                  <li key={`${f}-${i}`}>{f}</li>
+          {(keySlots[0]?.fileName || textFeatures.length > 0) && (
+            <ReadOnlyBlock title="Key Features Of Course">
+              <div className="space-y-3 text-sm text-[#444]">
+                {keySlots[0]?.fileName ? (
+                  <p>
+                    <span className="font-semibold text-[#246392]">Hero image:</span>{' '}
+                    {keySlots[0].fileName}
+                  </p>
+                ) : null}
+                {textFeatures.length ? (
+                  <ul className="list-disc space-y-1 pl-5">
+                    {textFeatures.map((f, i) => (
+                      <li key={`${f}-${i}`}>{f}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </ReadOnlyBlock>
+          )}
+
+          {whyFeatures.some((f) => f.title || f.description) ? (
+            <ReadOnlyBlock title={whyTitle}>
+              <div className="grid gap-4 md:grid-cols-2">
+                {whyFeatures.map((f) => (
+                  <div
+                    key={f.id}
+                    className="rounded-xl border border-gray-100 bg-[#fafcff] p-4 text-sm"
+                  >
+                    {f.iconPreview ? (
+                      <img
+                        src={f.iconPreview}
+                        alt=""
+                        className="mb-3 h-12 w-12 object-contain"
+                      />
+                    ) : null}
+                    {f.title ? <p className="font-semibold text-[#111]">{f.title}</p> : null}
+                    {f.description ? (
+                      <p className="mt-1 whitespace-pre-wrap text-[#444]">{f.description}</p>
+                    ) : null}
+                    {f.isHighlighted ? (
+                      <p className="mt-2 text-xs font-semibold text-amber-700">Highlighted</p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </ReadOnlyBlock>
+          ) : null}
+
+          {howSlots.length ? (
+            <ReadOnlyBlock title={howTitle}>
+              <ul className="space-y-2 text-sm text-[#444]">
+                {howSlots.map((slot) => (
+                  <li key={slot.id}>
+                    <span className="font-semibold capitalize text-[#246392]">
+                      {slot.kind || 'image'}:
+                    </span>{' '}
+                    {slot.fileName || slot.preview || '—'}
+                  </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-[#686868]">No features listed</p>
-            )}
-          </ReadOnlyBlock>
-
-          {item.whyChooseCourse ? (
-            <ReadOnlyBlock title={whyTitle}>
-              <p className="whitespace-pre-wrap">{item.whyChooseCourse}</p>
-            </ReadOnlyBlock>
-          ) : null}
-
-          {item.howCourseHelps ? (
-            <ReadOnlyBlock title={howTitle}>
-              <p className="whitespace-pre-wrap">{item.howCourseHelps}</p>
             </ReadOnlyBlock>
           ) : null}
         </div>
