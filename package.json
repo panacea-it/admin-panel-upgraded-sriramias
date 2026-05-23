@@ -10,6 +10,7 @@
     "vercel-build": "npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "verify:features": "node scripts/verify-features.mjs",
     "start:api": "npm run start --prefix backend"
   },
   "dependencies": {
