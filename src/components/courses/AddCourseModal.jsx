@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
+import { BookOpen, CreditCard, GraduationCap, Search } from 'lucide-react'
 import { toast } from '@/utils/toast'
-import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from './ModalPanelHeader'
-import SectionBar from './SectionBar'
 import BatchDetailsSection from './BatchDetailsSection'
 import BatchFeeDetailsSection from './BatchFeeDetailsSection'
 import BatchSubjectDetailsSection from './BatchSubjectDetailsSection'
 import BatchSeoSection from './BatchSeoSection'
 import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
-import BatchFormSection from './BatchFormSection'
+import BatchFormCard from './batch-form/BatchFormCard'
+import BatchFormStickyFooter from './batch-form/BatchFormStickyFooter'
 import {
   batchRowToForm,
   createEmptyBatchForm,
@@ -33,6 +33,7 @@ export default function AddCourseModal({
     createEmptyBatchForm,
   )
   const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (open) setErrors({})
@@ -67,12 +68,15 @@ export default function AddCourseModal({
       toast.error('Please fix the highlighted fields')
       return
     }
+    setSubmitting(true)
     try {
       await onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
       toast.success(isEditMode ? 'Batch updated successfully' : 'Batch created successfully')
       handleClose()
     } catch (err) {
       toast.error(err.message || 'Failed to save batch')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -82,14 +86,20 @@ export default function AddCourseModal({
     <Modal open={open} onClose={handleClose} size="full" title={modalTitle}>
       <form
         onSubmit={handleSubmit}
-        className="flex max-h-[min(92vh,820px)] flex-col overflow-hidden rounded-2xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="flex max-h-[min(92vh,860px)] flex-col overflow-hidden rounded-2xl bg-[#eef2f7] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
         <ModalPanelHeader title={modalTitle} onBack={handleClose} />
 
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-8 sm:py-7">
-          <div className="space-y-6">
-            <SectionBar title="Batch Details" />
-            <BatchFormSection>
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#c5d9eb_transparent]"
+        >
+          <div className="space-y-6 px-4 py-6 sm:space-y-8 sm:px-8 sm:py-8">
+            <BatchFormCard
+              step={1}
+              icon={BookOpen}
+              title="Batch Details"
+              description="Name, course, schedule dates, and banner image for this batch."
+            >
               <BatchDetailsSection
                 form={form}
                 setForm={setForm}
@@ -97,27 +107,48 @@ export default function AddCourseModal({
                 setErrors={setErrors}
                 excludeCourseIds={isEditMode ? [] : existingCourseIds}
               />
-            </BatchFormSection>
+            </BatchFormCard>
 
-            <BatchFeeDetailsSection form={form} setForm={setForm} errors={errors} />
-            <BatchSubjectDetailsSection form={form} setForm={setForm} subjects={subjects} />
-            <BatchSeoSection form={form} setForm={setForm} errors={errors} />
+            <BatchFormCard
+              step={2}
+              icon={CreditCard}
+              title="Fee Details"
+              description="Payment amounts, currency, and bullet points shown to students."
+            >
+              <BatchFeeDetailsSection form={form} setForm={setForm} errors={errors} />
+            </BatchFormCard>
+
+            <BatchFormCard
+              step={3}
+              icon={GraduationCap}
+              title="Subject Details"
+              description="Link faculty subjects to this batch for scheduling and SEO."
+            >
+              <BatchSubjectDetailsSection form={form} setForm={setForm} subjects={subjects} />
+            </BatchFormCard>
+
+            <BatchFormCard
+              step={4}
+              icon={Search}
+              title="SEO & Content"
+              description="Search engine metadata and rich page content for this batch."
+            >
+              <BatchSeoSection form={form} setForm={setForm} errors={errors} />
+            </BatchFormCard>
           </div>
         </div>
 
-        <div className="sticky bottom-0 z-10 shrink-0 border-t border-[#e5eaf2] bg-[#f0f4f8]/95 px-4 py-5 backdrop-blur-md sm:px-8">
-          <FormModalSubmitBar
-            isEditMode={isEditMode}
-            onReset={() => {
-              reset()
-              setErrors({})
-              toast.message('Form reset')
-            }}
-            createLabel="Create"
-            updateLabel="Update"
-            className="border-t-0 pt-4"
-          />
-        </div>
+        <BatchFormStickyFooter
+          isEditMode={isEditMode}
+          saving={submitting}
+          onReset={() => {
+            reset()
+            setErrors({})
+            toast.message('Form reset')
+          }}
+          createLabel="Create"
+          updateLabel="Update"
+        />
       </form>
     </Modal>
   )

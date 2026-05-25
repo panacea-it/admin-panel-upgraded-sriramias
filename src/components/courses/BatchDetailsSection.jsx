@@ -3,8 +3,10 @@ import {
   CourseFormField,
   CourseInput,
 } from './CourseFormField'
+import { batchFormGrid } from './batch-form/BatchFormCard'
 import BannerImageUpload from './BannerImageUpload'
 import CourseCatalogSelect from './CourseCatalogSelect'
+import { cn } from '../../utils/cn'
 
 export default function BatchDetailsSection({
   form,
@@ -34,7 +36,7 @@ export default function BatchDetailsSection({
     ) : null
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className={cn(batchFormGrid)}>
       <CourseFormField label="Batch Name" required className="sm:col-span-2 lg:col-span-3">
         <CourseInput
           value={form.batchName}

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import SectionBar from './SectionBar'
+import { Globe, Search } from 'lucide-react'
 import {
   CourseFormField,
   CourseInput,
@@ -25,7 +25,7 @@ function CharCounter({ text, limit }) {
   const count = seoCharCount(text)
   const over = isOverLimit(text, limit)
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="mt-2 flex items-center justify-between gap-2">
       <span className={cn('text-xs font-medium', seoLimitTone(count, limit))}>
         {count} / {limit}
       </span>
@@ -38,27 +38,68 @@ function CharCounter({ text, limit }) {
   )
 }
 
-function FieldHint({ children }) {
-  return <p className="text-xs leading-relaxed text-[#686868]">{children}</p>
+function FieldHint({ children, className }) {
+  return (
+    <p className={cn('text-xs leading-relaxed text-[#686868]', className)}>{children}</p>
+  )
 }
 
-function SubsectionTitle({ children }) {
+function SubsectionTitle({ children, icon: Icon }) {
   return (
-    <h4 className="border-b border-[#eef2fc] pb-2 text-sm font-bold text-[#246392]">
-      {children}
-    </h4>
+    <div className="flex items-center gap-2 border-b border-[#eef2fc] pb-3">
+      {Icon ? <Icon className="h-4 w-4 text-[#246392]" strokeWidth={2.2} /> : null}
+      <h4 className="text-sm font-bold text-[#1a3a5c]">{children}</h4>
+    </div>
   )
 }
 
 function ContextChip({ label, value }) {
   if (!value) return null
   return (
-    <span className="inline-flex max-w-full flex-col rounded-lg bg-white px-3 py-2 text-left ring-1 ring-[#eef2fc] sm:min-w-[140px]">
+    <span className="inline-flex max-w-full flex-col rounded-xl border border-[#eef2fc] bg-white px-3 py-2 text-left shadow-sm transition hover:border-[#cfe8f7]">
       <span className="text-[10px] font-bold uppercase tracking-wide text-[#9ca3af]">
         {label}
       </span>
       <span className="truncate text-sm font-semibold text-[#111]">{value}</span>
     </span>
+  )
+}
+
+function GoogleSearchPreview({ preview }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#dfe1e5] bg-white shadow-[0_1px_6px_rgba(32,33,36,0.12)]">
+      <div className="border-b border-[#f1f3f4] bg-[#f8f9fa] px-4 py-2">
+        <div className="flex items-center gap-2 text-xs text-[#70757a]">
+          <Search className="h-3.5 w-3.5" />
+          <span>Search preview</span>
+        </div>
+      </div>
+      <div className="space-y-1 px-4 py-4 font-[Arial,Helvetica,sans-serif]">
+        <p
+          className={cn(
+            'cursor-default text-xl leading-snug text-[#1a0dab] hover:underline',
+            preview.titleFromBatch && 'italic text-[#70757a] no-underline',
+          )}
+        >
+          {preview.title}
+        </p>
+        <div className="flex flex-wrap items-center gap-1 text-sm leading-tight">
+          <span className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#f1f3f4] text-[9px] font-bold text-[#5f6368]">
+            S
+          </span>
+          <span className="text-[#202124]">sriramias.com</span>
+          <span className="text-[#70757a]"> › batches › batch</span>
+        </div>
+        <p
+          className={cn(
+            'max-w-2xl text-sm leading-relaxed text-[#4d5156]',
+            preview.descriptionFromBatch && 'italic text-[#70757a]',
+          )}
+        >
+          {preview.description}
+        </p>
+      </div>
+    </div>
   )
 }
 
@@ -76,73 +117,54 @@ export default function BatchSeoSection({ form, setForm, errors = {} }) {
   const preview = useMemo(() => buildBatchSearchPreview(form, seo), [form, seo])
 
   return (
-    <div className="space-y-4">
-      <SectionBar title="SEO & Content" />
-      <div className="space-y-6 rounded-xl border border-gray-100 bg-white px-4 py-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:px-6 sm:py-6">
-        <p className="text-sm text-[#686868]">
-          SEO and page content apply to <strong className="text-[#333]">this batch only</strong>.
-          Search preview uses the batch name, course, and subjects from{' '}
-          <strong className="text-[#333]">Batch Details</strong> when meta fields are left empty
-          — not a separate course category.
-        </p>
-
-        <div className="rounded-xl border border-[#d9ebf9] bg-[#f8fbff] p-4">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#246392]">
-            Based on this batch (Batch Details)
+    <div className="space-y-8">
+      <div className="rounded-xl border border-[#d9ebf9] bg-gradient-to-br from-[#f8fbff] to-white p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <Globe className="mt-0.5 h-5 w-5 shrink-0 text-[#246392]" />
+          <p className="text-sm leading-relaxed text-[#686868]">
+            SEO and page content apply to <strong className="font-semibold text-[#333]">this batch only</strong>.
+            Search preview uses the batch name, course, and subjects from{' '}
+            <strong className="font-semibold text-[#333]">Batch Details</strong> when meta fields are
+            left empty — not a separate course category.
           </p>
-          <div className="flex flex-wrap gap-2">
-            <ContextChip label="Batch title" value={preview.context.batchName} />
-            <ContextChip label="Course" value={preview.context.courseName} />
-            <ContextChip label="Duration" value={preview.context.durationLabel} />
-            <ContextChip
-              label="Subjects"
-              value={
-                preview.context.subjectNames.length
-                  ? preview.context.subjectNames.join(', ')
-                  : ''
-              }
-            />
-          </div>
-          {!preview.context.batchName && !preview.context.courseName ? (
-            <p className="mt-3 text-xs text-amber-700">
-              Fill batch name and course in Batch Details above to drive the search preview.
-            </p>
-          ) : null}
         </div>
+      </div>
 
-        <div className="rounded-xl border border-[#eef2fc] bg-[#fafcff] p-4">
-          <p className="mb-1 text-xs font-bold uppercase tracking-wide text-[#246392]">
-            Search preview
-          </p>
-          <p className="mb-3 text-xs text-[#686868]">
-            {preview.titleFromBatch || preview.descriptionFromBatch
-              ? 'Italic lines use Batch Details until you enter meta fields below.'
-              : 'Showing your custom meta title and description.'}
-          </p>
-          <div className="space-y-1 rounded-lg bg-white p-3 font-[Arial,sans-serif] ring-1 ring-[#eef2fc]">
-            <p
-              className={cn(
-                'text-xl leading-snug text-[#1a0dab]',
-                preview.titleFromBatch && 'italic text-[#545454]',
-              )}
-            >
-              {preview.title}
-            </p>
-            <p className="text-sm text-[#006621]">{preview.url}</p>
-            <p
-              className={cn(
-                'line-clamp-3 text-sm leading-relaxed text-[#545454]',
-                preview.descriptionFromBatch && 'italic',
-              )}
-            >
-              {preview.description}
-            </p>
-          </div>
+      <div className="space-y-4 rounded-xl border border-[#eef2fc] bg-[#fafcff] p-4 sm:p-5">
+        <SubsectionTitle>Based on this batch (Batch Details)</SubsectionTitle>
+        <div className="flex flex-wrap gap-2">
+          <ContextChip label="Batch title" value={preview.context.batchName} />
+          <ContextChip label="Course" value={preview.context.courseName} />
+          <ContextChip label="Duration" value={preview.context.durationLabel} />
+          <ContextChip
+            label="Subjects"
+            value={
+              preview.context.subjectNames.length
+                ? preview.context.subjectNames.join(', ')
+                : ''
+            }
+          />
         </div>
+        {!preview.context.batchName && !preview.context.courseName ? (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200/60">
+            Fill batch name and course in Batch Details above to drive the search preview.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-3">
+        <FieldHint className="font-medium text-[#246392]">
+          {preview.titleFromBatch || preview.descriptionFromBatch
+            ? 'Italic lines use Batch Details until you enter meta fields below.'
+            : 'Showing your custom meta title and description.'}
+        </FieldHint>
+        <GoogleSearchPreview preview={preview} />
+      </div>
+
+      <div className="space-y-6 rounded-xl border border-[#eef2fc] bg-white p-4 shadow-sm sm:p-6">
+        <SubsectionTitle icon={Search}>SEO for search engines</SubsectionTitle>
 
         <div className="space-y-5">
-          <SubsectionTitle>SEO for search engines</SubsectionTitle>
-
           <CourseFormField label="Meta Title">
             <FieldHint>SEO title for search engines</FieldHint>
             <CourseInput
@@ -157,7 +179,9 @@ export default function BatchSeoSection({ form, setForm, errors = {} }) {
             />
             <CharCounter text={seo.metaTitle} limit={META_TITLE_LIMIT} />
             {preview.titleFromBatch ? (
-              <FieldHint>Empty → uses batch title and course from Batch Details.</FieldHint>
+              <FieldHint className="mt-1">
+                Empty → uses batch title and course from Batch Details.
+              </FieldHint>
             ) : null}
           </CourseFormField>
 
@@ -170,15 +194,19 @@ export default function BatchSeoSection({ form, setForm, errors = {} }) {
               value={seo.metaDescription || ''}
               onChange={(e) => updateSeo('metaDescription', e.target.value)}
               placeholder="Brief summary for search results (recommended 150–160 characters)"
-              className="mt-2"
+              className="mt-2 min-h-[6rem] leading-relaxed"
             />
             <CharCounter text={seo.metaDescription} limit={META_DESCRIPTION_LIMIT} />
             {preview.descriptionFromBatch ? (
-              <FieldHint>Empty → built from batch name, course, duration, and subjects.</FieldHint>
+              <FieldHint className="mt-1">
+                Empty → built from batch name, course, duration, and subjects.
+              </FieldHint>
             ) : null}
           </CourseFormField>
+        </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-6 border-t border-[#eef2fc] pt-6 sm:grid-cols-2">
+          <div className="rounded-xl border border-[#eef2fc] bg-[#fafcff] p-4">
             <CourseFormField label="Focus Keywords">
               <FieldHint>Type keyword and press Enter</FieldHint>
               <div className="mt-2">
@@ -190,9 +218,11 @@ export default function BatchSeoSection({ form, setForm, errors = {} }) {
                   allowCustom
                 />
               </div>
-              <FieldHint>Pick from suggestions or add your own keywords.</FieldHint>
+              <FieldHint className="mt-2">Pick from suggestions or add your own keywords.</FieldHint>
             </CourseFormField>
+          </div>
 
+          <div className="rounded-xl border border-[#eef2fc] bg-[#fafcff] p-4">
             <CourseFormField label="Tags">
               <FieldHint>Search or add tags</FieldHint>
               <div className="mt-2">
@@ -204,31 +234,33 @@ export default function BatchSeoSection({ form, setForm, errors = {} }) {
                   allowCustom
                 />
               </div>
-              <FieldHint>
+              <FieldHint className="mt-2">
                 Tags appear as chips — click a suggestion or press Enter to add.
               </FieldHint>
             </CourseFormField>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-4">
-          <SubsectionTitle>Content</SubsectionTitle>
-          <FieldHint>
-            Structured content for this batch page with H1, H2, and H3 heading support.
-          </FieldHint>
+      <div className="space-y-4 rounded-xl border border-[#eef2fc] bg-white p-4 shadow-sm sm:p-6">
+        <SubsectionTitle>Content</SubsectionTitle>
+        <FieldHint>
+          Structured content for this batch page with H1, H2, and H3 heading support.
+        </FieldHint>
 
-          <CourseFormField label="Formatted Content">
+        <CourseFormField label="Formatted Content">
+          <div className="mt-2 overflow-hidden rounded-xl ring-1 ring-[#eef2fc] transition focus-within:ring-2 focus-within:ring-[#55ace7]/30">
             <BlogRichEditor
               value={seo.formattedContent || ''}
               onChange={(html) => updateSeo('formattedContent', html)}
               placeholder="Write batch description with headings, lists, and links…"
               minHeight={220}
             />
-            <FieldHint>
-              Use the toolbar for H1, H2, H3, bold, lists, links, and images.
-            </FieldHint>
-          </CourseFormField>
-        </div>
+          </div>
+          <FieldHint className="mt-2">
+            Use the toolbar for H1, H2, H3, bold, lists, links, and images.
+          </FieldHint>
+        </CourseFormField>
       </div>
     </div>
   )

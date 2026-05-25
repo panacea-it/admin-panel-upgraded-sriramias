@@ -193,7 +193,7 @@ export default function Header({ onMenuClick }) {
             <IconAction icon={Plus} label="Add course" onClick={handleHeaderAdd} />
             <IconAction
               icon={Users}
-              label="Manage users"
+              label="List users"
               className="hidden md:flex"
               onClick={handleHeaderTeam}
             />

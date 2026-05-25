@@ -84,7 +84,7 @@ function OverviewTab({ data }) {
       <div className="sm:col-span-2">
         <DetailItem label="Counselor notes">
           <span className="font-normal text-[#444]">
-            Student profile linked from Manage Users. Subjects and batches are managed
+            Student profile linked from List Users. Faculty Subjects and batches are managed
             separately under Academics.
           </span>
         </DetailItem>
@@ -361,7 +361,7 @@ export default function StudentDetailPage() {
       <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 py-12 text-center">
         <p className="text-[#686868]">Student not found.</p>
         <Link to="/users/manage" className="mt-4 inline-block font-semibold text-[#246392] hover:underline">
-          ← Back to Manage Users
+          ← Back to List Users
         </Link>
       </div>
     )
@@ -370,9 +370,9 @@ export default function StudentDetailPage() {
   if (!data.isStudent) {
     return (
       <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 py-12 text-center">
-        <p className="text-[#686868]">This user is not a student. Open Manage Users to view staff profiles.</p>
+        <p className="text-[#686868]">This user is not a student. Open List Users to view staff profiles.</p>
         <Link to="/users/manage" className="mt-4 inline-block font-semibold text-[#246392] hover:underline">
-          ← Back to Manage Users
+          ← Back to List Users
         </Link>
       </div>
     )
@@ -388,7 +388,7 @@ export default function StudentDetailPage() {
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#246392] hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Manage Users
+          Back to List Users
         </Link>
 
         <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)]">

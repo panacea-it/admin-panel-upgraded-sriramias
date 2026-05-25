@@ -1,7 +1,7 @@
-/** User-facing labels for Academics → Subjects */
+/** User-facing labels for Academics → Faculty Subjects */
 
 export const FACULTY_SUBJECT_LABEL = 'Subject'
-export const FACULTY_SUBJECTS_LABEL = 'Subjects'
+export const FACULTY_SUBJECTS_LABEL = 'Faculty Subjects'
 export const FACULTY_SUBJECT_DETAILS_LABEL = 'Subject Details'
 
 export const facultySubjectLabels = {

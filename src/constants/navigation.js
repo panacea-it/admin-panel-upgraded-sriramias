@@ -74,7 +74,7 @@ export const SIDEBAR_GROUPS = [
     icon: Bookmark,
     children: [
       { label: 'Batch', path: '/academics/batch', icon: BookOpen },
-      { label: 'Subjects', path: '/academics/subjects', icon: Layers3 },
+      { label: 'Faculty Subjects', path: '/academics/subjects', icon: Layers3 },
       ACADEMICS_LIVE_CLASSES_SUBMENU,
       { label: 'Content Library', path: '/content-library', icon: FolderOpen },
       { label: 'Books', path: '/marketing/books', icon: BookMarked },
@@ -105,7 +105,7 @@ export const SIDEBAR_GROUPS = [
     label: 'Users & Access',
     icon: Layers,
     children: [
-      { label: 'Manage Users', path: '/users/manage', icon: Users },
+      { label: 'List Users', path: '/users/manage', icon: Users },
       { label: 'Wallet', path: '/users/wallet', icon: Wallet },
       { label: 'Coupons', path: '/coupons', icon: TicketPercent },
       {

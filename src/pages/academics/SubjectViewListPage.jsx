@@ -183,7 +183,7 @@ export default function SubjectViewListPage() {
             onClick={() => navigate('/academics/subjects')}
             className="text-sm font-semibold text-[#246392] underline-offset-2 hover:underline"
           >
-            ← Back to Subjects
+            ← Back to Faculty Subjects
           </button>
         </div>
       </section>
