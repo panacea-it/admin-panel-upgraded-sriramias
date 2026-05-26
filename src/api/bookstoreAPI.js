@@ -8,6 +8,7 @@ import {
   MOCK_BOOKSTORE_PAYMENTS,
   MOCK_BOOKSTORE_WALLET_TXNS,
   MOCK_BOOKSTORE_RECOMMENDATIONS,
+  nextRecommendationId,
   MOCK_BOOKSTORE_INVOICES,
   MOCK_INVENTORY_LOGS,
   buildBookstoreDashboardPayload,
@@ -15,6 +16,7 @@ import {
   nextComboId,
   nextBundleId,
 } from '../data/bookstoreMockData'
+import { resolveCartRecommendations } from '../utils/bookstoreRecommendationUtils'
 
 const USE_MOCK = isFrontendOnly || import.meta.env.VITE_BOOKSTORE_USE_MOCK !== 'false'
 
@@ -179,6 +181,61 @@ export async function fetchBookstoreRecommendations() {
   return tryApi(
     () => api.get('/bookstore/recommendations'),
     () => ({ items: [...MOCK_BOOKSTORE_RECOMMENDATIONS] }),
+  )
+}
+
+/** Student portal + admin preview — cart “You May Also Like” */
+export async function fetchCartRecommendations(sourceProductId, params = {}) {
+  return tryApi(
+    () => api.get('/bookstore/recommendations/cart', { params: { sourceProductId, ...params } }),
+    () =>
+      resolveCartRecommendations(
+        MOCK_BOOKSTORE_RECOMMENDATIONS,
+        MOCK_BOOKSTORE_PRODUCTS,
+        {
+          sourceProductId,
+          placement: params.placement,
+          recommendationType: params.recommendationType,
+        },
+      ),
+  )
+}
+
+export async function createBookstoreRecommendation(payload) {
+  return tryApi(
+    () => api.post('/bookstore/recommendations', payload),
+    () => {
+      const row = { id: nextRecommendationId(), ...payload }
+      MOCK_BOOKSTORE_RECOMMENDATIONS.unshift(row)
+      return row
+    },
+  )
+}
+
+export async function updateBookstoreRecommendation(id, payload) {
+  return tryApi(
+    () => api.put(`/bookstore/recommendations/${id}`, payload),
+    () => {
+      const idx = MOCK_BOOKSTORE_RECOMMENDATIONS.findIndex((r) => r.id === id)
+      if (idx >= 0) {
+        MOCK_BOOKSTORE_RECOMMENDATIONS[idx] = {
+          ...MOCK_BOOKSTORE_RECOMMENDATIONS[idx],
+          ...payload,
+        }
+      }
+      return MOCK_BOOKSTORE_RECOMMENDATIONS.find((r) => r.id === id)
+    },
+  )
+}
+
+export async function deleteBookstoreRecommendation(id) {
+  return tryApi(
+    () => api.delete(`/bookstore/recommendations/${id}`),
+    () => {
+      const idx = MOCK_BOOKSTORE_RECOMMENDATIONS.findIndex((r) => r.id === id)
+      if (idx >= 0) MOCK_BOOKSTORE_RECOMMENDATIONS.splice(idx, 1)
+      return { success: true }
+    },
   )
 }
 

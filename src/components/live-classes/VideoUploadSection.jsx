@@ -1,7 +1,11 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Film, Upload } from 'lucide-react'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
 import { cn } from '../../utils/cn'
-import { VIDEO_ACCEPT } from '../../data/liveClassesData'
+import { UPLOAD_PROFILES } from '../../constants/uploadConstraints'
+import { validateUploadFile } from '../../utils/uploadValidation'
+
+const VIDEO_PROFILE = UPLOAD_PROFILES.VIDEO_STANDARD
 
 function formatDuration(seconds) {
   if (!Number.isFinite(seconds) || seconds <= 0) return ''
@@ -14,13 +18,17 @@ function formatDuration(seconds) {
 
 export default function VideoUploadSection({ form, setForm }) {
   const inputRef = useRef(null)
+  const [validationError, setValidationError] = useState(null)
 
   const applyFile = useCallback(
-    (file) => {
+    async (file) => {
       if (!file) return
-      const ext = file.name.split('.').pop()?.toLowerCase()
-      const allowed = ['mp4', 'mov', 'mkv', 'avi']
-      if (!allowed.includes(ext)) return
+      const result = await validateUploadFile(file, VIDEO_PROFILE)
+      if (!result.valid) {
+        setValidationError(result.message)
+        return
+      }
+      setValidationError(null)
 
       const objectUrl = URL.createObjectURL(file)
       const video = document.createElement('video')
@@ -61,15 +69,16 @@ export default function VideoUploadSection({ form, setForm }) {
       >
         <Upload className="mb-3 h-10 w-10 text-[#55ace7]" strokeWidth={1.8} />
         <p className="text-sm font-semibold text-[#246392]">Drag & drop video here</p>
-        <p className="mt-1 text-xs text-[#686868]">MP4, MOV, MKV, AVI</p>
         <input
           ref={inputRef}
           type="file"
-          accept={VIDEO_ACCEPT}
+          accept={VIDEO_PROFILE.accept}
           className="sr-only"
           onChange={(e) => applyFile(e.target.files?.[0])}
         />
       </div>
+      <UploadFieldHint profile={VIDEO_PROFILE} />
+      <UploadValidationMessage message={validationError} />
 
       {form.videoObjectUrl && (
         <div className="overflow-hidden rounded-2xl bg-[#1a3a5c] shadow-lg ring-1 ring-[#55ace7]/20">

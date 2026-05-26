@@ -13,6 +13,10 @@ import { LIVE_CLASSES_BASE } from '../../constants/liveClassesNav'
 import LiveClassesFilterBar from './LiveClassesFilterBar'
 import LiveClassStatusBadge from './LiveClassStatusBadge'
 import LiveClassesTableActions from './LiveClassesTableActions'
+import {
+  tableActionsCellClass,
+  tableActionsHeaderClass,
+} from '../common/TableActionMenu'
 import ScheduleClassModal from './ScheduleClassModal'
 import RecurrenceScopeDialog from './RecurrenceScopeDialog'
 import { RECURRENCE_DELETE_SCOPES } from '../../constants/recurrence'
@@ -189,15 +193,19 @@ export default function LiveClassesListSection({
     {
       key: 'actions',
       label: 'Actions',
+      headerClassName: tableActionsHeaderClass,
+      cellClassName: tableActionsCellClass,
       render: (row) => (
-        <LiveClassesTableActions
-          row={row}
-          onView={() => navigate(`${LIVE_CLASSES_BASE}/${row.id}`)}
-          onEdit={() => modal.openEdit(row)}
-          onDelete={() => requestDelete(row)}
-          onDisable={() => toggleDisabled(row.id)}
-          onDuplicate={() => handleDuplicate(row)}
-        />
+        <div className="flex justify-center sm:justify-end">
+          <LiveClassesTableActions
+            row={row}
+            onView={() => navigate(`${LIVE_CLASSES_BASE}/${row.id}`)}
+            onEdit={() => modal.openEdit(row)}
+            onDelete={() => requestDelete(row)}
+            onDisable={() => toggleDisabled(row.id)}
+            onDuplicate={() => handleDuplicate(row)}
+          />
+        </div>
       ),
     },
   ]

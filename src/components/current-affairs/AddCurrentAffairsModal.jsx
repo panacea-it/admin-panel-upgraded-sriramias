@@ -1,20 +1,24 @@
-import { useRef } from 'react'
-import { FileText, Layers } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { Layers } from 'lucide-react'
 import { toast } from '@/utils/toast'
-import FormModalSubmitBar from '../common/FormModalSubmitBar'
-import Modal from '../ui/Modal'
-import ModalPanelHeader from '../courses/ModalPanelHeader'
-import SectionBar from '../courses/SectionBar'
-import { CourseFormField, CourseInput, CourseSelect } from '../courses/CourseFormField'
-import { MONTH_OPTIONS, YEAR_OPTIONS } from '../../data/currentAffairsData'
+import { isDailyPracticeCategory } from '../../constants/currentAffairsForm'
 import {
   createEmptyCurrentAffairsForm,
   currentAffairsRowToForm,
 } from '../../utils/academicsFormMappers'
+import { validateCurrentAffairsForm } from '../../utils/currentAffairsValidation'
 import { useModalForm } from '../../hooks/useModalForm'
+import FormModalSubmitBar from '../common/FormModalSubmitBar'
+import Modal from '../ui/Modal'
+import ModalPanelHeader from '../courses/ModalPanelHeader'
+import SectionBar from '../courses/SectionBar'
+import CurrentAffairsFormFields from './CurrentAffairsFormFields'
+import CurrentAffairsQuestionPaperSection from './CurrentAffairsQuestionPaperSection'
 
-export default function AddCurrentAffairsModal({ open, onClose, item, categories, onSubmit }) {
-  const fileRef = useRef(null)
+export default function AddCurrentAffairsModal({ open, onClose, item, onSubmit }) {
+  const [errors, setErrors] = useState({})
+  const [fileInputKey, setFileInputKey] = useState(0)
+
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
@@ -22,30 +26,91 @@ export default function AddCurrentAffairsModal({ open, onClose, item, categories
     createEmptyCurrentAffairsForm,
   )
 
-  const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  const clearFileInputs = useCallback(() => {
+    setFileInputKey((k) => k + 1)
+  }, [])
 
   const handleClose = () => {
-    if (fileRef.current) fileRef.current.value = ''
+    clearFileInputs()
+    setErrors({})
     onClose()
   }
 
   const handleReset = () => {
     reset()
-    if (fileRef.current) fileRef.current.value = ''
+    clearFileInputs()
+    setErrors({})
   }
 
-  const handleFile = (e) => {
-    const file = e.target.files?.[0]
-    setForm((f) => ({ ...f, fileName: file?.name || f.fileName }))
+  const handleCategoryChange = (e) => {
+    const nextCategory = e.target.value
+    setForm(createEmptyCurrentAffairsForm(nextCategory))
+    clearFileInputs()
+    setErrors({})
+  }
+
+  const onFieldChange = (key) => (e) => {
+    const value = e.target.value
+    setForm((f) => ({ ...f, [key]: value }))
+    setErrors((prev) => {
+      if (!prev[key]) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
+
+  const onFileChange = ({ fileName, file, errorMessage }) => {
+    setForm((f) => {
+      const uploadKey = f.category === 'Monthly Magazine' ? 'magazineUpload' : 'pdfUpload'
+      setErrors((prev) => {
+        const next = { ...prev }
+        if (errorMessage) {
+          next[uploadKey] = errorMessage
+        } else {
+          delete next.pdfUpload
+          delete next.magazineUpload
+        }
+        return next
+      })
+      return { ...f, fileName, file: file || null }
+    })
+  }
+
+  const onClearError = (key) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
+
+  const handlePatch = (patch) => {
+    setForm((f) => ({ ...f, ...patch }))
+    if (patch.questions) {
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next.questions
+        Object.keys(next).forEach((k) => {
+          if (k.startsWith('q')) delete next[k]
+        })
+        return next
+      })
+    }
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.category || !form.name.trim() || !form.year || !form.month) {
-      toast.error('Please fill all required fields')
+    const { valid, errors: nextErrors } = validateCurrentAffairsForm(form)
+    setErrors(nextErrors)
+    if (!valid) {
+      toast.error('Please fix the highlighted fields')
       return
     }
-    onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
+
+    const payload = { ...form, file: undefined }
+    onSubmit?.(payload, { isEdit: isEditMode, id: item?.id })
     toast.success(
       isEditMode
         ? 'Current affairs updated successfully'
@@ -53,6 +118,8 @@ export default function AddCurrentAffairsModal({ open, onClose, item, categories
     )
     handleClose()
   }
+
+  const showQuestions = isDailyPracticeCategory(form.category)
 
   return (
     <Modal
@@ -74,76 +141,30 @@ export default function AddCurrentAffairsModal({ open, onClose, item, categories
         <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6">
           <SectionBar title="Current Affairs Details" />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <CourseFormField label="Current Affairs Category" required>
-              <CourseSelect value={form.category} onChange={update('category')}>
-                <option value="">Choose category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </CourseSelect>
-            </CourseFormField>
-            <CourseFormField label="Name" required>
-              <CourseInput value={form.name} onChange={update('name')} placeholder="Enter name" />
-            </CourseFormField>
-            <CourseFormField label="Year" required>
-              <CourseSelect value={form.year} onChange={update('year')}>
-                <option value="">Select year</option>
-                {YEAR_OPTIONS.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </CourseSelect>
-            </CourseFormField>
-            <CourseFormField label="Month" required>
-              <CourseSelect value={form.month} onChange={update('month')}>
-                <option value="">Select month</option>
-                {MONTH_OPTIONS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </CourseSelect>
-            </CourseFormField>
-            <CourseFormField label="Status" required>
-              <CourseSelect value={form.status} onChange={update('status')}>
-                <option value="Active">Active</option>
-                <option value="In Active">In Active</option>
-                <option value="Draft">Draft</option>
-              </CourseSelect>
-            </CourseFormField>
-            <CourseFormField label="Upload PDF" required className="sm:col-span-2 lg:col-span-2">
-              <div className="relative">
-                <CourseInput
-                  readOnly
-                  value={form.fileName}
-                  placeholder="Choose PDF to upload"
-                  className="pr-12"
-                />
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".pdf"
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                  onChange={handleFile}
-                />
-                <FileText className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
-              </div>
-              {form.fileName ? (
-                <p className="mt-1 truncate text-[11px] text-[#246392]">Current: {form.fileName}</p>
-              ) : null}
-            </CourseFormField>
-          </div>
+          <CurrentAffairsFormFields
+            form={form}
+            errors={errors}
+            fileInputKey={fileInputKey}
+            onCategoryChange={handleCategoryChange}
+            onFieldChange={onFieldChange}
+            onFileChange={onFileChange}
+            onClearError={onClearError}
+          />
+
+          {showQuestions ? (
+            <CurrentAffairsQuestionPaperSection
+              form={form}
+              errors={errors}
+              onPatch={handlePatch}
+            />
+          ) : null}
 
           <FormModalSubmitBar
             isEditMode={isEditMode}
             onReset={handleReset}
             className="pt-2"
-            createLabel="Create"
-            updateLabel="Update"
+            createLabel="Save"
+            updateLabel="Save"
           />
         </div>
       </form>

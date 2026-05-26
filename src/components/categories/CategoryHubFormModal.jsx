@@ -4,6 +4,8 @@ import Modal from '../ui/Modal'
 import { useModalForm } from '../../hooks/useModalForm'
 import { cn } from '../../utils/cn'
 import { toast } from '../../utils/toast'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 import { PARENT_CATEGORY_OPTIONS, SUBJECT_OPTIONS } from '../../data/categoriesHubData'
 import { formatProgramLabel, loadPrograms } from '../../utils/programsStorage'
 
@@ -67,6 +69,7 @@ export default function CategoryHubFormModal({
     () => createEmptyForm(section),
   )
   const [errors, setErrors] = useState({})
+  const [uploadError, setUploadError] = useState(null)
 
   if (!section) return null
 
@@ -247,9 +250,16 @@ export default function CategoryHubFormModal({
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0]
                     if (!file) return
+                    const result = await validateUploadFile(file, 'IMAGE_ICON')
+                    if (!result.valid) {
+                      setUploadError(result.message)
+                      e.target.value = ''
+                      return
+                    }
+                    setUploadError(null)
                     setForm((f) => ({
                       ...f,
                       iconUrl: URL.createObjectURL(file),
@@ -264,6 +274,8 @@ export default function CategoryHubFormModal({
                 >
                   {form.iconFileName || 'Choose image'}
                 </button>
+                <UploadFieldHint profile="IMAGE_ICON" />
+                <UploadValidationMessage message={uploadError} />
               </Field>
             )}
           </div>

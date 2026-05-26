@@ -50,6 +50,8 @@ export let MOCK_BOOKSTORE_PRODUCTS = [
     discountPrice: 749,
     thumbnailUrl: '',
     previewPdfUrl: '',
+    keywords: ['UPSC', 'Indian Polity', 'Laxmikanth', 'Civil Services'],
+    sampleImages: [],
     stockQuantity: 18,
     weight: '0.9 kg',
     dimensions: '22×16×2.5 cm',
@@ -93,6 +95,26 @@ export let MOCK_BOOKSTORE_PRODUCTS = [
     dimensions: '21×15×2 cm',
     status: 'inactive',
     createdAt: iso(new Date(now - 86400000 * 5)),
+  },
+  {
+    id: 'BSP-006',
+    name: 'Indian Economy General Studies Book-1',
+    productType: 'Physical Book',
+    description: 'Complete Indian Economy coverage for UPSC General Studies Paper.',
+    subject: 'Economy',
+    authorName: 'Ramesh Singh',
+    isbn: '978-93-81234-06-6',
+    language: 'English',
+    originalPrice: 795,
+    discountPrice: 636,
+    thumbnailUrl: '',
+    previewPdfUrl: '',
+    stockQuantity: 120,
+    weight: '1.1 kg',
+    dimensions: '23×17×2.5 cm',
+    status: 'active',
+    isBestseller: true,
+    createdAt: iso(new Date(now - 86400000 * 8)),
   },
   {
     id: 'BSP-005',
@@ -241,9 +263,44 @@ export const MOCK_BOOKSTORE_WALLET_TXNS = [
   { id: 'WT-02', user: 'Sneha Reddy', type: 'debit', points: 100, reason: 'Redeemed on order', createdAt: iso(new Date(now - 86400000 * 1)) },
 ]
 
-export const MOCK_BOOKSTORE_RECOMMENDATIONS = [
-  { id: 'REC-1', type: 'Related Products', sourceProductId: 'BSP-001', targetProductIds: ['BSP-002', 'BSP-005'], status: 'active' },
-  { id: 'REC-2', type: 'Frequently Bought Together', sourceProductId: 'BSP-002', targetProductIds: ['BSP-001'], status: 'active' },
+let recommendationSeq = 3
+
+export function nextRecommendationId() {
+  recommendationSeq += 1
+  return `REC-${String(recommendationSeq).padStart(3, '0')}`
+}
+
+export let MOCK_BOOKSTORE_RECOMMENDATIONS = [
+  {
+    id: 'REC-001',
+    sourceProductId: 'BSP-006',
+    recommendationType: 'Cart Recommendations',
+    placement: 'Cart Drawer',
+    recommendedProductIds: ['BSP-002', 'BSP-005', 'BSP-001'],
+    priorityOrder: 1,
+    status: 'active',
+    bestsellerProductIds: ['BSP-002'],
+  },
+  {
+    id: 'REC-002',
+    sourceProductId: 'BSP-001',
+    recommendationType: 'Related Books',
+    placement: 'Product Page',
+    recommendedProductIds: ['BSP-002', 'BSP-006'],
+    priorityOrder: 2,
+    status: 'active',
+    bestsellerProductIds: [],
+  },
+  {
+    id: 'REC-003',
+    sourceProductId: 'BSP-002',
+    recommendationType: 'Frequently Bought Together',
+    placement: 'Product Page',
+    recommendedProductIds: ['BSP-006', 'BSP-001'],
+    priorityOrder: 1,
+    status: 'active',
+    bestsellerProductIds: ['BSP-006'],
+  },
 ]
 
 export const MOCK_BOOKSTORE_INVOICES = [
@@ -276,53 +333,148 @@ export function nextBundleId() {
   return `BSB-${String(bundleSeq).padStart(2, '0')}`
 }
 
+function stockStatusLabel(qty, min = 20) {
+  if (qty <= 0) return 'Critical'
+  if (qty <= min * 0.3) return 'Critical'
+  if (qty <= min) return 'Low'
+  if (qty <= min * 1.2) return 'Reorder Needed'
+  return 'Safe'
+}
+
 export function buildBookstoreDashboardPayload({ dateFrom, dateTo } = {}) {
   const products = MOCK_BOOKSTORE_PRODUCTS
   const orders = MOCK_BOOKSTORE_ORDERS
-  const revenue = orders
+  const paidRevenue = orders
     .filter((o) => o.paymentStatus === 'Paid')
     .reduce((sum, o) => sum + o.total, 0)
 
+  const revenueChart = [
+    { label: 'Mon', day: 'Mon', amount: 12000 },
+    { label: 'Tue', day: 'Tue', amount: 18000 },
+    { label: 'Wed', day: 'Wed', amount: 22000 },
+    { label: 'Thu', day: 'Thu', amount: 28000 },
+    { label: 'Fri', day: 'Fri', amount: 35000 },
+    { label: 'Sat', day: 'Sat', amount: 42000 },
+    { label: 'Sun', day: 'Sun', amount: 39000 },
+  ]
+  const weekRevenue = revenueChart.reduce((s, d) => s + d.amount, 0)
+
+  const productSalesChart = [
+    { label: 'UPSC Prelims', name: 'UPSC Prelims', units: 186, sales: 186 },
+    { label: 'Indian Polity', name: 'Indian Polity', units: 142, sales: 142 },
+    { label: 'Ethics', name: 'Ethics', units: 98, sales: 98 },
+    { label: 'Current Affairs', name: 'Current Affairs', units: 76, sales: 76 },
+    { label: 'Quantitative Aptitude', name: 'Quantitative Aptitude', units: 64, sales: 64 },
+    { label: 'Essay Writing', name: 'Essay Writing', units: 52, sales: 52 },
+  ]
+
+  const orderTrends = [
+    { label: 'Week 1', week: 'W1', orders: 48 },
+    { label: 'Week 2', week: 'W2', orders: 62 },
+    { label: 'Week 3', week: 'W3', orders: 55 },
+    { label: 'Week 4', week: 'W4', orders: 71 },
+  ]
+
+  const comboPerformance = [
+    { label: 'UPSC Foundation Combo', name: 'UPSC Foundation Combo', value: 38, sales: 38 },
+    { label: 'Polity + Ethics Combo', name: 'Polity + Ethics Combo', value: 28, sales: 28 },
+    { label: 'Prelims Booster Combo', name: 'Prelims Booster Combo', value: 22, sales: 22 },
+    { label: 'Test Series Bundle', name: 'Test Series Bundle', value: 12, sales: 12 },
+  ]
+
+  const suppliers = ['Pearson India', 'NCERT Depot', 'Arihant Wholesale', 'McGraw Hill', 'S. Chand']
+  const lowStockAlerts = products
+    .filter((p) => p.stockQuantity <= 25)
+    .map((p, i) => ({
+      ...p,
+      sku: p.id,
+      productName: p.name,
+      category: p.subject || p.productType,
+      currentStock: p.stockQuantity,
+      minimumStock: 20,
+      supplier: suppliers[i % suppliers.length],
+      lastUpdated: iso(new Date(now - 86400000 * (i + 1))),
+      status: stockStatusLabel(p.stockQuantity, 20),
+    }))
+
+  const bestSellers = [...products]
+    .map((p) => {
+      const unitsSold = Math.max(10, 120 - p.stockQuantity)
+      return {
+        ...p,
+        unitsSold,
+        revenue: unitsSold * p.discountPrice,
+        category: p.subject || 'General',
+        rating: (4.2 + (p.stockQuantity % 5) * 0.15).toFixed(1),
+        trend: unitsSold > 80 ? 'up' : 'down',
+        trendPercent: 5 + (unitsSold % 20),
+        maxUnits: 150,
+      }
+    })
+    .sort((a, b) => b.unitsSold - a.unitsSold)
+    .slice(0, 8)
+    .map((p, i) => ({ ...p, rank: i + 1, isTopSeller: i < 3 }))
+
+  const recentOrders = orders.map((o) => ({
+    ...o,
+    product: o.items?.[0]?.name || '—',
+    paymentStatus: o.paymentStatus || 'Pending',
+    deliveryStatus: o.status,
+    orderedDate: o.createdAt,
+  }))
+
   return {
     stats: {
-      totalRevenue: revenue,
-      totalOrders: orders.length,
+      totalRevenue: 245000,
+      totalOrders: orders.length + 24,
       totalProducts: products.length,
       totalCombos: MOCK_BOOKSTORE_COMBOS.length,
       pendingOrders: orders.filter((o) => o.status === 'Pending').length,
       deliveredOrders: orders.filter((o) => o.status === 'Delivered').length,
-      lowStockProducts: products.filter((p) => p.stockQuantity > 0 && p.stockQuantity <= 20).length,
-      topSellingProducts: 3,
+      lowStockProducts: lowStockAlerts.length,
+      topSellingProducts: bestSellers.length,
+      totalCustomers: 1842,
+      monthlyGrowth: 12.5,
+      bestSellingCategory: 'UPSC Prelims',
+      weekRevenue,
+      paidRevenue,
     },
-    revenueChart: [
-      { label: 'Mon', amount: 4200 },
-      { label: 'Tue', amount: 5100 },
-      { label: 'Wed', amount: 3800 },
-      { label: 'Thu', amount: 6200 },
-      { label: 'Fri', amount: 7400 },
-      { label: 'Sat', amount: 8900 },
-      { label: 'Sun', amount: 5600 },
+    kpiTrends: {
+      totalRevenue: { value: 12.5, up: true },
+      totalOrders: { value: 8.2, up: true },
+      pendingOrders: { value: 3.1, up: false },
+      deliveredOrders: { value: 14.6, up: true },
+      lowStockProducts: { value: 5, up: false },
+      totalCustomers: { value: 9.4, up: true },
+      monthlyGrowth: { value: 12.5, up: true },
+      bestSellingCategory: { value: 18, up: true },
+    },
+    sparklines: {
+      totalRevenue: [180, 195, 210, 220, 235, 245, 252],
+      totalOrders: [32, 38, 35, 42, 48, 52, 58],
+      pendingOrders: [5, 4, 6, 3, 4, 2, 1],
+      deliveredOrders: [28, 30, 32, 38, 40, 45, 48],
+    },
+    revenueChart,
+    productSalesChart,
+    orderTrends,
+    comboPerformance,
+    recentOrders,
+    lowStockAlerts,
+    bestSellers,
+    activities: [
+      { id: 'a1', type: 'order', title: 'New order received', detail: 'BSO-1003 — Rahul Verma', time: '12 min ago' },
+      { id: 'a2', type: 'stock', title: 'Product out of stock', detail: 'Quantitative Aptitude Workbook', time: '1 hr ago' },
+      { id: 'a3', type: 'combo', title: 'Combo purchased', detail: 'UPSC Foundation Combo', time: '2 hrs ago' },
+      { id: 'a4', type: 'payment', title: 'Payment received', detail: '₹1,498 via Cashfree', time: '3 hrs ago' },
+      { id: 'a5', type: 'refund', title: 'Refund initiated', detail: 'Order BSO-1002 partial', time: '5 hrs ago' },
     ],
-    productSalesChart: products.slice(0, 5).map((p) => ({
-      label: p.name.slice(0, 12),
-      units: Math.max(5, 120 - p.stockQuantity),
-    })),
-    orderTrends: [
-      { label: 'W1', orders: 12 },
-      { label: 'W2', orders: 18 },
-      { label: 'W3', orders: 15 },
-      { label: 'W4', orders: 22 },
-    ],
-    comboPerformance: MOCK_BOOKSTORE_COMBOS.map((c) => ({
-      label: c.name.slice(0, 14),
-      sales: Math.round(c.comboPrice / 100),
-    })),
-    recentOrders: orders,
-    lowStockAlerts: products.filter((p) => p.stockQuantity <= 20 && p.stockQuantity >= 0),
-    bestSellers: [...products]
-      .sort((a, b) => b.originalPrice - a.originalPrice)
-      .slice(0, 5)
-      .map((p) => ({ ...p, unitsSold: Math.max(10, 100 - p.stockQuantity) })),
+    performanceSummary: {
+      conversionRate: 68,
+      avgOrderValue: 1240,
+      fulfillmentRate: 94,
+      repeatCustomers: 42,
+    },
     filters: { dateFrom, dateTo },
   }
 }

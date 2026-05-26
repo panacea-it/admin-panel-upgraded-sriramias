@@ -4,6 +4,8 @@ import Modal from '../ui/Modal'
 import { useModalForm } from '../../hooks/useModalForm'
 import { cn } from '../../utils/cn'
 import { toast } from '../../utils/toast'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 
 function createEmptyForm() {
   return {
@@ -45,6 +47,7 @@ const inputClass =
 
 export default function MainCategoryModal({ open, onClose, item, onSubmit }) {
   const fileRef = useRef(null)
+  const [uploadError, setUploadError] = useState(null)
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
@@ -78,9 +81,16 @@ export default function MainCategoryModal({ open, onClose, item, onSubmit }) {
     handleClose()
   }
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const result = await validateUploadFile(file, 'IMAGE_ICON')
+    if (!result.valid) {
+      setUploadError(result.message)
+      e.target.value = ''
+      return
+    }
+    setUploadError(null)
     const url = URL.createObjectURL(file)
     setForm((f) => ({
       ...f,
@@ -183,9 +193,11 @@ export default function MainCategoryModal({ open, onClose, item, onSubmit }) {
                 )}
               >
                 <span className="truncate">
-                  {form.iconFileName || 'Choose image (PNG, JPG)'}
+                  {form.iconFileName || 'Choose image'}
                 </span>
               </button>
+              <UploadFieldHint profile="IMAGE_ICON" />
+              <UploadValidationMessage message={uploadError} />
               {(form.iconUrl || form.iconLabel) && (
                 <div className="mt-2 flex items-center gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#cbeeff] text-sm font-bold text-[#246392]">

@@ -1,5 +1,11 @@
+import { useState } from 'react'
 import { Calendar, ChevronDown, FileText, Image as ImageIcon, Video } from 'lucide-react'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
 import { cn } from '../../utils/cn'
+import {
+  inferUploadProfileFromAccept,
+  validateUploadFile,
+} from '../../utils/uploadValidation'
 
 export const courseFieldShell = cn(
   'h-12 min-h-[48px] w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800',
@@ -45,19 +51,48 @@ export function CourseDateInput({ className, ...props }) {
   )
 }
 
-export function CourseFileInput({ accept = 'image/*', placeholder = '360 to 480 kb', onChange, className }) {
+export function CourseFileInput({
+  accept = 'image/*',
+  uploadProfile,
+  placeholder = '360 to 480 kb',
+  onChange,
+  className,
+}) {
+  const profile = uploadProfile || inferUploadProfileFromAccept(accept)
+  const [error, setError] = useState(null)
+
+  const handleChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      onChange?.(e)
+      return
+    }
+    const result = await validateUploadFile(file, profile)
+    if (!result.valid) {
+      setError(result.message)
+      e.target.value = ''
+      return
+    }
+    setError(null)
+    onChange?.(e)
+  }
+
   return (
-    <label
-      className={cn(
-        courseFieldShell,
-        'relative flex cursor-pointer items-center',
-        className,
-      )}
-    >
-      <span className="min-w-0 flex-1 truncate text-gray-400">{placeholder}</span>
-      <ImageIcon className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
-      <input type="file" accept={accept} className="sr-only" onChange={onChange} />
-    </label>
+    <>
+      <label
+        className={cn(
+          courseFieldShell,
+          'relative flex cursor-pointer items-center',
+          className,
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate text-gray-400">{placeholder}</span>
+        <ImageIcon className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
+        <input type="file" accept={accept || profile.accept} className="sr-only" onChange={handleChange} />
+      </label>
+      <UploadFieldHint profile={profile} />
+      <UploadValidationMessage message={error} />
+    </>
   )
 }
 
@@ -84,22 +119,47 @@ export function CourseMediaSlot({
   className,
   onFileChange,
   accept,
+  uploadProfile,
 }) {
   const Icon = icon === 'video' ? Video : ImageIcon
+  const profile =
+    uploadProfile ||
+    (icon === 'video' ? 'VIDEO_STANDARD' : inferUploadProfileFromAccept(accept))
+  const [error, setError] = useState(null)
+
+  const handleChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      onFileChange?.(e)
+      return
+    }
+    const result = await validateUploadFile(file, profile)
+    if (!result.valid) {
+      setError(result.message)
+      e.target.value = ''
+      return
+    }
+    setError(null)
+    onFileChange?.(e)
+  }
 
   if (onFileChange) {
     return (
-      <label
-        className={cn(
-          courseFieldShell,
-          'relative flex min-h-[48px] cursor-pointer items-center text-xs sm:text-sm',
-          className,
-        )}
-      >
-        <span className="min-w-0 flex-1 truncate text-gray-400">{fileName || placeholder}</span>
-        <Icon className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
-        <input type="file" accept={accept} className="sr-only" onChange={onFileChange} />
-      </label>
+      <>
+        <label
+          className={cn(
+            courseFieldShell,
+            'relative flex min-h-[48px] cursor-pointer items-center text-xs sm:text-sm',
+            className,
+          )}
+        >
+          <span className="min-w-0 flex-1 truncate text-gray-400">{fileName || placeholder}</span>
+          <Icon className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
+          <input type="file" accept={accept || profile.accept} className="sr-only" onChange={handleChange} />
+        </label>
+        <UploadFieldHint profile={profile} />
+        <UploadValidationMessage message={error} />
+      </>
     )
   }
 
@@ -172,20 +232,44 @@ export function CoursePdfInput({
   onChange,
   placeholder = 'Upload sample PDF',
   className,
+  uploadProfile = 'PDF_STANDARD',
 }) {
+  const [error, setError] = useState(null)
+  const profile = uploadProfile
+
+  const handleChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      onChange?.(e)
+      return
+    }
+    const result = await validateUploadFile(file, profile)
+    if (!result.valid) {
+      setError(result.message)
+      e.target.value = ''
+      return
+    }
+    setError(null)
+    onChange?.(e)
+  }
+
   return (
-    <label
-      className={cn(courseFieldShell, 'relative flex cursor-pointer items-center', className)}
-    >
-      <span className="min-w-0 flex-1 truncate text-gray-400">{fileName || placeholder}</span>
-      <FileText className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
-      <input
-        type="file"
-        accept="application/pdf,.pdf"
-        className="sr-only"
-        onChange={onChange}
-      />
-    </label>
+    <>
+      <label
+        className={cn(courseFieldShell, 'relative flex cursor-pointer items-center', className)}
+      >
+        <span className="min-w-0 flex-1 truncate text-gray-400">{fileName || placeholder}</span>
+        <FileText className="ml-2 h-5 w-5 shrink-0 text-[#246392]" />
+        <input
+          type="file"
+          accept="application/pdf,.pdf"
+          className="sr-only"
+          onChange={handleChange}
+        />
+      </label>
+      <UploadFieldHint profile={profile} />
+      <UploadValidationMessage message={error} />
+    </>
   )
 }
 

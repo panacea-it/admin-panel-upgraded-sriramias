@@ -17,7 +17,6 @@ const BookstoreWalletPage = lazy(() => import('../pages/bookstore/BookstoreWalle
 const BookstoreRecommendationsPage = lazy(() => import('../pages/bookstore/BookstoreRecommendationsPage'))
 const BookstoreInvoicesPage = lazy(() => import('../pages/bookstore/BookstoreInvoicesPage'))
 const BookstoreReportsPage = lazy(() => import('../pages/bookstore/BookstoreReportsPage'))
-const BookstoreRbacPage = lazy(() => import('../pages/bookstore/BookstoreRbacPage'))
 
 function BookstoreRouteGuard({ children }) {
   const { role } = usePermissions()
@@ -56,7 +55,6 @@ export default function BookstoreLayout() {
                 <Route path="recommendations" element={<BookstoreRecommendationsPage />} />
                 <Route path="invoices" element={<BookstoreInvoicesPage />} />
                 <Route path="reports" element={<BookstoreReportsPage />} />
-                <Route path="rbac" element={<BookstoreRbacPage />} />
                 <Route path="*" element={<Navigate to="dashboard" replace />} />
               </Routes>
             </Suspense>

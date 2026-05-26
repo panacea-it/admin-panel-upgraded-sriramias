@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, CreditCard, GraduationCap, Search } from 'lucide-react'
+import { BookOpen, CreditCard, GraduationCap } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from './ModalPanelHeader'
 import BatchDetailsSection from './BatchDetailsSection'
 import BatchFeeDetailsSection from './BatchFeeDetailsSection'
 import BatchSubjectDetailsSection from './BatchSubjectDetailsSection'
-import BatchSeoSection from './BatchSeoSection'
-import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
 import BatchFormCard from './batch-form/BatchFormCard'
 import BatchFormStickyFooter from './batch-form/BatchFormStickyFooter'
 import {
@@ -25,7 +23,6 @@ export default function AddCourseModal({
   onSubmit,
   existingCourseIds = [],
 }) {
-  const { subjects } = useAcademicsSubjects()
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
@@ -122,18 +119,9 @@ export default function AddCourseModal({
               step={3}
               icon={GraduationCap}
               title="Subject Details"
-              description="Link faculty subjects to this batch for scheduling and SEO."
+              description="Link faculty subjects from Academics to this batch for scheduling."
             >
-              <BatchSubjectDetailsSection form={form} setForm={setForm} subjects={subjects} />
-            </BatchFormCard>
-
-            <BatchFormCard
-              step={4}
-              icon={Search}
-              title="SEO & Content"
-              description="Search engine metadata and rich page content for this batch."
-            >
-              <BatchSeoSection form={form} setForm={setForm} errors={errors} />
+              <BatchSubjectDetailsSection form={form} setForm={setForm} />
             </BatchFormCard>
           </div>
         </div>

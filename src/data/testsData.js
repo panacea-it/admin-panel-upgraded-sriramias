@@ -31,7 +31,22 @@ export const INITIAL_TESTS = [
   },
 ]
 
-export const TEST_TYPES = ['Prelims', 'Mains', 'CSAT', 'Sectional']
+export const ACADEMIC_TEST_TYPES = [
+  'Prelims',
+  'Mains',
+  'CSAT',
+  'Mock Test',
+  'Sectional Test',
+  'Practice Test',
+  'Custom Test',
+]
+
+/** @deprecated Use ACADEMIC_TEST_TYPES */
+export const TEST_TYPES = ACADEMIC_TEST_TYPES
+
+export const TEST_STATUSES = ['Draft', 'Scheduled', 'Active', 'Completed']
+
+export const NEGATIVE_MARK_PRESETS = ['0.25', '0.50', '1.00']
 
 export const TEST_CENTERS = [
   'Delhi Center',

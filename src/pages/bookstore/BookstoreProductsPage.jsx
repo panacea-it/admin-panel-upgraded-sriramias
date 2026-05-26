@@ -63,10 +63,10 @@ export default function BookstoreProductsPage() {
     try {
       if (editing) {
         await updateBookstoreProduct(editing.id, form)
-        toast.success('Product updated')
+        toast.success(form.publishState === 'draft' ? 'Draft saved' : 'Product updated')
       } else {
         await createBookstoreProduct(form)
-        toast.success('Product created')
+        toast.success(form.publishState === 'draft' ? 'Draft saved' : 'Product created')
       }
       setModalOpen(false)
       setEditing(null)

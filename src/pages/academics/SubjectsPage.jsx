@@ -8,6 +8,7 @@ import SubjectModal from '../../components/subjects/SubjectModal'
 import SubjectEmptyState from '../../components/subjects/SubjectEmptyState'
 import ConfirmDeleteDialog from '../../components/subjects/ConfirmDeleteDialog'
 import {
+  buildRecordingFromForm,
   buildSubjectFromForm,
 } from '../../components/subjects/subjectFormUtils'
 import { useAuth } from '../../contexts/AuthContext'
@@ -15,7 +16,16 @@ import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
 import {
   buildLiveClassesFromRecurrence,
   isLiveClassCategory,
+  isRecordedClassCategory,
 } from '../../utils/academicsSubjectsRecurrence'
+import {
+  normalizeCategories,
+  normalizeTopics,
+} from '../../utils/subjectCategoryHelpers'
+import {
+  syncSubjectLiveClassesToModule,
+  syncSubjectRecordingsToModule,
+} from '../../utils/subjectModuleSync'
 import { toast } from '../../utils/toast'
 import { cn } from '../../utils/cn'
 import { facultySubjectLabels } from '../../data/facultySubjectLabels'
@@ -42,10 +52,11 @@ export default function SubjectsPage() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     return subjects.filter((row) => {
+      const topics = normalizeTopics(row.topics ?? row.topic)
       const matchSearch =
         !q ||
         row.subjectName?.toLowerCase().includes(q) ||
-        row.topic?.toLowerCase().includes(q) ||
+        topics.some((t) => t.toLowerCase().includes(q)) ||
         row.teacher?.toLowerCase().includes(q) ||
         String(row.id).includes(q)
       const matchStatus = statusFilter === 'all' || row.status === statusFilter
@@ -76,14 +87,21 @@ export default function SubjectsPage() {
 
   const handleModalSubmit = async (form) => {
     const actorName = user?.name || user?.email || 'Admin'
+    const categories = normalizeCategories(form.categories ?? form.category)
 
     if (modalContext === 'liveClass' && activeSubject) {
       const rows = buildLiveClassesFromRecurrence(form, activeSubject, null, actorName)
-      if (rows.length > 1) {
-        upsertLiveClassesBatch(activeSubject.id, rows)
-        toast.success(`${rows.length} live classes scheduled`)
+      let syncedRows = rows
+      try {
+        syncedRows = await syncSubjectLiveClassesToModule(rows, activeSubject, { actor: actorName })
+      } catch {
+        toast.error('Live class saved locally but sync to Schedule/Live Classes failed')
+      }
+      if (syncedRows.length > 1) {
+        upsertLiveClassesBatch(activeSubject.id, syncedRows)
+        toast.success(`${syncedRows.length} live classes scheduled`)
       } else {
-        upsertLiveClass(activeSubject.id, rows[0])
+        upsertLiveClass(activeSubject.id, syncedRows[0])
         toast.success('Live class added')
       }
       return
@@ -91,13 +109,53 @@ export default function SubjectsPage() {
 
     const existing = modalMode === 'edit' ? activeSubject : null
     const subjectRow = buildSubjectFromForm(form, existing, subjects)
-    const showLive =
-      isLiveClassCategory(form.category) && form.classTitle?.trim()
-    if (showLive) {
+
+    if (isLiveClassCategory(categories) && form.classTitle?.trim()) {
       const rows = buildLiveClassesFromRecurrence(form, subjectRow, null, actorName)
-      subjectRow.liveClasses = [...(existing?.liveClasses || []), ...rows]
+      const existingLive = existing?.liveClasses || []
+      subjectRow.liveClasses = [...existingLive, ...rows]
     }
+
+    if (isRecordedClassCategory(categories)) {
+      const recording = buildRecordingFromForm(form, existing?.recordings?.[0], subjectRow)
+      const existingRec = existing?.recordings || []
+      const recIdx = existingRec.findIndex((r) => r.id === recording.id)
+      subjectRow.recordings =
+        recIdx >= 0
+          ? existingRec.map((r, i) => (i === recIdx ? recording : r))
+          : [...existingRec, recording]
+    }
+
     upsertSubject(subjectRow)
+
+    try {
+      let needsResave = false
+      if (isLiveClassCategory(categories) && subjectRow.liveClasses?.length) {
+        const rowsToSync = subjectRow.liveClasses.filter((lc) => !lc.linkedLessonId)
+        if (rowsToSync.length) {
+          const synced = await syncSubjectLiveClassesToModule(rowsToSync, subjectRow, {
+            actor: actorName,
+          })
+          const syncedById = new Map(synced.map((r) => [r.id, r]))
+          subjectRow.liveClasses = subjectRow.liveClasses.map(
+            (lc) => syncedById.get(lc.id) || lc,
+          )
+          needsResave = true
+        }
+      }
+      if (isRecordedClassCategory(categories) && subjectRow.recordings?.length) {
+        subjectRow.recordings = await syncSubjectRecordingsToModule(
+          subjectRow.recordings,
+          subjectRow,
+          { actor: actorName },
+        )
+        needsResave = true
+      }
+      if (needsResave) upsertSubject(subjectRow)
+    } catch (err) {
+      toast.error(err?.message || 'Subject saved; failed to sync to Live Classes modules')
+    }
+
     toast.success(modalMode === 'edit' ? facultySubjectLabels.updated : facultySubjectLabels.created)
   }
 

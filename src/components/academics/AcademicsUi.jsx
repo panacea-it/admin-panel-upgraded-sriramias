@@ -14,13 +14,20 @@ export function BannerButton({ children, onClick }) {
   )
 }
 
+const STATUS_STYLES = {
+  Active: 'bg-[#69df66]',
+  Draft: 'bg-[#efb36d]',
+  Scheduled: 'bg-[#55ace7]',
+  Completed: 'bg-[#9ca3af]',
+  'In Active': 'bg-[#efb36d]',
+}
+
 export function StatusBadge({ status }) {
-  const active = status === 'Active'
   return (
     <span
       className={cn(
         'inline-flex min-w-[88px] items-center justify-center rounded-md px-3 py-1.5 text-sm font-semibold text-white',
-        active ? 'bg-[#69df66]' : 'bg-[#efb36d]',
+        STATUS_STYLES[status] || 'bg-[#efb36d]',
       )}
     >
       {status}

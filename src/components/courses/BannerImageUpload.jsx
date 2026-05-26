@@ -1,8 +1,11 @@
 import { useRef, useState } from 'react'
 import { ImageIcon, Upload, X } from 'lucide-react'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
 import { cn } from '../../utils/cn'
+import { validateUploadFile } from '../../utils/uploadValidation'
 
 const ACCEPT = 'image/jpeg,image/png,image/webp'
+const PROFILE = 'IMAGE_BANNER'
 
 export default function BannerImageUpload({
   previewUrl,
@@ -12,11 +15,16 @@ export default function BannerImageUpload({
 }) {
   const inputRef = useRef(null)
   const [dragOver, setDragOver] = useState(false)
+  const [validationError, setValidationError] = useState(null)
 
-  const applyFile = (file) => {
+  const applyFile = async (file) => {
     if (!file) return
-    const allowed = ['image/jpeg', 'image/png', 'image/webp']
-    if (!allowed.includes(file.type)) return
+    const result = await validateUploadFile(file, PROFILE)
+    if (!result.valid) {
+      setValidationError(result.message)
+      return
+    }
+    setValidationError(null)
     const url = URL.createObjectURL(file)
     onChange({ file, previewUrl: url, fileName: file.name })
   }
@@ -73,9 +81,7 @@ export default function BannerImageUpload({
             <span className="text-base font-semibold text-[#246392]">
               Drag & drop banner image here
             </span>
-            <span className="max-w-sm text-sm text-gray-500">
-              or click to browse — JPG, PNG, WebP
-            </span>
+            <span className="max-w-sm text-sm text-gray-500">or click to browse</span>
           </button>
         )}
         <input
@@ -92,7 +98,8 @@ export default function BannerImageUpload({
           {fileName}
         </p>
       ) : null}
-      {error ? <p className="mt-2 text-xs font-medium text-red-600">{error}</p> : null}
+      <UploadFieldHint profile={PROFILE} className="mt-2" />
+      <UploadValidationMessage message={validationError || error} />
     </div>
   )
 }

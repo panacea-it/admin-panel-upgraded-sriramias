@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useFieldArray, useForm, Controller } from 'react-hook-form'
 import { ChevronDown, ChevronUp, ImageIcon, Sparkles, Trash2, Upload } from 'lucide-react'
 import { CourseAddMoreLink, CourseFormField, CourseInput, CourseTextarea } from './CourseFormField'
 import { emptyWhyChooseFeature, normalizeWhyChooseFeatures } from '../../utils/whyChooseFeatures'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 import { cn } from '../../utils/cn'
 
 const ICON_ACCEPT = 'image/jpeg,image/png,image/webp,image/svg+xml'
@@ -32,6 +34,7 @@ function HighlightSwitch({ checked, onChange, id }) {
 
 function FeatureIconUpload({ value, fileName, onFile }) {
   const inputRef = useRef(null)
+  const [uploadError, setUploadError] = useState(null)
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -58,17 +61,24 @@ function FeatureIconUpload({ value, fileName, onFile }) {
         </button>
         {fileName ? (
           <p className="mt-2 truncate text-xs font-medium text-gray-500">{fileName}</p>
-        ) : (
-          <p className="mt-2 text-xs text-gray-500">JPG, PNG, WebP, or SVG</p>
-        )}
+        ) : null}
+        <UploadFieldHint profile="IMAGE_ICON" className="mt-2" />
+        <UploadValidationMessage message={uploadError} />
         <input
           ref={inputRef}
           type="file"
           accept={ICON_ACCEPT}
           className="sr-only"
-          onChange={(e) => {
+          onChange={async (e) => {
             const file = e.target.files?.[0]
             if (!file) return
+            const result = await validateUploadFile(file, 'IMAGE_ICON', { checkDimensions: false })
+            if (!result.valid) {
+              setUploadError(result.message)
+              e.target.value = ''
+              return
+            }
+            setUploadError(null)
             const reader = new FileReader()
             reader.onload = () => onFile(file, String(reader.result || ''))
             reader.readAsDataURL(file)

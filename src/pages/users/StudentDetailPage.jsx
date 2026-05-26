@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   ClipboardList,
   CreditCard,
+  FolderOpen,
   GraduationCap,
   Mail,
   Package,
@@ -21,6 +22,7 @@ import { buildStudent360 } from '../../utils/studentDetailAggregator'
 import { formatINR } from '../../utils/financeFilters'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import { cn } from '../../utils/cn'
+import StudentContentPanel from '../../components/content-library/student/StudentContentPanel'
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: User },
@@ -30,6 +32,7 @@ const TABS = [
   { id: 'wallet', label: 'Wallet', icon: Wallet },
   { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
   { id: 'tests', label: 'Tests', icon: ClipboardList },
+  { id: 'content', label: 'Content Library', icon: FolderOpen },
   { id: 'activity', label: 'Activity', icon: GraduationCap },
 ]
 
@@ -480,6 +483,13 @@ export default function StudentDetailPage() {
             <AttendanceTab attendance={data.attendance} enrollments={data.enrollments} />
           )}
           {activeTab === 'tests' && <TestsTab tests={data.tests} />}
+          {activeTab === 'content' && (
+            <StudentContentPanel
+              studentId={userId}
+              batchIds={data.enrollments?.map((e) => e.batchId).filter(Boolean) || ['batch-2025']}
+              courseIds={data.enrollments?.map((e) => e.courseId).filter(Boolean) || ['course-gs']}
+            />
+          )}
           {activeTab === 'activity' && <ActivityTab activity={data.activity} />}
         </div>
       </section>

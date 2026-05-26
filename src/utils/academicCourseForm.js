@@ -36,11 +36,29 @@ export const createEmptyHowWillSlots = createDefaultHowWillSlots
 
 export const DEFAULT_SECTION_TITLE_OVERVIEW = 'Course Overview'
 export const DEFAULT_SECTION_TITLE_KEY_FEATURES = 'Key Features Of Course'
+export const DEFAULT_WHY_CHOOSE_TITLE = 'Why Choose This Course?'
+export const DEFAULT_WHY_CHOOSE_SUBTITLE =
+  'Discover how this course can help you achieve your goals.'
 
+/** @deprecated Legacy auto-generated titles; only used when migrating stored values */
 export function buildWhyChooseTitle({ examCategory, courseName }) {
   const cat = examCategory?.trim() || 'Category'
   const name = courseName?.trim() || 'Course Name'
   return `Why Choose ${cat} ${name} Course Help You?`
+}
+
+export function resolveWhyChooseTitle(row = {}) {
+  const explicit = row.whyChooseTitle?.trim()
+  if (explicit) return explicit
+  const legacy = row.sectionTitleWhyChoose?.trim()
+  if (legacy) return legacy
+  return DEFAULT_WHY_CHOOSE_TITLE
+}
+
+export function resolveWhyChooseSubtitle(row = {}) {
+  const explicit = row.whyChooseSubtitle?.trim()
+  if (explicit) return explicit
+  return DEFAULT_WHY_CHOOSE_SUBTITLE
 }
 
 export function buildHowHelpsTitle(courseName) {
@@ -48,11 +66,11 @@ export function buildHowHelpsTitle(courseName) {
   return `How Will the ${name} Helps You ?`
 }
 
-export function buildDefaultSectionTitles({ examCategory = '', courseName = '' } = {}) {
+export function buildDefaultSectionTitles({ courseName = '' } = {}) {
   return {
     sectionTitleOverview: DEFAULT_SECTION_TITLE_OVERVIEW,
     sectionTitleKeyFeatures: DEFAULT_SECTION_TITLE_KEY_FEATURES,
-    sectionTitleWhyChoose: buildWhyChooseTitle({ examCategory, courseName }),
+    sectionTitleWhyChoose: DEFAULT_WHY_CHOOSE_TITLE,
     sectionTitleHowHelps: buildHowHelpsTitle(courseName),
   }
 }
@@ -64,6 +82,8 @@ export function createEmptyAcademicCourseContent(meta = {}) {
     keyFeatures: createDefaultKeyFeatureSlots(),
     whyChooseFeatures: [emptyWhyChooseFeature(1)],
     howWill: createDefaultHowWillSlots(),
+    whyChooseTitle: '',
+    whyChooseSubtitle: '',
     ...buildDefaultSectionTitles(meta),
   }
 }
@@ -123,6 +143,8 @@ function mergeItemWithCourseFormData(item) {
     sectionTitleKeyFeatures: stored.sectionTitleKeyFeatures ?? item.sectionTitleKeyFeatures,
     sectionTitleWhyChoose: stored.sectionTitleWhyChoose ?? item.sectionTitleWhyChoose,
     sectionTitleHowHelps: stored.sectionTitleHowHelps ?? item.sectionTitleHowHelps,
+    whyChooseTitle: stored.whyChooseTitle ?? item.whyChooseTitle ?? '',
+    whyChooseSubtitle: stored.whyChooseSubtitle ?? item.whyChooseSubtitle ?? '',
   }
 }
 
@@ -170,7 +192,6 @@ export function academicCourseItemToContent(item) {
   }
 
   const defaults = buildDefaultSectionTitles({
-    examCategory: row.examCategory,
     courseName: row.name,
   })
 
@@ -180,6 +201,8 @@ export function academicCourseItemToContent(item) {
     keyFeatures,
     whyChooseFeatures,
     howWill,
+    whyChooseTitle: row.whyChooseTitle?.trim() || row.sectionTitleWhyChoose?.trim() || '',
+    whyChooseSubtitle: row.whyChooseSubtitle?.trim() || '',
     sectionTitleOverview:
       row.sectionTitleOverview?.trim() || defaults.sectionTitleOverview,
     sectionTitleKeyFeatures:
@@ -192,18 +215,16 @@ export function academicCourseItemToContent(item) {
 }
 
 export function getCourseMarketingSectionTitles(course = {}, meta = {}) {
-  const examCategory =
-    meta.examCategory ?? course.examCategory?.split(' - ').pop() ?? course.examCategory ?? ''
   const courseName = meta.courseName ?? course.name ?? course.courseName ?? ''
-  const defaults = buildDefaultSectionTitles({ examCategory, courseName })
+  const defaults = buildDefaultSectionTitles({ courseName })
 
   return {
     overview:
       course.sectionTitleOverview?.trim() || defaults.sectionTitleOverview,
     keyFeatures:
       course.sectionTitleKeyFeatures?.trim() || defaults.sectionTitleKeyFeatures,
-    whyChoose:
-      course.sectionTitleWhyChoose?.trim() || defaults.sectionTitleWhyChoose,
+    whyChoose: resolveWhyChooseTitle(course),
+    whyChooseSubtitle: resolveWhyChooseSubtitle(course),
     howHelps:
       course.sectionTitleHowHelps?.trim() || defaults.sectionTitleHowHelps,
   }
@@ -219,13 +240,14 @@ export function mapCourseMarketingForWebsite(course = {}) {
     overview: content.overview,
     courseOverview: content.overview,
     keyFeatures: content.keyFeatures,
+    whyChooseTitle: sectionTitles.whyChoose,
+    whyChooseSubtitle: sectionTitles.whyChooseSubtitle,
     whyChooseFeatures: mapWhyChooseFeaturesForWebsite({
       whyChooseFeatures: content.whyChooseFeatures,
       whyChooseCourse: course.whyChooseCourse,
     }),
     howWill: content.howWill,
     howCourseHelps: course.howCourseHelps || legacyHowCourseHelpsSummary(content.howWill),
-    sectionTitles: getCourseMarketingSectionTitles(course),
   }
 }
 
@@ -294,9 +316,9 @@ export function serializeAcademicCourseContent(form, meta = {}) {
   const sectionTitleKeyFeatures = String(
     form.sectionTitleKeyFeatures ?? titles.keyFeatures,
   ).trim()
-  const sectionTitleWhyChoose = String(
-    form.sectionTitleWhyChoose ?? titles.whyChoose,
-  ).trim()
+  const whyChooseTitle = resolveWhyChooseTitle(form)
+  const whyChooseSubtitle = resolveWhyChooseSubtitle(form)
+  const sectionTitleWhyChoose = whyChooseTitle
   const sectionTitleHowHelps = String(
     form.sectionTitleHowHelps ?? titles.howHelps,
   ).trim()
@@ -307,6 +329,8 @@ export function serializeAcademicCourseContent(form, meta = {}) {
     keyFeatures,
     whyChooseFeatures,
     howWill,
+    whyChooseTitle,
+    whyChooseSubtitle,
     sectionTitleOverview,
     sectionTitleKeyFeatures,
     sectionTitleWhyChoose,
@@ -321,6 +345,8 @@ export function serializeAcademicCourseContent(form, meta = {}) {
       keyFeatures,
       whyChooseFeatures,
       howWill,
+      whyChooseTitle,
+      whyChooseSubtitle,
       sectionTitleOverview,
       sectionTitleKeyFeatures,
       sectionTitleWhyChoose,

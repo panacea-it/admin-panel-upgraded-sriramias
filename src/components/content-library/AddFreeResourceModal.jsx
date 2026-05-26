@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { BookMarked, Layers } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import FormModalSubmitBar from '../common/FormModalSubmitBar'
@@ -11,9 +11,12 @@ import {
   freeResourceRowToForm,
 } from '../../utils/academicsFormMappers'
 import { useModalForm } from '../../hooks/useModalForm'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 
 export default function AddFreeResourceModal({ open, onClose, item, categories, onSubmit }) {
   const fileRef = useRef(null)
+  const [uploadError, setUploadError] = useState(null)
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
@@ -33,9 +36,17 @@ export default function AddFreeResourceModal({ open, onClose, item, categories, 
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0]
-    setForm((f) => ({ ...f, fileName: file?.name || f.fileName }))
+    if (!file) return
+    const result = await validateUploadFile(file, 'DOCUMENT_BOOK')
+    if (!result.valid) {
+      setUploadError(result.message)
+      e.target.value = ''
+      return
+    }
+    setUploadError(null)
+    setForm((f) => ({ ...f, fileName: file.name }))
   }
 
   const handleSubmit = (e) => {
@@ -115,6 +126,8 @@ export default function AddFreeResourceModal({ open, onClose, item, categories, 
                 />
                 <BookMarked className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
               </div>
+              <UploadFieldHint profile="DOCUMENT_BOOK" />
+              <UploadValidationMessage message={uploadError} />
               {form.fileName ? (
                 <p className="mt-1 truncate text-[11px] text-[#246392]">Current: {form.fileName}</p>
               ) : null}

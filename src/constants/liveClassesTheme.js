@@ -37,7 +37,7 @@ export const liveClassesTw = {
     'inline-flex h-10 items-center gap-2 rounded-lg bg-[#1a3a5c] px-4 text-sm font-semibold text-white shadow-[0_4px_10px_rgba(0,0,0,0.15)] transition hover:bg-[#152f4a]',
   courseCountBadge: 'inline-flex rounded-full bg-[#eef2fc] px-2.5 py-0.5 text-xs font-bold text-[#246392]',
   bulkBar: 'rounded-xl bg-[#eef2fc] px-4 py-3',
-  rowHover: 'hover:bg-slate-50/90',
+  rowHover: 'transition-colors hover:bg-slate-50/90',
   filterBar:
     'rounded-lg bg-white px-3 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.08)] sm:px-4',
   modalRecordingBorder: 'ring-1 ring-[#e8f4fc]',

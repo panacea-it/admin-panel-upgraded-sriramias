@@ -1,17 +1,24 @@
-import { ClipboardList } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ClipboardList, FileQuestion } from 'lucide-react'
 import { toast } from '@/utils/toast'
-import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
-import SectionBar from '../courses/SectionBar'
+import BatchFormCard from '../courses/batch-form/BatchFormCard'
+import BatchFormStickyFooter from '../courses/batch-form/BatchFormStickyFooter'
+import BatchQuestionPaperSection from '../courses/exam/BatchQuestionPaperSection'
+import TestSeriesDetailsFields from '../courses/exam/TestSeriesDetailsFields'
+import { CourseFormField, CourseSelect } from '../courses/CourseFormField'
+import { TEST_CENTERS, TEST_STATUSES } from '../../data/testsData'
 import {
-  CourseFormField,
-  CourseInput,
-  CourseSelect,
-  CourseTextarea,
-} from '../courses/CourseFormField'
-import { TEST_CENTERS, TEST_TYPES } from '../../data/testsData'
-import { createEmptyTestForm, testRowToForm } from '../../utils/academicsFormMappers'
+  createEmptyTestForm,
+  testRowToForm,
+  validateTestForm,
+} from '../../utils/testFormUtils'
+import {
+  normalizeTestSeriesBlock,
+  patchTestSeriesBlock,
+} from '../../utils/batchTestSeriesForm'
+import { cn } from '../../utils/cn'
 import { useModalForm } from '../../hooks/useModalForm'
 
 export default function AddTestModal({ open, onClose, item, onSubmit }) {
@@ -21,99 +28,135 @@ export default function AddTestModal({ open, onClose, item, onSubmit }) {
     testRowToForm,
     createEmptyTestForm,
   )
+  const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
 
-  const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  useEffect(() => {
+    if (open) setErrors({})
+  }, [open])
 
-  const handleClose = () => {
-    onClose()
+  const testSeries = normalizeTestSeriesBlock(form.testSeries || {})
+
+  const setTestSeries = (updater) => {
+    setForm((f) => {
+      const prev = normalizeTestSeriesBlock(f.testSeries || {})
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      return { ...f, testSeries: normalizeTestSeriesBlock(next) }
+    })
   }
 
-  const handleReset = () => {
-    reset()
+  const updateTestSeries = (patch) => {
+    setForm((f) => ({
+      ...f,
+      testSeries: patchTestSeriesBlock(f.testSeries || {}, patch),
+    }))
   }
 
-  const handleSubmit = (e) => {
+  const handleClose = () => onClose()
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.title.trim() || !form.totalQuestions.trim() || !form.duration.trim()) {
-      toast.error('Please fill required test details')
+    const validationErrors = validateTestForm(form)
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors)
+      toast.error('Please fix the highlighted fields')
       return
     }
-    onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
-    toast.success(isEditMode ? 'Test updated successfully' : 'Test created successfully')
-    handleClose()
+    setSubmitting(true)
+    try {
+      await onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
+      toast.success(isEditMode ? 'Test updated successfully' : 'Test created successfully')
+      handleClose()
+    } catch (err) {
+      toast.error(err?.message || 'Failed to save test')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
+  const modalTitle = isEditMode ? 'Edit Test' : 'Create Test'
+
   return (
-    <Modal
-      open={open}
-      onClose={handleClose}
-      size="full"
-      title={isEditMode ? 'Edit Test' : 'Create Test'}
-    >
+    <Modal open={open} onClose={handleClose} size="full" title={modalTitle}>
       <form
         onSubmit={handleSubmit}
-        className="overflow-hidden rounded-2xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
+        className="flex max-h-[min(92vh,900px)] flex-col overflow-hidden rounded-2xl bg-[#eef2f7] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
-        <ModalPanelHeader
-          title={isEditMode ? 'Edit Test' : 'Create Test'}
-          onBack={handleClose}
-          icon={ClipboardList}
-        />
+        <ModalPanelHeader title={modalTitle} onBack={handleClose} icon={ClipboardList} />
 
-        <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6">
-          <SectionBar title="Test Details" />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#c5d9eb_transparent]">
+          <div className="space-y-6 px-4 py-6 sm:space-y-8 sm:px-8 sm:py-8">
+            <BatchFormCard
+              step={1}
+              icon={ClipboardList}
+              title="Test Details"
+              description="Configure exam metadata, schedule, instructions, and ranking."
+            >
+              <TestSeriesDetailsFields
+                testSeries={testSeries}
+                onTestSeriesChange={updateTestSeries}
+                errors={errors}
+              />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <CourseFormField label="Test Title" required>
-              <CourseInput value={form.title} onChange={update('title')} />
-            </CourseFormField>
-            <CourseFormField label="Type" required>
-              <CourseSelect value={form.type} onChange={update('type')}>
-                {TEST_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </CourseSelect>
-            </CourseFormField>
-            <CourseFormField label="Center" required>
-              <CourseSelect value={form.center} onChange={update('center')}>
-                {TEST_CENTERS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </CourseSelect>
-            </CourseFormField>
-            <CourseFormField label="Total Questions" required>
-              <CourseInput value={form.totalQuestions} onChange={update('totalQuestions')} inputMode="numeric" />
-            </CourseFormField>
-            <CourseFormField label="Duration" required>
-              <CourseInput value={form.duration} onChange={update('duration')} placeholder="e.g. 120 min" />
-            </CourseFormField>
-            <CourseFormField label="Scheduled Date">
-              <CourseInput type="date" value={form.scheduledAt} onChange={update('scheduledAt')} />
-            </CourseFormField>
-            <CourseFormField label="Status" required>
-              <CourseSelect value={form.status} onChange={update('status')}>
-                <option value="Active">Active</option>
-                <option value="Draft">Draft</option>
-                <option value="In Active">In Active</option>
-              </CourseSelect>
-            </CourseFormField>
-            <CourseFormField label="Description" className="sm:col-span-2 lg:col-span-3">
-              <CourseTextarea value={form.description} onChange={update('description')} rows={4} />
-            </CourseFormField>
+              <div className="mt-6 grid gap-5 border-t border-[#eef2fc] pt-6 sm:grid-cols-2">
+                <CourseFormField label="Center" required>
+                  <CourseSelect
+                    value={form.center}
+                    onChange={(e) => setForm((f) => ({ ...f, center: e.target.value }))}
+                    className={cn(errors.center && 'ring-2 ring-red-400')}
+                  >
+                    {TEST_CENTERS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </CourseSelect>
+                  {errors.center ? (
+                    <p className="mt-1 text-xs font-medium text-red-600">{errors.center}</p>
+                  ) : null}
+                </CourseFormField>
+
+                <CourseFormField label="Status" required>
+                  <CourseSelect
+                    value={form.status}
+                    onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                  >
+                    {TEST_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </CourseSelect>
+                </CourseFormField>
+              </div>
+            </BatchFormCard>
+
+            <BatchFormCard
+              step={2}
+              icon={FileQuestion}
+              title="Question Paper"
+              description="Set the number of questions, fill each block, or bulk upload from files."
+            >
+              <BatchQuestionPaperSection
+                testSeries={testSeries}
+                setTestSeries={setTestSeries}
+                errors={errors}
+              />
+            </BatchFormCard>
           </div>
-
-          <FormModalSubmitBar
-            isEditMode={isEditMode}
-            onReset={handleReset}
-            className="pt-2"
-            createLabel="Create"
-            updateLabel="Update"
-          />
         </div>
+
+        <BatchFormStickyFooter
+          isEditMode={isEditMode}
+          saving={submitting}
+          onReset={() => {
+            reset()
+            setErrors({})
+            toast.message('Form reset')
+          }}
+          createLabel="Create Test"
+          updateLabel="Update Test"
+        />
       </form>
     </Modal>
   )

@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react'
 import BatchFormSection from '../courses/BatchFormSection'
 import EditableSectionBar from '../courses/EditableSectionBar'
 import WhyChooseFeaturesSection from '../courses/WhyChooseFeaturesSection'
 import {
   CourseAddMoreLink,
+  CourseFormField,
   CourseInput,
   CourseMediaSlot,
   CourseTextarea,
@@ -11,9 +11,12 @@ import {
 import {
   buildDefaultSectionTitles,
   buildHowHelpsTitle,
-  buildWhyChooseTitle,
   DEFAULT_SECTION_TITLE_KEY_FEATURES,
   DEFAULT_SECTION_TITLE_OVERVIEW,
+  DEFAULT_WHY_CHOOSE_SUBTITLE,
+  DEFAULT_WHY_CHOOSE_TITLE,
+  resolveWhyChooseSubtitle,
+  resolveWhyChooseTitle,
 } from '../../utils/academicCourseForm'
 
 const batchGrid = 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3'
@@ -28,45 +31,16 @@ function appendGridRow(setForm, key, factory) {
 }
 
 /**
- * Course marketing sections — batch dialog UI with editable section headings.
+ * Course marketing sections — Add/Edit Course dialog with editable section headings.
  */
 export default function CourseMarketingSections({
   form,
   setForm,
   courseName = '',
-  examCategoryLabel = '',
 }) {
-  const defaultWhyTitle = buildWhyChooseTitle({
-    examCategory: examCategoryLabel,
-    courseName: courseName || form.name,
-  })
   const defaultHowTitle = buildHowHelpsTitle(courseName || form.name)
-  const prevDynamicDefaults = useRef({ why: defaultWhyTitle, how: defaultHowTitle })
-
-  useEffect(() => {
-    const prev = prevDynamicDefaults.current
-    setForm((f) => {
-      let sectionTitleWhyChoose = f.sectionTitleWhyChoose
-      let sectionTitleHowHelps = f.sectionTitleHowHelps
-
-      if (!sectionTitleWhyChoose?.trim() || sectionTitleWhyChoose === prev.why) {
-        sectionTitleWhyChoose = defaultWhyTitle
-      }
-      if (!sectionTitleHowHelps?.trim() || sectionTitleHowHelps === prev.how) {
-        sectionTitleHowHelps = defaultHowTitle
-      }
-
-      if (
-        sectionTitleWhyChoose === f.sectionTitleWhyChoose &&
-        sectionTitleHowHelps === f.sectionTitleHowHelps
-      ) {
-        return f
-      }
-
-      return { ...f, sectionTitleWhyChoose, sectionTitleHowHelps }
-    })
-    prevDynamicDefaults.current = { why: defaultWhyTitle, how: defaultHowTitle }
-  }, [defaultWhyTitle, defaultHowTitle, setForm])
+  const displayWhyTitle = resolveWhyChooseTitle(form)
+  const displayWhySubtitle = resolveWhyChooseSubtitle(form)
 
   const setSectionTitle = (key) => (value) => {
     setForm((f) => ({ ...f, [key]: value }))
@@ -78,7 +52,6 @@ export default function CourseMarketingSections({
 
   const keyFeatures = form.keyFeatures?.length ? form.keyFeatures : []
   const sectionDefaults = buildDefaultSectionTitles({
-    examCategory: examCategoryLabel,
     courseName: courseName || form.name,
   })
 
@@ -160,13 +133,35 @@ export default function CourseMarketingSections({
       </div>
 
       <div className="space-y-6">
-        <EditableSectionBar
-          value={form.sectionTitleWhyChoose ?? ''}
-          defaultValue={defaultWhyTitle}
-          onChange={setSectionTitle('sectionTitleWhyChoose')}
-          placeholder={sectionDefaults.sectionTitleWhyChoose}
-          aria-label="Why Choose section title"
-        />
+        <div className="rounded-2xl border border-gray-100 bg-white px-6 py-5 text-center shadow-sm">
+          <h3 className="text-base font-bold tracking-tight text-[#246392] sm:text-lg">
+            {displayWhyTitle}
+          </h3>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-gray-600">{displayWhySubtitle}</p>
+        </div>
+
+        <BatchFormSection className="space-y-5">
+          <CourseFormField label="Why Choose Section Title">
+            <CourseInput
+              value={form.whyChooseTitle ?? ''}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, whyChooseTitle: e.target.value }))
+              }
+              placeholder={DEFAULT_WHY_CHOOSE_TITLE}
+            />
+          </CourseFormField>
+          <CourseFormField label="Why Choose Section Subtitle">
+            <CourseTextarea
+              value={form.whyChooseSubtitle ?? ''}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, whyChooseSubtitle: e.target.value }))
+              }
+              rows={3}
+              placeholder={DEFAULT_WHY_CHOOSE_SUBTITLE}
+            />
+          </CourseFormField>
+        </BatchFormSection>
+
         <BatchFormSection>
           <WhyChooseFeaturesSection
             features={form.whyChooseFeatures}

@@ -116,7 +116,7 @@ export default function CurrentAffairsPage() {
           className="from-[#55ace7] via-[#8b98bb] to-[#b8887a]"
         >
           <BannerButton onClick={modal.openCreate}>Add Current Affairs</BannerButton>
-          <BannerButton onClick={() => setCategoryOpen(true)}>Modify Category</BannerButton>
+          <BannerButton onClick={() => setCategoryOpen(true)}>Add Current Category</BannerButton>
         </PageBanner>
 
         <CourseFilterToolbar
@@ -144,7 +144,6 @@ export default function CurrentAffairsPage() {
         open={modal.isOpen}
         onClose={modal.close}
         item={modal.selectedItem}
-        categories={categories}
         onSubmit={handleSave}
       />
 

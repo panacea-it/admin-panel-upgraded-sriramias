@@ -2,18 +2,42 @@ import { ACADEMICS_SUBJECTS_SEED } from '../data/academicsSubjectsSeed'
 
 const STORAGE_KEY = 'academics_subjects_module_v1'
 
+function migrateSubjectRow(row) {
+  const topics = row.topics?.length
+    ? row.topics
+    : row.topic
+      ? [row.topic]
+      : []
+  const categories = row.categories?.length
+    ? row.categories
+    : row.category
+      ? [row.category]
+      : []
+  return {
+    ...row,
+    topics,
+    topic: topics[0] || row.topic || '',
+    categories,
+    category: categories[0] || row.category || '',
+    recordings: row.recordings || [],
+    liveClasses: row.liveClasses || [],
+    enableTestSeries: Boolean(row.enableTestSeries),
+    testSeries: row.testSeries ?? null,
+  }
+}
+
 export function loadAcademicsSubjects() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed
+      if (Array.isArray(parsed)) return parsed.map(migrateSubjectRow)
     }
   } catch {
     /* ignore */
   }
   saveAcademicsSubjects(ACADEMICS_SUBJECTS_SEED)
-  return [...ACADEMICS_SUBJECTS_SEED]
+  return ACADEMICS_SUBJECTS_SEED.map(migrateSubjectRow)
 }
 
 export function saveAcademicsSubjects(subjects) {
@@ -43,10 +67,23 @@ export function nextLiveClassId(liveClasses = []) {
   return String(max + 1).padStart(3, '0')
 }
 
+export function nextRecordingId(recordings = []) {
+  const max = recordings.reduce((m, row) => {
+    const num = parseInt(String(row.id || '').replace(/\D/g, ''), 10) || 0
+    return Math.max(m, num)
+  }, 0)
+  return String(max + 1).padStart(3, '0')
+}
+
 export function formatSubjectViewTitle(subject) {
   if (!subject) return 'Subject'
   const name = subject.subjectName || subject.subject || 'Subject'
-  const topic = subject.topic ? ` ( ${subject.topic} )` : ''
+  const topics = subject.topics?.length
+    ? subject.topics
+    : subject.topic
+      ? [subject.topic]
+      : []
+  const topic = topics.length ? ` ( ${topics.join(', ')} )` : ''
   const teacherLabel = subject.teacher?.includes('Darshan')
     ? 'Darshan Sir'
     : subject.teacher

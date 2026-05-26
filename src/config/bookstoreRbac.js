@@ -1,7 +1,7 @@
 import { ROLES } from '../constants/roles'
 import { BOOKSTORE_NAV_ITEMS } from '../constants/bookstoreNav'
 
-/** Bookstore module roles (displayed on RBAC page) */
+/** Bookstore module role keys for permission matrix */
 export const BOOKSTORE_ROLES = {
   SUPER_ADMIN: 'bookstore_super_admin',
   CONTENT_ADMIN: 'bookstore_content_admin',

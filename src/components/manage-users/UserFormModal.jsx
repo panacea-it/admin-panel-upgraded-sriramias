@@ -12,6 +12,8 @@ import {
 import { USER_ROLES, USER_STATUS_OPTIONS } from '../../data/manageUsersConfig'
 import { createManageUser, updateManageUser } from '../../utils/manageUsersStorage'
 import { cn } from '../../utils/cn'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phoneRe = /^[6-9]\d{9}$/
@@ -65,6 +67,7 @@ export default function UserFormModal({
 }) {
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
+  const [uploadError, setUploadError] = useState(null)
   const [saving, setSaving] = useState(false)
   const fileRef = useRef(null)
   const editingRef = useRef(editingUser)
@@ -100,13 +103,16 @@ export default function UserFormModal({
     return Object.keys(next).length === 0
   }
 
-  const handleImage = (e) => {
+  const handleImage = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please choose an image file')
+    const result = await validateUploadFile(file, 'IMAGE_PROFILE')
+    if (!result.valid) {
+      setUploadError(result.message)
+      e.target.value = ''
       return
     }
+    setUploadError(null)
     const reader = new FileReader()
     reader.onload = () => {
       setForm((f) => ({ ...f, profileImage: String(reader.result || '') }))
@@ -356,9 +362,11 @@ export default function UserFormModal({
                   >
                     {form.profileImage ? 'Change photo' : 'Upload photo'}
                   </button>
-                  <p className="mt-1 text-xs leading-relaxed text-[#686868]">
-                    Recommended square image. Max display size 96×96 px in lists.
+                  <UploadFieldHint profile="IMAGE_PROFILE" className="mt-1" />
+                  <p className="mt-1 text-[11px] leading-relaxed text-[#686868]">
+                    Max display size 96×96 px in user lists.
                   </p>
+                  <UploadValidationMessage message={uploadError} />
                   {form.profileImage ? (
                     <button
                       type="button"

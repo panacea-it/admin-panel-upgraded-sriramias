@@ -12,6 +12,7 @@ import { RECURRENCE_DELETE_SCOPES } from '../../constants/recurrence'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
 import { buildLiveClassesFromRecurrence } from '../../utils/academicsSubjectsRecurrence'
+import { syncSubjectLiveClassesToModule } from '../../utils/subjectModuleSync'
 import { formatSubjectViewTitle } from '../../utils/academicsSubjectsStorage'
 import { toast } from '../../utils/toast'
 import { cn } from '../../utils/cn'
@@ -77,25 +78,32 @@ export default function SubjectViewListPage() {
     const scope = form.recurrenceEditScope || 'series'
     const rows = buildLiveClassesFromRecurrence(form, subject, existing, actorName, { scope })
 
+    let syncedRows = rows
+    try {
+      syncedRows = await syncSubjectLiveClassesToModule(rows, subject, { actor: actorName })
+    } catch {
+      toast.error('Saved on subject; sync to Scheduled/Live Classes failed')
+    }
+
     if (existing?.recurrenceSeriesId && form.recurring && scope !== 'this') {
-      upsertLiveClassesBatch(subject.id, rows, {
+      upsertLiveClassesBatch(subject.id, syncedRows, {
         removeSeriesId: existing.recurrenceSeriesId,
         scope,
         fromDate: existing.date,
       })
       toast.success(
-        rows.length > 1
-          ? `Recurring schedule updated — ${rows.length} sessions`
+        syncedRows.length > 1
+          ? `Recurring schedule updated — ${syncedRows.length} sessions`
           : 'Live class updated',
       )
       return
     }
 
-    if (rows.length > 1) {
-      upsertLiveClassesBatch(subject.id, rows)
-      toast.success(`${rows.length} live classes scheduled`)
+    if (syncedRows.length > 1) {
+      upsertLiveClassesBatch(subject.id, syncedRows)
+      toast.success(`${syncedRows.length} live classes scheduled`)
     } else {
-      upsertLiveClass(subject.id, rows[0])
+      upsertLiveClass(subject.id, syncedRows[0])
       toast.success(modalMode === 'edit' ? 'Live class updated' : 'Live class added')
     }
   }

@@ -7,6 +7,8 @@ import SectionBar from '../courses/SectionBar'
 import { CourseFormField, CourseInput } from '../courses/CourseFormField'
 import { StatusBadge } from '../academics/AcademicsUi'
 import { cn } from '../../utils/cn'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 
 export default function ModifyCurrentAffairsCategoryModal({
   open,
@@ -18,6 +20,7 @@ export default function ModifyCurrentAffairsCategoryModal({
   const imageRef = useRef(null)
   const [name, setName] = useState('')
   const [imageName, setImageName] = useState('')
+  const [uploadError, setUploadError] = useState(null)
 
   const handleClose = () => {
     setName('')
@@ -42,7 +45,7 @@ export default function ModifyCurrentAffairsCategoryModal({
     <Modal open={open} onClose={handleClose} size="full">
       <div className="overflow-hidden rounded-xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]">
         <ModalPanelHeader
-          title="Modify Current Affairs Category"
+          title="Add Current Affairs Category"
           onBack={handleClose}
           icon={Layers}
         />
@@ -70,10 +73,23 @@ export default function ModifyCurrentAffairsCategoryModal({
                   type="file"
                   accept="image/*"
                   className="absolute inset-0 cursor-pointer opacity-0"
-                  onChange={(e) => setImageName(e.target.files?.[0]?.name || '')}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    const result = await validateUploadFile(file, 'IMAGE_BANNER')
+                    if (!result.valid) {
+                      setUploadError(result.message)
+                      e.target.value = ''
+                      return
+                    }
+                    setUploadError(null)
+                    setImageName(file.name)
+                  }}
                 />
                 <ImageIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
               </div>
+              <UploadFieldHint profile="IMAGE_BANNER" />
+              <UploadValidationMessage message={uploadError} />
             </CourseFormField>
             <div className="flex items-end sm:col-span-2">
               <button

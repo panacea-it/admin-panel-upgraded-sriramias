@@ -1,25 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { BookMarked, PlusCircle } from 'lucide-react'
 import PageBanner from '../../components/figma/PageBanner'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import AddCourseModal from '../../components/courses/AddCourseModal'
 import ViewBatchModal from '../../components/courses/ViewBatchModal'
 import BatchManagementTable from '../../components/batch-management/BatchManagementTable'
+import { useBatchManagementContext } from '../../contexts/BatchManagementContext'
 import { useEditModal } from '../../hooks/useEditModal'
-import { useBatchStudents } from '../../hooks/useBatchStudents'
+import { useBatchesData } from '../../hooks/useBatchesData'
 import { mapCourseToApiPayload } from '../../utils/coursesApiMappers'
 import {
-  enrichBatchRow,
   mapBatchRowToTableFormat,
-  mapInitialBatchesToRows,
   nextBatchId,
 } from '../../utils/batchHelpers'
-import {
-  createCourse,
-  fetchCourses,
-  updateCourse,
-} from '../../api/coursesAPI'
-import { toast, toastMessages } from '../../utils/toast'
+import { createCourse, updateCourse } from '../../api/coursesAPI'
+import { toast } from '../../utils/toast'
 
 function BannerButton({ children, onClick }) {
   return (
@@ -32,12 +28,6 @@ function BannerButton({ children, onClick }) {
       {children}
     </button>
   )
-}
-
-function resolveStudentKey(row, getStudents) {
-  if (getStudents(row.id).length) return row.id
-  if (row.batchId && getStudents(row.batchId).length) return row.batchId
-  return row.id
 }
 
 function rowMatchesSearch(row, q) {
@@ -56,47 +46,26 @@ function rowMatchesSearch(row, q) {
 }
 
 export default function BatchesPage() {
-  const [apiBatches, setApiBatches] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [expandedBatchId, setExpandedBatchId] = useState(null)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const restored = location.state?.listState
+
+  const { sourceRows, loading, loadBatches, apiBatches, existingCourseIds } = useBatchesData()
+  const { getStudentCount } = useBatchManagementContext()
+
+  const [search, setSearch] = useState(restored?.search ?? '')
+  const [statusFilter, setStatusFilter] = useState(restored?.statusFilter ?? 'all')
+  const [tablePage, setTablePage] = useState(restored?.page ?? 1)
+  const [tablePageSize, setTablePageSize] = useState(restored?.pageSize ?? 10)
+
   const modal = useEditModal()
   const [viewItem, setViewItem] = useState(null)
 
-  const {
-    getStudents,
-    addStudent,
-    updateStudent,
-    deleteStudent,
-    toggleStudentStatus,
-  } = useBatchStudents()
-
-  const loadBatches = useCallback(async () => {
-    setLoading(true)
-    try {
-      const rows = await fetchCourses()
-      setApiBatches(rows.map((row, i) => enrichBatchRow(row, i)))
-    } catch {
-      setApiBatches(mapInitialBatchesToRows().map((row, i) => enrichBatchRow(row, i)))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    loadBatches()
-  }, [loadBatches])
-
-  const existingCourseIds = useMemo(
-    () => apiBatches.map((b) => b.courseId).filter(Boolean),
-    [apiBatches],
-  )
-
-  const sourceRows = useMemo(() => {
-    if (apiBatches.length > 0) return apiBatches
-    return mapInitialBatchesToRows()
-  }, [apiBatches])
+    if (location.state?.listState) {
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [navigate, location.pathname, location.state?.listState])
 
   const filteredRows = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -109,11 +78,20 @@ export default function BatchesPage() {
 
   const tableBatches = useMemo(
     () =>
-      filteredRows.map((row) => {
-        const key = resolveStudentKey(row, getStudents)
-        return mapBatchRowToTableFormat(row, getStudents(key))
-      }),
-    [filteredRows, getStudents],
+      filteredRows.map((row) =>
+        mapBatchRowToTableFormat(row, [], getStudentCount(row)),
+      ),
+    [filteredRows, getStudentCount],
+  )
+
+  const listState = useMemo(
+    () => ({
+      search,
+      statusFilter,
+      page: tablePage,
+      pageSize: tablePageSize,
+    }),
+    [search, statusFilter, tablePage, tablePageSize],
   )
 
   const handleSaveBatch = async (form, { isEdit, id }) => {
@@ -146,45 +124,18 @@ export default function BatchesPage() {
     await loadBatches()
   }
 
-  const toggleBatch = useCallback((batchId) => {
-    setExpandedBatchId((prev) => (prev === batchId ? null : batchId))
+  const handleEditBatch = useCallback(
+    (tableBatch) => {
+      const row = tableBatch.apiRow ?? apiBatches.find((b) => b.id === tableBatch.id)
+      if (row) modal.openEdit(row)
+    },
+    [apiBatches, modal],
+  )
+
+  const handleQuickView = useCallback((tableBatch) => {
+    const row = tableBatch.apiRow ?? tableBatch
+    setViewItem(row)
   }, [])
-
-  const studentKeyForTableBatch = (tableBatch) =>
-    resolveStudentKey(
-      tableBatch.apiRow ?? { id: tableBatch.id, batchId: tableBatch.batchId },
-      getStudents,
-    )
-
-  const handleAddStudent = (batchId, form) => {
-    const row = tableBatches.find((b) => b.id === batchId)
-    const key = row ? studentKeyForTableBatch(row) : batchId
-    addStudent(key, form)
-    toast.success(`${form.name} enrolled successfully`)
-  }
-
-  const handleUpdateStudent = (batchId, studentId, form) => {
-    const row = tableBatches.find((b) => b.id === batchId)
-    const key = row ? studentKeyForTableBatch(row) : batchId
-    updateStudent(key, studentId, form)
-    toast.success('Student updated')
-  }
-
-  const handleDeleteStudent = (batchId, studentId) => {
-    const row = tableBatches.find((b) => b.id === batchId)
-    const key = row ? studentKeyForTableBatch(row) : batchId
-    deleteStudent(key, studentId)
-    toast.success('Student removed from batch')
-  }
-
-  const handleToggleStudentStatus = (batchId, studentId) => {
-    const row = tableBatches.find((b) => b.id === batchId)
-    const key = row ? studentKeyForTableBatch(row) : batchId
-    const student = getStudents(key).find((s) => s.id === studentId)
-    const next = student?.status === 'Active' ? 'In Active' : 'Active'
-    toggleStudentStatus(key, studentId)
-    toast.success(next === 'Active' ? 'Student enabled' : 'Student disabled')
-  }
 
   return (
     <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-8 pt-6 sm:px-5 lg:px-6">
@@ -200,10 +151,16 @@ export default function BatchesPage() {
 
         <CourseFilterToolbar
           search={search}
-          onSearchChange={(e) => setSearch(e.target.value)}
+          onSearchChange={(e) => {
+            setSearch(e.target.value)
+            setTablePage(1)
+          }}
           searchPlaceholder="Search batches..."
           status={statusFilter}
-          onStatusChange={(e) => setStatusFilter(e.target.value)}
+          onStatusChange={(e) => {
+            setStatusFilter(e.target.value)
+            setTablePage(1)
+          }}
         />
 
         {loading ? (
@@ -214,12 +171,16 @@ export default function BatchesPage() {
         ) : (
           <BatchManagementTable
             batches={tableBatches}
-            expandedBatchId={expandedBatchId}
-            onToggleBatch={toggleBatch}
-            onAddStudent={handleAddStudent}
-            onUpdateStudent={handleUpdateStudent}
-            onDeleteStudent={handleDeleteStudent}
-            onToggleStudentStatus={handleToggleStudentStatus}
+            listState={listState}
+            page={tablePage}
+            pageSize={tablePageSize}
+            onPageChange={setTablePage}
+            onPageSizeChange={(size) => {
+              setTablePageSize(size)
+              setTablePage(1)
+            }}
+            onEditBatch={handleEditBatch}
+            onQuickViewBatch={handleQuickView}
             resetDeps={[search, statusFilter]}
           />
         )}

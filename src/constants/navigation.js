@@ -38,6 +38,7 @@ import {
   Layers3,
 } from 'lucide-react'
 import { ACADEMICS_LIVE_CLASSES_SUBMENU } from './liveClassesNav'
+import { ACADEMICS_CONTENT_LIBRARY_SUBMENU } from './contentLibraryNav'
 import { FINANCE_NAV_ITEMS } from './financeNav'
 import { SALES_ANALYTICS_NAV_ITEMS } from './salesAnalyticsNav'
 import { BOOKSTORE_NAV_ITEMS } from './bookstoreNav'
@@ -76,7 +77,7 @@ export const SIDEBAR_GROUPS = [
       { label: 'Batch', path: '/academics/batch', icon: BookOpen },
       { label: 'Faculty Subjects', path: '/academics/subjects', icon: Layers3 },
       ACADEMICS_LIVE_CLASSES_SUBMENU,
-      { label: 'Content Library', path: '/content-library', icon: FolderOpen },
+      ACADEMICS_CONTENT_LIBRARY_SUBMENU,
       { label: 'Books', path: '/marketing/books', icon: BookMarked },
       { label: 'Free Resources', path: '/free-resources', icon: Gift },
       { label: 'Tests', path: '/tests', icon: ClipboardList },
@@ -217,6 +218,15 @@ export function isNavItemActive(item, pathname) {
         pathname === '/academics/live-classes' ||
         pathname.startsWith('/academics/live-classes/')
       )
+    }
+    if (item.path?.startsWith('/academics/content-library')) {
+      return (
+        pathname === '/academics/content-library' ||
+        pathname.startsWith('/academics/content-library/')
+      )
+    }
+    if (item.path === '/content-library') {
+      return pathname === '/content-library' || pathname.startsWith('/academics/content-library')
     }
     return pathname === item.path || pathname.startsWith(`${item.path}/`)
   }

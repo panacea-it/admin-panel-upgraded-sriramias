@@ -16,6 +16,10 @@ import {
   listPayments,
   listWallet,
   listRecommendations,
+  getCartRecommendations,
+  createRecommendation,
+  updateRecommendation,
+  deleteRecommendation,
   listInvoices,
   getReports,
 } from '../controllers/bookstoreController.js'
@@ -40,6 +44,10 @@ router.patch('/orders/:id/status', patchOrderStatus)
 router.get('/payments', listPayments)
 router.get('/wallet', listWallet)
 router.get('/recommendations', listRecommendations)
+router.get('/recommendations/cart', getCartRecommendations)
+router.post('/recommendations', createRecommendation)
+router.put('/recommendations/:id', updateRecommendation)
+router.delete('/recommendations/:id', deleteRecommendation)
 router.get('/invoices', listInvoices)
 router.get('/reports', getReports)
 

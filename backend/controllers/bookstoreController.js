@@ -96,6 +96,78 @@ export function listRecommendations(req, res) {
   ok(res, { items: MOCK_RECOMMENDATIONS })
 }
 
+function discountPercent(orig, disc) {
+  if (!orig || disc >= orig) return 0
+  return Math.round(((orig - disc) / orig) * 100)
+}
+
+function resolveCartRecs(sourceProductId, placement = 'Cart Drawer', recommendationType = 'Cart Recommendations') {
+  const rule = [...MOCK_RECOMMENDATIONS]
+    .filter(
+      (r) =>
+        r.status === 'active' &&
+        r.sourceProductId === sourceProductId &&
+        r.placement === placement &&
+        r.recommendationType === recommendationType,
+    )
+    .sort((a, b) => (a.priorityOrder ?? 99) - (b.priorityOrder ?? 99))[0]
+
+  if (!rule) return { title: 'You May Also Like', placement, products: [] }
+
+  const ids = rule.recommendedProductIds || rule.targetProductIds || []
+  const bestsellerIds = rule.bestsellerProductIds || []
+  const products = ids
+    .map((id) => MOCK_PRODUCTS.find((p) => p.id === id))
+    .filter(Boolean)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      thumbnailUrl: p.thumbnailUrl || '',
+      originalPrice: p.originalPrice,
+      discountPrice: p.discountPrice,
+      discountPercent: discountPercent(p.originalPrice, p.discountPrice),
+      isBestseller: bestsellerIds.includes(p.id) || Boolean(p.isBestseller),
+    }))
+
+  return {
+    title: 'You May Also Like',
+    placement,
+    recommendationType: rule.recommendationType,
+    ruleId: rule.id,
+    products,
+  }
+}
+
+export function getCartRecommendations(req, res) {
+  const { sourceProductId, placement, recommendationType } = req.query
+  if (!sourceProductId) {
+    return res.status(400).json({ success: false, message: 'sourceProductId required' })
+  }
+  ok(
+    res,
+    resolveCartRecs(sourceProductId, placement || 'Cart Drawer', recommendationType || 'Cart Recommendations'),
+  )
+}
+
+export function createRecommendation(req, res) {
+  const row = { id: `REC-${Date.now()}`, ...req.body }
+  MOCK_RECOMMENDATIONS.unshift(row)
+  ok(res, row)
+}
+
+export function updateRecommendation(req, res) {
+  const idx = MOCK_RECOMMENDATIONS.findIndex((r) => r.id === req.params.id)
+  if (idx < 0) return res.status(404).json({ success: false, message: 'Not found' })
+  MOCK_RECOMMENDATIONS[idx] = { ...MOCK_RECOMMENDATIONS[idx], ...req.body }
+  ok(res, MOCK_RECOMMENDATIONS[idx])
+}
+
+export function deleteRecommendation(req, res) {
+  const idx = MOCK_RECOMMENDATIONS.findIndex((r) => r.id === req.params.id)
+  if (idx >= 0) MOCK_RECOMMENDATIONS.splice(idx, 1)
+  ok(res, { success: true })
+}
+
 export function listInvoices(req, res) {
   ok(res, { items: MOCK_INVOICES })
 }

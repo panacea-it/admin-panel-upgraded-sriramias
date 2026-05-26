@@ -1,6 +1,7 @@
 import {
   formatDurationFromForm,
   nextLiveClassId,
+  nextRecordingId,
   nextSubjectRowId,
 } from '../../utils/academicsSubjectsStorage'
 import { findClassroomById } from '../../utils/classroomsStorage'
@@ -8,17 +9,34 @@ import { durationFromHms, minutesToTimeString, timePartsToMinutes } from '../../
 import { findClassroomConflict } from '../../utils/classroomBookings'
 import {
   createRecurrenceFromSubjectForm,
-  isLiveClassCategory,
   validateSubjectRecurrence,
 } from '../../utils/academicsSubjectsRecurrence'
 import { createDefaultRecurrenceRule } from '../../utils/recurrenceEngine'
+import {
+  createEmptyTestSeriesBlock,
+  normalizeTestSeriesBlock,
+  serializeTestSeriesForStorage,
+  validateTestSeriesForm,
+} from '../../utils/batchTestSeriesForm'
+import { validateTestSeriesQuestions } from '../../utils/testSeriesQuestionSlots'
+import {
+  isLiveClassCategory,
+  isRecordedClassCategory,
+  isTestSeriesCategory,
+  normalizeCategories,
+  normalizeTopics,
+  shouldShowTestSeriesSection,
+} from '../../utils/subjectCategoryHelpers'
+
+export { shouldShowTestSeriesSection }
 
 export const EMPTY_SUBJECT_FORM = {
   subjectName: '',
   subject: '',
-  topic: '',
+  topics: [],
+  categories: ['Live Class'],
   teacher: '',
-  category: 'Live Class',
+  batch: '',
   classTitle: '',
   center: '',
   classroomId: '',
@@ -35,6 +53,16 @@ export const EMPTY_SUBJECT_FORM = {
   recurrence: null,
   recurrenceEditScope: 'series',
   timezone: 'Asia/Kolkata',
+  recordingLessonName: '',
+  recordingCenter: '',
+  recordingTopic: '',
+  recordingTeacher: '',
+  recordingVideoFileName: '',
+  recordingVideoDuration: '',
+  recordingDescription: '',
+  recordingVisibility: 'Published',
+  recordingDownloadable: false,
+  testSeries: createEmptyTestSeriesBlock(),
 }
 
 function parseTimeToFormParts(timeStr) {
@@ -47,15 +75,27 @@ function parseTimeToFormParts(timeStr) {
   }
 }
 
+function categoriesFromSubject(subject, liveClass) {
+  const fromSubject = normalizeCategories(subject?.categories ?? subject?.category)
+  if (fromSubject.length) return fromSubject
+  if (liveClass) return ['Live Class']
+  return []
+}
+
 export function subjectToForm(subject, liveClass = null) {
   if (!subject && !liveClass) return { ...EMPTY_SUBJECT_FORM }
   const time = parseTimeToFormParts(liveClass?.startTime || liveClass?.scheduledTime)
+  const recording = subject?.recordings?.[0]
+  const topics = normalizeTopics(subject?.topics ?? subject?.topic)
+  const categories = categoriesFromSubject(subject, liveClass)
+
   return {
     subjectName: subject?.subjectName || '',
     subject: subject?.subjectName || subject?.subject || '',
-    topic: subject?.topic || '',
+    topics,
+    categories: categories.length ? categories : ['Live Class'],
     teacher: subject?.teacher || '',
-    category: 'Live Class',
+    batch: subject?.batch || '',
     classTitle: liveClass?.classTitle || '',
     center: liveClass?.center || '',
     classroomId: liveClass?.classroomId || '',
@@ -64,9 +104,9 @@ export function subjectToForm(subject, liveClass = null) {
     timeHrs: liveClass?.timeHrs || time.hrs,
     timeMin: liveClass?.timeMin || time.min,
     timeSec: liveClass?.timeSec || time.sec,
-    durationHrs: '00',
-    durationMin: '00',
-    durationSec: '00',
+    durationHrs: liveClass?.durationHrs || '00',
+    durationMin: liveClass?.durationMin || '00',
+    durationSec: liveClass?.durationSec || '00',
     status: liveClass?.status || subject?.status || 'Active',
     recurring: Boolean(liveClass?.recurring),
     recurrence: liveClass?.recurrence
@@ -79,18 +119,46 @@ export function subjectToForm(subject, liveClass = null) {
         : null,
     recurrenceEditScope: 'series',
     timezone: liveClass?.recurrence?.timezone || 'Asia/Kolkata',
+    recordingLessonName: recording?.lessonName || '',
+    recordingCenter: recording?.center || '',
+    recordingTopic: recording?.topic || topics[0] || '',
+    recordingTeacher: recording?.teacher || subject?.teacher || '',
+    recordingVideoFileName: recording?.videoFileName || '',
+    recordingVideoDuration: recording?.videoDuration || '',
+    recordingDescription: recording?.description || '',
+    recordingVisibility: recording?.visibility || 'Published',
+    recordingDownloadable: Boolean(recording?.downloadable),
+    testSeries: subject?.testSeries
+      ? normalizeTestSeriesBlock(subject.testSeries)
+      : createEmptyTestSeriesBlock(),
   }
 }
 
 export function buildSubjectFromForm(form, existing, subjectsList) {
   const id = existing?.id || nextSubjectRowId(subjectsList)
+  const now = new Date().toISOString()
+  const topics = normalizeTopics(form.topics)
+  const categories = normalizeCategories(form.categories)
+  const hasTestSeries = isTestSeriesCategory(categories)
+
   return {
     id,
     subjectName: form.subjectName?.trim() || form.subject?.trim() || 'Untitled',
-    topic: form.topic?.trim() || '',
+    topic: topics[0] || '',
+    topics,
+    categories,
+    category: categories[0] || '',
     teacher: form.teacher?.trim() || '',
+    batch: form.batch?.trim() || '',
     status: form.status || 'Active',
+    createdAt: existing?.createdAt || now,
+    modifiedAt: now,
     liveClasses: existing?.liveClasses || [],
+    recordings: existing?.recordings || [],
+    enableTestSeries: hasTestSeries,
+    testSeries: hasTestSeries
+      ? serializeTestSeriesForStorage(form.testSeries || createEmptyTestSeriesBlock())
+      : null,
   }
 }
 
@@ -137,7 +205,29 @@ export function buildLiveClassFromForm(form, existingLiveClass, subject) {
     isRecurrenceOccurrence: Boolean(form.recurring),
     occurrenceIndex: existingLiveClass?.occurrenceIndex ?? null,
     occurrenceCount: existingLiveClass?.occurrenceCount ?? null,
+    linkedLessonId: existingLiveClass?.linkedLessonId ?? null,
     calendarPayload: null,
+  }
+}
+
+export function buildRecordingFromForm(form, existingRecording, subject) {
+  const list = subject?.recordings || []
+  const id = existingRecording?.id || nextRecordingId(list)
+  const topics = normalizeTopics(form.topics)
+  return {
+    id,
+    lessonName: form.recordingLessonName?.trim() || form.subjectName?.trim() || 'Untitled Recording',
+    center: form.recordingCenter?.trim() || '',
+    topic: form.recordingTopic?.trim() || topics[0] || '',
+    teacher: form.recordingTeacher?.trim() || form.teacher?.trim() || '',
+    videoFileName: form.recordingVideoFileName || '',
+    videoDuration: form.recordingVideoDuration || '',
+    description: form.recordingDescription?.trim() || '',
+    visibility: form.recordingVisibility || 'Published',
+    downloadable: Boolean(form.recordingDownloadable),
+    status: form.recordingVisibility === 'Draft' ? 'Draft' : 'Active',
+    linkedLessonId: existingRecording?.linkedLessonId ?? null,
+    createdAt: existingRecording?.createdAt || new Date().toISOString(),
   }
 }
 
@@ -150,7 +240,12 @@ export function clampTimeField(value, max = 59) {
 
 export function shouldShowLiveClassSection(values, { liveClassOnly = false } = {}) {
   if (liveClassOnly) return true
-  return isLiveClassCategory(values.category)
+  return isLiveClassCategory(values.categories ?? values.category)
+}
+
+export function shouldShowRecordingSection(values, { liveClassOnly = false } = {}) {
+  if (liveClassOnly) return false
+  return isRecordedClassCategory(values.categories ?? values.category)
 }
 
 export function validateSubjectForm(
@@ -164,16 +259,21 @@ export function validateSubjectForm(
   } = {},
 ) {
   const errors = {}
+  const categories = normalizeCategories(values.categories ?? values.category)
+
   if (!liveClassOnly) {
     if (!values.subjectName?.trim()) errors.subjectName = 'Subject name is required'
     if (!values.subject?.trim()) errors.subject = 'Subject is required'
     if (!values.teacher?.trim()) errors.teacher = 'Teacher is required'
+    if (!categories.length) errors.categories = 'Select at least one category'
   }
+
   const needsLiveClass =
     requireLiveClass ||
     liveClassOnly ||
-    isLiveClassCategory(values.category) ||
+    isLiveClassCategory(categories) ||
     Boolean(values.classTitle?.trim() || values.center?.trim() || values.date?.trim())
+
   if (needsLiveClass) {
     if (!values.classTitle?.trim()) errors.classTitle = 'Class title is required'
     if (!values.center?.trim()) errors.center = 'Center is required'
@@ -202,12 +302,45 @@ export function validateSubjectForm(
     }
     Object.assign(
       errors,
-      validateSubjectRecurrence(values, {
+      validateSubjectRecurrence({ ...values, categories }, {
         allSubjects,
         subjectId,
         excludeIds: excludeLessonIds,
       }),
     )
   }
+
+  const needsRecording =
+    isRecordedClassCategory(categories) ||
+    Boolean(
+      values.recordingLessonName?.trim() ||
+        values.recordingCenter?.trim() ||
+        values.recordingVideoFileName,
+    )
+
+  if (needsRecording && !liveClassOnly) {
+    if (!values.recordingLessonName?.trim()) {
+      errors.recordingLessonName = 'Lesson name is required'
+    }
+    if (!values.recordingCenter?.trim()) {
+      errors.recordingCenter = 'Center is required'
+    }
+    if (!values.recordingTopic?.trim()) {
+      errors.recordingTopic = 'Topic is required'
+    }
+    if (!values.recordingTeacher?.trim()) {
+      errors.recordingTeacher = 'Teacher is required'
+    }
+    if (!values.recordingVideoFileName?.trim()) {
+      errors.recordingVideoFileName = 'Upload a recording video'
+    }
+  }
+
+  if (isTestSeriesCategory(categories) && !liveClassOnly) {
+    const ts = normalizeTestSeriesBlock(values.testSeries || {})
+    Object.assign(errors, validateTestSeriesForm(ts))
+    Object.assign(errors, validateTestSeriesQuestions(ts))
+  }
+
   return errors
 }

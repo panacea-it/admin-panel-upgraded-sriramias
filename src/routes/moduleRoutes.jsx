@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 import {
   Wallet,
   FileSearch,
@@ -24,8 +24,10 @@ import {
   BannersPage,
   BlogsPage,
   ContentLibraryPage,
+  ContentLibraryLayout,
+  FreeResourcesPage,
   CouponsPage,
-  BatchesPage,
+  BatchManagementLayout,
   SubjectsPage,
   SubjectViewListPage,
   LiveClassesLayout,
@@ -43,6 +45,16 @@ import {
   ModuleListPage,
 } from './lazyPages'
 
+function LegacyBatchDetailRedirect() {
+  const { batchId } = useParams()
+  return (
+    <Navigate
+      to={`/academics/batch/${encodeURIComponent(String(batchId ?? ''))}`}
+      replace
+    />
+  )
+}
+
 function module(icon, title, addLabel, searchPlaceholder) {
   return (
     <ModuleListPage
@@ -55,13 +67,16 @@ function module(icon, title, addLabel, searchPlaceholder) {
 }
 
 export const MODULE_ROUTE_ELEMENTS = [
-  { path: 'academics/batch', element: <BatchesPage /> },
+  { path: 'academics/batch/*', element: <BatchManagementLayout /> },
+  { path: 'academics/batches', element: <Navigate to="/academics/batch" replace /> },
+  { path: 'academics/batches/:batchId', element: <LegacyBatchDetailRedirect /> },
   { path: 'academics/subjects', element: <SubjectsPage /> },
   { path: 'academics/subjects/:id', element: <SubjectViewListPage /> },
   { path: 'courses', element: <Navigate to="/academics/batch" replace /> },
   { path: 'live-classes', element: <Navigate to="/academics/live-classes/schedule" replace /> },
   { path: 'academics/live-classes/*', element: <LiveClassesLayout /> },
-  { path: 'content-library', element: <ContentLibraryPage /> },
+  { path: 'content-library', element: <Navigate to="/academics/content-library/dashboard" replace /> },
+  { path: 'academics/content-library/*', element: <ContentLibraryLayout /> },
   { path: 'tests', element: <TestsPage /> },
   { path: 'current-affairs', element: <CurrentAffairsPage /> },
   { path: 'academics/categories', element: <Navigate to="/academics/categories/programs" replace /> },
@@ -142,7 +157,7 @@ export const MODULE_ROUTE_ELEMENTS = [
     path: 'system/queue-monitor',
     element: module(ListOrdered, 'Queue Monitor', 'Refresh', 'Search queue'),
   },
-  { path: 'free-resources', element: <ContentLibraryPage /> },
+  { path: 'free-resources', element: <FreeResourcesPage /> },
   { path: 'books', element: <Navigate to="/marketing/books" replace /> },
   { path: 'finance', element: <Navigate to="/finance/dashboard" replace /> },
   { path: 'finance/*', element: <FinanceLayout /> },

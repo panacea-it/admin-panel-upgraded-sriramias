@@ -7,6 +7,10 @@ import {
   SUBJECT_TESTS,
 } from '../data/subjectProvisioningSeed'
 import { parseDateForDisplay } from './academicsSubjectsStorage'
+import {
+  formatBatchSubjectDropdownLabel,
+  mapFacultySubjectToBatchOption,
+} from './facultySubjectBatch'
 
 function todayIso() {
   const d = new Date()
@@ -118,6 +122,8 @@ export function getSubjectProvisioning(subject, { liveLessons = INITIAL_LIVE_CLA
 }
 
 export function formatFacultySubjectOption(subject) {
+  const opt = mapFacultySubjectToBatchOption(subject)
+  if (opt) return formatBatchSubjectDropdownLabel(opt)
   const id = subject?.id ? String(subject.id).padStart(3, '0') : ''
   const name = subject?.subjectName || subject?.subject || ''
   return `${id} · ${name}`

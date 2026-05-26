@@ -134,13 +134,19 @@ export function freeResourceFormToRow(form, existing) {
   }
 }
 
-export function createEmptyCurrentAffairsForm() {
+export function createEmptyCurrentAffairsForm(category = '') {
   return {
-    category: '',
+    category,
     name: '',
     year: '',
     month: '',
+    date: '',
+    mainsCategory: '',
+    paperName: '',
     fileName: '',
+    sectionFrom: '',
+    sectionTo: '',
+    questions: [],
     status: 'Active',
   }
 }
@@ -155,15 +161,36 @@ export function currentAffairsRowToForm(row) {
   }
 }
 
+function currentAffairsDisplayName(form, existing) {
+  if (form.category === 'Daily Practice Questions') {
+    return (
+      form.paperName?.trim() ||
+      [form.mainsCategory, form.month, form.year].filter(Boolean).join(' - ') ||
+      existing?.name
+    )
+  }
+  if (form.category === 'Monthly Magazine') {
+    return (
+      form.name?.trim() ||
+      [form.name, form.month, form.year].filter(Boolean).join(' ') ||
+      existing?.name
+    )
+  }
+  return (
+    form.name?.trim() ||
+    `${form.month || ''} ${form.year || ''}`.trim() ||
+    existing?.name ||
+    'Untitled'
+  )
+}
+
 export function currentAffairsFormToRow(form, existing) {
-  const displayName =
-    form.name?.trim() || `${form.month} ${form.year} - ${form.category}`.trim() || existing?.name
   return {
     id: existing?.id ?? Date.now(),
-    name: displayName,
+    name: currentAffairsDisplayName(form, existing),
     category: form.category || existing?.category,
     status: form.status || existing?.status || 'Active',
-    formData: form,
+    formData: { ...form, file: undefined },
   }
 }
 
@@ -249,43 +276,9 @@ export function liveClassFormToRow(form, existing) {
   }
 }
 
-export function createEmptyTestForm() {
-  return {
-    title: '',
-    type: 'Prelims',
-    center: 'Delhi Center',
-    totalQuestions: '',
-    duration: '',
-    status: 'Active',
-    scheduledAt: '',
-    description: '',
-  }
-}
-
-export function testRowToForm(row) {
-  if (row?.formData) return { ...createEmptyTestForm(), ...row.formData }
-  return {
-    ...createEmptyTestForm(),
-    title: row?.name || '',
-    type: row?.type || 'Prelims',
-    center: row?.center || 'Delhi Center',
-    totalQuestions: row?.totalQuestions || '',
-    duration: row?.duration || '',
-    status: row?.status || 'Active',
-    scheduledAt: row?.scheduledAt || '',
-  }
-}
-
-export function testFormToRow(form, existing) {
-  return {
-    id: existing?.id ?? Date.now(),
-    name: form.title?.trim() || existing?.name,
-    type: form.type || existing?.type,
-    center: form.center || existing?.center,
-    totalQuestions: form.totalQuestions || existing?.totalQuestions,
-    duration: form.duration || existing?.duration,
-    status: form.status || existing?.status || 'Active',
-    scheduledAt: form.scheduledAt || existing?.scheduledAt,
-    formData: form,
-  }
-}
+export {
+  createEmptyTestForm,
+  testFormToRow,
+  testRowToForm,
+  validateTestForm,
+} from './testFormUtils'

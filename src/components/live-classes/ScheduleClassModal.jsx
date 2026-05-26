@@ -7,6 +7,7 @@ import SectionBar from '../courses/SectionBar'
 import {
   CourseFormField,
   CourseInput,
+  CoursePdfInput,
   CourseSelect,
   CourseTextarea,
 } from '../courses/CourseFormField'
@@ -278,9 +279,9 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
                   label="Downloadable"
                 />
                 <CourseFormField label="Notes / PDF">
-                  <CourseInput
-                    type="file"
-                    accept=".pdf"
+                  <CoursePdfInput
+                    fileName={form.notesFileName}
+                    placeholder="Upload notes PDF"
                     onChange={(e) =>
                       setForm((f) => ({
                         ...f,
@@ -288,9 +289,6 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
                       }))
                     }
                   />
-                  {form.notesFileName && (
-                    <p className="mt-1 text-xs text-[#686868]">{form.notesFileName}</p>
-                  )}
                 </CourseFormField>
                 <CourseFormField label="Visibility">
                   <CourseSelect value={form.visibility} onChange={update('visibility')}>

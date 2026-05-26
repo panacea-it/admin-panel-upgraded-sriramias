@@ -9,7 +9,8 @@ import AddTestModal from '../../components/tests/AddTestModal'
 import { BannerButton, ResourceNameCell, StatusBadge } from '../../components/academics/AcademicsUi'
 import { INITIAL_TESTS } from '../../data/testsData'
 import { useEditModal } from '../../hooks/useEditModal'
-import { testFormToRow } from '../../utils/academicsFormMappers'
+import { testFormToRow } from '../../utils/testFormUtils'
+import { TEST_STATUSES } from '../../data/testsData'
 import { upsertListItem } from '../../utils/academicsCrud'
 
 export default function TestsPage() {
@@ -90,6 +91,10 @@ export default function TestsPage() {
           onCategoryChange={() => {}}
           status={statusFilter}
           onStatusChange={(e) => setStatusFilter(e.target.value)}
+          statusOptions={[
+            { value: 'all', label: 'Status' },
+            ...TEST_STATUSES.map((s) => ({ value: s, label: s })),
+          ]}
         />
 
         <PaginatedFigmaTable

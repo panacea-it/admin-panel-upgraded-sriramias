@@ -1,13 +1,13 @@
-/** Batch-only form — scheduling, fees & SEO */
+/** Batch-only form — scheduling, fees, and linked faculty subjects */
 
 import {
   DEFAULT_FEE_DETAILS,
   normalizeAcademicFeeDetails,
   serializeAcademicFeeDetails,
 } from './feeDetailsForm'
-import { DEFAULT_BATCH_SEO, normalizeBatchSeo, serializeBatchSeo } from './batchSeoForm'
 import { normalizeLinkedSubjects } from './batchHelpers'
-
+import { enrichLinkedSubjectsWithFaculty } from './facultySubjectBatch'
+import { loadAcademicsSubjects } from './academicsSubjectsStorage'
 function resolveBatchLinkedSubjects(row = {}, fd = {}) {
   const fromArray = normalizeLinkedSubjects({
     linkedSubjects: row.linkedSubjects || fd.linkedSubjects,
@@ -26,7 +26,6 @@ function resolveBatchLinkedSubjects(row = {}, fd = {}) {
 export function serializeBatchContent(form) {
   return {
     feeDetails: serializeAcademicFeeDetails(form.feeDetails),
-    seo: serializeBatchSeo(form.seo),
   }
 }
 
@@ -54,7 +53,6 @@ export function createEmptyBatchForm() {
     status: 'Active',
     linkedSubjects: [],
     feeDetails: { ...DEFAULT_FEE_DETAILS },
-    seo: { ...DEFAULT_BATCH_SEO },
   }
 }
 
@@ -76,17 +74,20 @@ export function batchRowToForm(row) {
     bannerFileName: row.bannerFileName || fd.bannerFileName || '',
     bannerUrl: row.bannerUrl || fd.bannerUrl || '',
     status: row.status || fd.status || 'Active',
-    linkedSubjects: resolveBatchLinkedSubjects(row, fd),
+    linkedSubjects: enrichLinkedSubjectsWithFaculty(
+      resolveBatchLinkedSubjects(row, fd),
+      loadAcademicsSubjects(),
+    ),
     feeDetails: normalizeAcademicFeeDetails(row.feeDetails || fd.feeDetails),
-    seo: normalizeBatchSeo(row.seo || fd.seo),
   }
 }
 
 export function batchFormToStorageRow(form, existing) {
   const displayName = form.batchName?.trim() || 'Untitled Batch'
   const content = serializeBatchContent(form)
-  const { subjects: _legacySubjects, ...formWithoutSubjects } = form
+  const { subjects: _legacySubjects, seo: _seo, ...formWithoutSubjects } = form
   void _legacySubjects
+  void _seo
   return {
     id: existing?.id ?? `batch-${Date.now()}`,
     batchId: form.batchId || existing?.batchId,
@@ -104,7 +105,6 @@ export function batchFormToStorageRow(form, existing) {
     status: form.status || 'Active',
     linkedSubjects: normalizeLinkedSubjects(form),
     feeDetails: content.feeDetails,
-    seo: content.seo,
     formData: { ...formWithoutSubjects, ...content },
     createdAt: existing?.createdAt,
     modifiedAt: new Date().toISOString(),

@@ -32,7 +32,13 @@ export default function CourseFilterToolbar({
   status,
   onStatusChange,
   categoryOptions,
+  statusOptions,
 }) {
+  const statusFilterOptions = statusOptions ?? [
+    { value: 'all', label: 'Status' },
+    { value: 'Active', label: 'Active' },
+    { value: 'In Active', label: 'In Active' },
+  ]
   return (
     <div className="flex min-h-14 flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.08)] sm:px-4">
       <div className="relative w-full min-w-0 flex-1 sm:max-w-md">
@@ -58,11 +64,7 @@ export default function CourseFilterToolbar({
           label="Status"
           value={status}
           onChange={onStatusChange}
-          options={[
-            { value: 'all', label: 'Status' },
-            { value: 'Active', label: 'Active' },
-            { value: 'In Active', label: 'In Active' },
-          ]}
+          options={statusFilterOptions}
         />
       </div>
     </div>

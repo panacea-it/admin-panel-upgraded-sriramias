@@ -24,17 +24,31 @@ export default function DashboardLayout() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  useEffect(() => {
+    document.documentElement.classList.add('dashboard-layout-active')
+    return () => document.documentElement.classList.remove('dashboard-layout-active')
+  }, [])
+
+  useEffect(() => {
+    if (!isMobile || !sidebarOpen) return undefined
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [isMobile, sidebarOpen])
+
   return (
     <div
-      className="flex h-screen max-h-[100dvh] w-full overflow-hidden bg-[#f7f7f7] text-[#111111]"
+      className="app-shell flex h-full w-full overflow-hidden bg-[#f7f7f7] text-[#111111]"
       style={{ fontFamily: "'Poppins', 'Inter', sans-serif" }}
     >
       <Sidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={closeSidebar} />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:pl-[272px]">
         <Header onMenuClick={toggleSidebar} />
 
-        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f7f7f7] dark:bg-[var(--app-bg)]">
+        <main className="admin-main-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#f7f7f7] dark:bg-[var(--app-bg)]">
           <Suspense fallback={<LoadingState message="Loading page..." className="m-6" />}>
             <Outlet />
           </Suspense>

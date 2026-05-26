@@ -73,6 +73,8 @@ const academicCourseSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    whyChooseTitle: { type: String, default: '' },
+    whyChooseSubtitle: { type: String, default: '' },
     sectionTitleOverview: { type: String, default: '' },
     sectionTitleKeyFeatures: { type: String, default: '' },
     sectionTitleWhyChoose: { type: String, default: '' },

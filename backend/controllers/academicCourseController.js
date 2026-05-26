@@ -61,9 +61,12 @@ export async function syncAcademicCourses(req, res, next) {
             whyChooseCourse: row.whyChooseCourse || '',
             howCourseHelps: row.howCourseHelps || '',
             courseFormData: row.courseFormData || null,
+            whyChooseTitle: row.whyChooseTitle || row.sectionTitleWhyChoose || '',
+            whyChooseSubtitle: row.whyChooseSubtitle || '',
             sectionTitleOverview: row.sectionTitleOverview || '',
             sectionTitleKeyFeatures: row.sectionTitleKeyFeatures || '',
-            sectionTitleWhyChoose: row.sectionTitleWhyChoose || '',
+            sectionTitleWhyChoose:
+              row.sectionTitleWhyChoose || row.whyChooseTitle || '',
             sectionTitleHowHelps: row.sectionTitleHowHelps || '',
           },
         },

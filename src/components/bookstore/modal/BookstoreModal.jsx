@@ -9,6 +9,7 @@ const SIZES = {
   md: 'max-w-2xl',
   lg: 'max-w-4xl',
   xl: 'max-w-5xl',
+  '7xl': 'w-[min(95vw,80rem)] max-w-7xl',
 }
 
 /** Bookstore-only modal — solid panel, overlay, portal, a11y */

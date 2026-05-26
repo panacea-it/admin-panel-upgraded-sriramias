@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { useForm, Controller } from 'react-hook-form'
-import { BookOpen, Calendar, ChevronDown } from 'lucide-react'
+import { BookOpen, Calendar, ChevronDown, Film } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import SubjectModalShell from './SubjectModalShell'
 import TimeDurationFields from './TimeDurationFields'
@@ -13,6 +13,7 @@ import {
   TEACHER_DROPDOWN_OPTIONS,
   TOPIC_DROPDOWN_OPTIONS,
 } from '../../data/academicsSubjectsSeed'
+import SubjectChipMultiSelect from './SubjectChipMultiSelect'
 import ClassroomSelectField from '../classrooms/ClassroomSelectField'
 import {
   CourseFormField,
@@ -26,10 +27,15 @@ import {
   formAnchorTime,
   getExcludeLessonIds,
 } from '../../utils/academicsSubjectsRecurrence'
+import SubjectTestSeriesSection from './SubjectTestSeriesSection'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 import {
   EMPTY_SUBJECT_FORM,
   clampTimeField,
   shouldShowLiveClassSection,
+  shouldShowRecordingSection,
+  shouldShowTestSeriesSection,
   subjectToForm,
   validateSubjectForm,
 } from './subjectFormUtils'
@@ -119,6 +125,8 @@ export default function SubjectModal({
   const { user } = useAuth()
   const actorName = user?.name || user?.email || 'Admin'
   const [saving, setSaving] = useState(false)
+  const [recordingUploadError, setRecordingUploadError] = useState(null)
+  const [testSeriesErrors, setTestSeriesErrors] = useState({})
   const isEdit = mode === 'edit'
   const liveClassOnly = context === 'liveClass'
 
@@ -157,9 +165,10 @@ export default function SubjectModal({
     reset(seeded)
     syncRecurrenceState(seeded)
     clearErrors()
+    setTestSeriesErrors({})
   })
 
-  const watchedCategory = watch('category')
+  const watchedCategories = watch('categories')
   const watchedDate = watch('date')
   const watchedTeacher = watch('teacher')
   const watchedTimeHrs = watch('timeHrs')
@@ -170,7 +179,15 @@ export default function SubjectModal({
   const watchedDurSec = watch('durationSec')
 
   const showLiveClass = shouldShowLiveClassSection(
-    { category: liveClassOnly ? 'Live Class' : watchedCategory },
+    { categories: liveClassOnly ? ['Live Class'] : watchedCategories },
+    { liveClassOnly },
+  )
+  const showRecording = shouldShowRecordingSection(
+    { categories: watchedCategories },
+    { liveClassOnly },
+  )
+  const showTestSeries = shouldShowTestSeriesSection(
+    { categories: watchedCategories },
     { liveClassOnly },
   )
 
@@ -223,15 +240,23 @@ export default function SubjectModal({
     })
 
     if (Object.keys(validationErrors).length) {
+      const tsErr = {}
       Object.entries(validationErrors).forEach(([key, message]) => {
-        if (key === 'recurrence') {
+        if (key.startsWith('testSeries_')) {
+          tsErr[key] = message
+        } else if (key === 'recurrence') {
           toast.error(message)
         } else {
           setError(key, { type: 'manual', message })
         }
       })
+      setTestSeriesErrors(tsErr)
+      if (Object.keys(tsErr).length) {
+        toast.error('Please complete the Test Series section')
+      }
       return
     }
+    setTestSeriesErrors({})
 
     setSaving(true)
     try {
@@ -307,11 +332,17 @@ export default function SubjectModal({
                 </div>
                 <div>
                   <FieldLabel>Topic</FieldLabel>
-                  <FormSelect
-                    register={register}
-                    name="topic"
-                    options={TOPIC_DROPDOWN_OPTIONS}
-                    placeholder="Choose Topic"
+                  <Controller
+                    control={control}
+                    name="topics"
+                    render={({ field }) => (
+                      <SubjectChipMultiSelect
+                        options={TOPIC_DROPDOWN_OPTIONS}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Choose Topic"
+                      />
+                    )}
                   />
                 </div>
                 <div>
@@ -328,20 +359,23 @@ export default function SubjectModal({
                   )}
                 </div>
                 <div>
-                  <FieldLabel>Category</FieldLabel>
-                  <div className="relative">
-                    <select
-                      {...register('category')}
-                      className="h-11 w-full appearance-none rounded-xl bg-[#d1e9f6] px-4 pr-10 text-sm text-[#222] outline-none focus:ring-2 focus:ring-[#55ace7]/40"
-                    >
-                      {CATEGORY_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#687180]" />
-                  </div>
+                  <FieldLabel required>Category</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="categories"
+                    render={({ field }) => (
+                      <SubjectChipMultiSelect
+                        options={CATEGORY_OPTIONS.map((o) => o.value)}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Choose Category"
+                        error={errors.categories?.message}
+                      />
+                    )}
+                  />
+                  {errors.categories && (
+                    <p className="mt-1 text-xs text-red-500">{errors.categories.message}</p>
+                  )}
                 </div>
               </div>
             </section>
@@ -521,6 +555,119 @@ export default function SubjectModal({
                 <p className="text-xs font-medium text-red-600">{errors.recurrence.message}</p>
               )}
             </section>
+          )}
+
+          {showRecording && (
+            <section className="space-y-4">
+              <SectionTitle>Recording Class Details</SectionTitle>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <FieldLabel required>Lesson Name</FieldLabel>
+                  <FormInput
+                    register={register}
+                    name="recordingLessonName"
+                    error={errors.recordingLessonName}
+                    placeholder="Lesson name"
+                  />
+                  {errors.recordingLessonName && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.recordingLessonName.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <FieldLabel required>Center</FieldLabel>
+                  <FormSelect
+                    register={register}
+                    name="recordingCenter"
+                    error={errors.recordingCenter}
+                    options={CENTER_DROPDOWN_OPTIONS}
+                    placeholder="Choose Center"
+                  />
+                  {errors.recordingCenter && (
+                    <p className="mt-1 text-xs text-red-500">{errors.recordingCenter.message}</p>
+                  )}
+                </div>
+                <div>
+                  <FieldLabel required>Topic</FieldLabel>
+                  <FormSelect
+                    register={register}
+                    name="recordingTopic"
+                    error={errors.recordingTopic}
+                    options={TOPIC_DROPDOWN_OPTIONS}
+                    placeholder="Choose Topic"
+                  />
+                  {errors.recordingTopic && (
+                    <p className="mt-1 text-xs text-red-500">{errors.recordingTopic.message}</p>
+                  )}
+                </div>
+                <div>
+                  <FieldLabel required>Teacher</FieldLabel>
+                  <FormInput
+                    register={register}
+                    name="recordingTeacher"
+                    error={errors.recordingTeacher}
+                    placeholder="Teacher name"
+                  />
+                  {errors.recordingTeacher && (
+                    <p className="mt-1 text-xs text-red-500">{errors.recordingTeacher.message}</p>
+                  )}
+                </div>
+                <div className="sm:col-span-2">
+                  <FieldLabel>Upload Recording</FieldLabel>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/x-matroska,video/avi,.mp4,.mov,.mkv,.avi"
+                      className="sr-only"
+                      id="subject-recording-upload"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const result = await validateUploadFile(file, 'VIDEO_RECORDING', {
+                          checkDimensions: false,
+                        })
+                        if (!result.valid) {
+                          setRecordingUploadError(result.message)
+                          e.target.value = ''
+                          return
+                        }
+                        setRecordingUploadError(null)
+                        setValue('recordingVideoFileName', file.name, { shouldValidate: true })
+                        clearErrors('recordingVideoFileName')
+                      }}
+                    />
+                    <label
+                      htmlFor="subject-recording-upload"
+                      className={cn(
+                        'flex h-11 cursor-pointer items-center justify-between rounded-xl bg-[#d1e9f6] px-4 text-sm text-[#7a8a9a]',
+                        errors.recordingVideoFileName && 'ring-2 ring-red-400',
+                      )}
+                    >
+                      <span className="truncate">
+                        {watch('recordingVideoFileName') || 'Choose video file'}
+                      </span>
+                      <Film className="h-5 w-5 shrink-0 text-[#55ace7]" />
+                    </label>
+                  </div>
+                  <UploadFieldHint profile="VIDEO_RECORDING" />
+                  <UploadValidationMessage message={recordingUploadError} />
+                  {errors.recordingVideoFileName && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.recordingVideoFileName.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {showTestSeries && (
+            <SubjectTestSeriesSection
+              watch={watch}
+              setValue={setValue}
+              errors={testSeriesErrors}
+            />
           )}
 
           <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-center">

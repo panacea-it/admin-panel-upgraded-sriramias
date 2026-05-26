@@ -18,6 +18,8 @@ import {
   Undo2,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
+import { validateUploadFile } from '../../utils/uploadValidation'
 
 const BLOCK_OPTIONS = [
   { value: 'p', label: 'Paragraph', icon: Type },
@@ -63,6 +65,7 @@ export default function BlogRichEditor({ value = '', onChange, placeholder, minH
   const editorRef = useRef(null)
   const fileRef = useRef(null)
   const [blockType, setBlockType] = useState('p')
+  const [uploadError, setUploadError] = useState(null)
   const lastEmitted = useRef(value)
 
   const emitChange = useCallback(() => {
@@ -100,9 +103,16 @@ export default function BlogRichEditor({ value = '', onChange, placeholder, minH
 
   const insertImage = () => fileRef.current?.click()
 
-  const handleImageFile = (e) => {
+  const handleImageFile = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const result = await validateUploadFile(file, 'IMAGE_STANDARD')
+    if (!result.valid) {
+      setUploadError(result.message)
+      e.target.value = ''
+      return
+    }
+    setUploadError(null)
     const reader = new FileReader()
     reader.onload = () => {
       exec('insertImage', reader.result)
@@ -198,6 +208,8 @@ export default function BlogRichEditor({ value = '', onChange, placeholder, minH
       />
 
       <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={handleImageFile} />
+      <UploadFieldHint profile="IMAGE_STANDARD" className="border-t border-gray-100 bg-[#fafcff] px-3 py-1.5" />
+      <UploadValidationMessage message={uploadError} className="px-3 pb-2" />
     </div>
   )
 }

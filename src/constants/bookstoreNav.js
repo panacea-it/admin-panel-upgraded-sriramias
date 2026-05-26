@@ -10,7 +10,6 @@ import {
   Sparkles,
   FileText,
   BarChart3,
-  ShieldCheck,
 } from 'lucide-react'
 
 export const BOOKSTORE_BASE = '/admin/bookstore'
@@ -27,7 +26,6 @@ export const BOOKSTORE_ROUTES = {
   recommendations: `${BOOKSTORE_BASE}/recommendations`,
   invoices: `${BOOKSTORE_BASE}/invoices`,
   reports: `${BOOKSTORE_BASE}/reports`,
-  rbac: `${BOOKSTORE_BASE}/rbac`,
 }
 
 export const BOOKSTORE_NAV_ITEMS = [
@@ -42,7 +40,6 @@ export const BOOKSTORE_NAV_ITEMS = [
   { label: 'Recommendations', path: BOOKSTORE_ROUTES.recommendations, icon: Sparkles, permission: 'recommendations' },
   { label: 'Invoices', path: BOOKSTORE_ROUTES.invoices, icon: FileText, permission: 'invoices' },
   { label: 'Reports & Analytics', path: BOOKSTORE_ROUTES.reports, icon: BarChart3, permission: 'reports' },
-  { label: 'Roles & Permissions', path: BOOKSTORE_ROUTES.rbac, icon: ShieldCheck, permission: 'rbac' },
 ]
 
 export function isBookstorePath(pathname) {

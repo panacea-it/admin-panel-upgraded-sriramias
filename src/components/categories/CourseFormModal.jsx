@@ -175,13 +175,6 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
     [subCategoriesForSelection],
   )
 
-  const selectedCategoryLabel = useMemo(() => {
-    const c = categoriesForSelection.find(
-      (x) => (x.categoryId || x.id) === form.examCategoryId,
-    )
-    return c ? formatExamCategoryLabel(c) : ''
-  }, [categoriesForSelection, form.examCategoryId])
-
   const handleClose = () => {
     if (closingRef.current) return
     closingRef.current = true
@@ -357,7 +350,6 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
             form={form}
             setForm={setForm}
             courseName={form.name}
-            examCategoryLabel={selectedCategoryLabel}
           />
         </div>
 

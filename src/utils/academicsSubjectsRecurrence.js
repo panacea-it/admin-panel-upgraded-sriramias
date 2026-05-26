@@ -9,10 +9,12 @@ import {
 import { buildLiveClassFromForm } from '../components/subjects/subjectFormUtils'
 import { findClassroomConflict } from './classroomBookings'
 import { durationFromHms, minutesToTimeString, timePartsToMinutes } from './classroomTime'
+import {
+  isLiveClassCategory,
+  normalizeCategories,
+} from './subjectCategoryHelpers'
 
-export function isLiveClassCategory(category) {
-  return category === 'Live Class'
-}
+export { isLiveClassCategory, isRecordedClassCategory } from './subjectCategoryHelpers'
 
 export function formAnchorTime(form) {
   return minutesToTimeString(timePartsToMinutes(form.timeHrs, form.timeMin, form.timeSec))
@@ -127,7 +129,8 @@ export function buildLiveClassesFromRecurrence(
 
 export function validateSubjectRecurrence(form, { allSubjects = [], subjectId = '', excludeIds = [] }) {
   const errors = {}
-  if (!isLiveClassCategory(form.category) && form.category) return errors
+  const categories = normalizeCategories(form.categories ?? form.category)
+  if (!isLiveClassCategory(categories) && categories.length) return errors
   if (!form.recurring || !form.recurrence?.enabled) return errors
 
   const anchor = { scheduledDate: form.date }

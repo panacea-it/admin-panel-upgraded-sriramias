@@ -6,9 +6,39 @@ export const MOCK_PRODUCTS = [
     name: 'UPSC Prelims GS Manual 2026',
     productType: 'Physical Book',
     subject: 'General Studies',
+    originalPrice: 1299,
     discountPrice: 999,
+    thumbnailUrl: '',
     stockQuantity: 240,
     status: 'active',
+  },
+  {
+    id: 'BSP-002',
+    name: 'Indian Polity — Laxmikanth Companion',
+    subject: 'Polity',
+    originalPrice: 899,
+    discountPrice: 749,
+    thumbnailUrl: '',
+    status: 'active',
+  },
+  {
+    id: 'BSP-005',
+    name: 'Ethics Case Studies Handbook',
+    subject: 'Ethics',
+    originalPrice: 1100,
+    discountPrice: 880,
+    thumbnailUrl: '',
+    status: 'active',
+  },
+  {
+    id: 'BSP-006',
+    name: 'Indian Economy General Studies Book-1',
+    subject: 'Economy',
+    originalPrice: 795,
+    discountPrice: 636,
+    thumbnailUrl: '',
+    status: 'active',
+    isBestseller: true,
   },
 ]
 
@@ -28,7 +58,18 @@ export const MOCK_COMBOS = []
 export const MOCK_BUNDLES = []
 export const MOCK_PAYMENTS = []
 export const MOCK_WALLET = []
-export const MOCK_RECOMMENDATIONS = []
+export let MOCK_RECOMMENDATIONS = [
+  {
+    id: 'REC-001',
+    sourceProductId: 'BSP-006',
+    recommendationType: 'Cart Recommendations',
+    placement: 'Cart Drawer',
+    recommendedProductIds: ['BSP-002', 'BSP-005', 'BSP-001'],
+    priorityOrder: 1,
+    status: 'active',
+    bestsellerProductIds: ['BSP-002'],
+  },
+]
 export const MOCK_INVOICES = []
 export const MOCK_INVENTORY_LOGS = []
 

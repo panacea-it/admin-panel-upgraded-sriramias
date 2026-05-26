@@ -1,6 +1,8 @@
 import { lazy } from 'react'
 
 export const BatchesPage = lazy(() => import('../pages/academics/BatchesPage'))
+export const BatchDetailsPage = lazy(() => import('../pages/academics/BatchDetailsPage'))
+export const BatchManagementLayout = lazy(() => import('../layouts/BatchManagementLayout'))
 export const SubjectsPage = lazy(() => import('../pages/academics/SubjectsPage'))
 export const SubjectViewListPage = lazy(
   () => import('../pages/academics/SubjectViewListPage'),
@@ -18,6 +20,8 @@ export const LiveClassDetailPage = lazy(
   () => import('../pages/academics/live-classes/LiveClassDetailPage'),
 )
 export const ContentLibraryPage = lazy(() => import('../pages/academics/ContentLibraryPage'))
+export const ContentLibraryLayout = lazy(() => import('../layouts/ContentLibraryLayout'))
+export const FreeResourcesPage = lazy(() => import('../pages/academics/FreeResourcesPage'))
 export const TestsPage = lazy(() => import('../pages/academics/TestsPage'))
 export const CurrentAffairsPage = lazy(() => import('../pages/academics/CurrentAffairsPage'))
 export const CategoriesLayout = lazy(() => import('../layouts/CategoriesLayout'))

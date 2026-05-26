@@ -117,6 +117,11 @@ export default function ViewCourseManagementModal({ open, onClose, item }) {
 
           {whyFeatures.some((f) => f.title || f.description) ? (
             <ReadOnlyBlock title={sectionTitles.whyChoose}>
+              {sectionTitles.whyChooseSubtitle ? (
+                <p className="mb-4 text-center text-sm text-[#555]">
+                  {sectionTitles.whyChooseSubtitle}
+                </p>
+              ) : null}
               <div className="grid gap-4 md:grid-cols-2">
                 {whyFeatures.map((f) => (
                   <div

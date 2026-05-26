@@ -6,6 +6,7 @@ import financeRoutes from './routes/financeRoutes.js'
 import salesAnalyticsRoutes from './routes/salesAnalyticsRoutes.js'
 import classroomRoutes from './routes/classroomRoutes.js'
 import bookstoreRoutes from './routes/bookstoreRoutes.js'
+import contentLibraryRoutes from './routes/contentLibraryRoutes.js'
 import { connectDB } from './config/db.js'
 import { errorHandler, notFound } from './middleware/errorHandler.js'
 
@@ -77,6 +78,7 @@ app.use('/api/finance', financeRoutes)
 app.use('/api/sales-analytics', salesAnalyticsRoutes)
 app.use('/api/classrooms', classroomRoutes)
 app.use('/api/bookstore', bookstoreRoutes)
+app.use('/api/content-library', contentLibraryRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

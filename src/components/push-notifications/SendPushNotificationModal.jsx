@@ -164,6 +164,7 @@ export default function SendPushNotificationModal({ open, onClose, editing, onSu
               <CourseFormField label="Upload Video (if any)">
                 <CourseMediaSlot
                   icon="video"
+                  uploadProfile="VIDEO_STANDARD"
                   fileName={form.videoName}
                   placeholder="Choose video"
                   accept="video/*"
@@ -172,6 +173,7 @@ export default function SendPushNotificationModal({ open, onClose, editing, onSu
               </CourseFormField>
               <CourseFormField label="Upload Image (if any)">
                 <CourseMediaSlot
+                  uploadProfile="IMAGE_STANDARD"
                   fileName={form.imageName}
                   placeholder="Choose image"
                   accept="image/*"

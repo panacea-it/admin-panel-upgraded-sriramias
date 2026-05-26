@@ -1,17 +1,16 @@
-export const CURRENT_AFFAIRS_CATEGORIES = [
-  { id: 1, name: 'Current Affairs', status: 'Active' },
-  { id: 2, name: 'Monthly Magazine', status: 'In Active' },
-  { id: 3, name: 'Infographics', status: 'Active' },
-  { id: 4, name: 'Monthly Recap', status: 'In Active' },
-  { id: 5, name: 'Daily Practice Questions', status: 'In Active' },
-  { id: 6, name: 'Daily Current Affairs', status: 'Active' },
-]
+import { CURRENT_AFFAIRS_FORM_CATEGORIES } from '../constants/currentAffairsForm'
+
+export const CURRENT_AFFAIRS_CATEGORIES = CURRENT_AFFAIRS_FORM_CATEGORIES.map((name, i) => ({
+  id: i + 1,
+  name,
+  status: 'Active',
+}))
 
 export const INITIAL_CURRENT_AFFAIRS = [
   {
     id: 1,
     name: 'April 10 - Current Affairs',
-    category: 'Daily Current Affairs',
+    category: 'Current Affairs',
     status: 'Active',
   },
   {
@@ -46,7 +45,10 @@ export const INITIAL_CURRENT_AFFAIRS = [
   },
 ]
 
-export const YEAR_OPTIONS = ['2024', '2025', '2026', '2027']
+export { getCurrentAffairsYearOptions as getYearOptions } from '../utils/currentAffairsYearOptions'
+
+/** @deprecated Use getCurrentAffairsYearOptions() for dynamic years */
+export const YEAR_OPTIONS = []
 
 export const MONTH_OPTIONS = [
   'January',

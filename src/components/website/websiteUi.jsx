@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { Edit3, Globe, ImageIcon, Trash2 } from 'lucide-react'
+import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
 import { cn } from '../../utils/cn'
+import { validateUploadFile } from '../../utils/uploadValidation'
 
 export const websiteInputClass =
   'h-11 w-full rounded-lg border-0 bg-[#eef6fc] px-4 text-sm text-[#111] outline-none transition focus:ring-2 focus:ring-[#55ace7]/40'
@@ -98,27 +101,43 @@ export function WebsiteUrlInput({ value, onChange, id }) {
 }
 
 export function WebsiteImageInput({ value, onChange, id }) {
+  const [uploadError, setUploadError] = useState(null)
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const result = await validateUploadFile(file, 'IMAGE_STANDARD')
+    if (!result.valid) {
+      setUploadError(result.message)
+      e.target.value = ''
+      return
+    }
+    setUploadError(null)
+    onChange(file.name)
+  }
+
   return (
-    <div className="relative">
-      <input
-        id={id}
-        type="text"
-        readOnly
-        value={value || '312×214 Kb'}
-        className={cn(websiteInputClass, 'cursor-pointer pr-11')}
-        onClick={() => document.getElementById(`${id}-file`)?.click()}
-      />
-      <input
-        id={`${id}-file`}
-        type="file"
-        accept="image/*"
-        className="sr-only"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) onChange(file.name)
-        }}
-      />
-      <ImageIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
+    <div>
+      <div className="relative">
+        <input
+          id={id}
+          type="text"
+          readOnly
+          value={value || '312×214 Kb'}
+          className={cn(websiteInputClass, 'cursor-pointer pr-11')}
+          onClick={() => document.getElementById(`${id}-file`)?.click()}
+        />
+        <input
+          id={`${id}-file`}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={handleFile}
+        />
+        <ImageIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#55ace7]" />
+      </div>
+      <UploadFieldHint profile="IMAGE_STANDARD" />
+      <UploadValidationMessage message={uploadError} />
     </div>
   )
 }

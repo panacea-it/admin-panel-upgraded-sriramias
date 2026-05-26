@@ -2,6 +2,15 @@ import PaginatedFigmaTable from '../figma/PaginatedFigmaTable'
 import { facultySubjectLabels } from '../../data/facultySubjectLabels'
 import StatusBadge from './StatusBadge'
 import { SubjectRowActions } from './ActionButtons'
+import TableValueChips from './TableValueChips'
+import {
+  deriveLiveStatus,
+  deriveRecordingStatus,
+  deriveTestSeriesStatus,
+  normalizeCategories,
+} from '../../utils/subjectCategoryHelpers'
+import { normalizeTestSeriesBlock } from '../../utils/batchTestSeriesForm'
+import { parseDateForDisplay } from '../../utils/academicsSubjectsStorage'
 
 function IdCell({ id }) {
   return (
@@ -36,14 +45,62 @@ export default function SubjectTable({
       ),
     },
     {
-      key: 'topic',
-      label: 'Topic',
-      render: (row) => <span className="text-sm text-[#444]">{row.topic || '—'}</span>,
-    },
-    {
       key: 'teacher',
       label: 'Teacher',
       render: (row) => <span className="text-sm text-[#444]">{row.teacher || '—'}</span>,
+    },
+    {
+      key: 'categories',
+      label: 'Categories',
+      render: (row) => (
+        <TableValueChips values={normalizeCategories(row.categories ?? row.category)} />
+      ),
+    },
+    {
+      key: 'liveStatus',
+      label: 'Live Class Status',
+      render: (row) => (
+        <span className="text-sm text-[#444]">{deriveLiveStatus(row)}</span>
+      ),
+    },
+    {
+      key: 'recordingStatus',
+      label: 'Recording Status',
+      render: (row) => (
+        <span className="text-sm text-[#444]">{deriveRecordingStatus(row)}</span>
+      ),
+    },
+    {
+      key: 'testSeriesStatus',
+      label: 'Test Series Status',
+      render: (row) => (
+        <span className="text-sm text-[#444]">{deriveTestSeriesStatus(row)}</span>
+      ),
+    },
+    {
+      key: 'totalQuestions',
+      label: 'Total Questions',
+      render: (row) => {
+        const ts = row.testSeries ? normalizeTestSeriesBlock(row.testSeries) : null
+        const count = ts?.questions?.length ?? 0
+        return <span className="text-sm font-medium text-[#444]">{count || '—'}</span>
+      },
+    },
+    {
+      key: 'scheduledDate',
+      label: 'Scheduled Date',
+      render: (row) => {
+        const ts = row.testSeries ? normalizeTestSeriesBlock(row.testSeries) : null
+        const date = ts?.schedule?.date || ts?.scheduleDate
+        const time = ts?.schedule?.time || ts?.scheduleTime
+        if (!date) return <span className="text-sm text-[#444]">—</span>
+        return (
+          <span className="text-sm text-[#444]">
+            {parseDateForDisplay(date)}
+            {time ? ` · ${time}` : ''}
+          </span>
+        )
+      },
     },
     {
       key: 'status',

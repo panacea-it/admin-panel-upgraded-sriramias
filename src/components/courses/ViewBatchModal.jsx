@@ -4,8 +4,9 @@ import SectionBar from './SectionBar'
 import CategoryStatusBadge from '../categories/CategoryStatusBadge'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import { normalizeLinkedSubjects } from '../../utils/batchHelpers'
-import { formatFacultySubjectOption } from '../../utils/subjectProvisioning'
-
+import { enrichLinkedSubjectsWithFaculty } from '../../utils/facultySubjectBatch'
+import { formatLinkedSubjectDisplay } from '../../utils/batchHelpers'
+import { loadAcademicsSubjects } from '../../utils/academicsSubjectsStorage'
 function DetailItem({ label, children }) {
   return (
     <div>
@@ -58,29 +59,24 @@ export default function ViewBatchModal({ open, onClose, item }) {
   const bannerSrc = item.bannerPreview || form.bannerPreview || form.bannerUrl
   const catalogName = item.linkedCourseName || item.courseName || form.courseName
   const feeDetails = item.feeDetails || form.feeDetails
-  const linkedSubjects = (() => {
-    const list = normalizeLinkedSubjects({
-      linkedSubjects: item.linkedSubjects || form.linkedSubjects,
-    })
-    if (list.length) return list
-    const legacyId = item.linkedSubjectId || form.linkedSubjectId
-    if (!legacyId) return []
-    return [
-      {
-        subjectId: String(legacyId),
-        subjectName: item.linkedSubjectName || form.linkedSubjectName || '',
-      },
-    ]
-  })()
-  const seo = item.seo || form.seo
+  const linkedSubjects = enrichLinkedSubjectsWithFaculty(
+    (() => {
+      const list = normalizeLinkedSubjects({
+        linkedSubjects: item.linkedSubjects || form.linkedSubjects,
+      })
+      if (list.length) return list
+      const legacyId = item.linkedSubjectId || form.linkedSubjectId
+      if (!legacyId) return []
+      return [
+        {
+          subjectId: String(legacyId),
+          subjectName: item.linkedSubjectName || form.linkedSubjectName || '',
+        },
+      ]
+    })(),
+    loadAcademicsSubjects(),
+  )
   const showFee = hasFeeDetails(feeDetails)
-  const showSeo =
-    seo &&
-    (seo.metaTitle ||
-      seo.metaDescription ||
-      (seo.focusKeywords || []).length ||
-      (seo.tags || []).length ||
-      seo.formattedContent)
   const currency = feeDetails?.currency || 'INR'
 
   return (
@@ -145,10 +141,7 @@ export default function ViewBatchModal({ open, onClose, item }) {
                     <ul className="mt-1 space-y-1">
                       {linkedSubjects.map((s) => (
                         <li key={s.subjectId} className="text-sm font-semibold text-[#111]">
-                          {formatFacultySubjectOption({
-                            id: s.subjectId,
-                            subjectName: s.subjectName,
-                          })}
+                          {formatLinkedSubjectDisplay(s)}
                         </li>
                       ))}
                     </ul>
@@ -217,52 +210,6 @@ export default function ViewBatchModal({ open, onClose, item }) {
             </ReadOnlyBlock>
           ) : null}
 
-          {showSeo ? (
-            <ReadOnlyBlock title="SEO & Content">
-              {seo.metaTitle ? (
-                <DetailItem label="Meta Title">{seo.metaTitle}</DetailItem>
-              ) : null}
-              {seo.metaDescription ? (
-                <p className="mt-3 whitespace-pre-wrap text-sm">{seo.metaDescription}</p>
-              ) : null}
-              {(seo.focusKeywords || []).length > 0 ? (
-                <div className="mt-4">
-                  <p className="mb-2 text-xs font-semibold text-[#246392]">Focus Keywords</p>
-                  <div className="flex flex-wrap gap-2">
-                    {seo.focusKeywords.map((k) => (
-                      <span
-                        key={k}
-                        className="rounded-full bg-[#e8f4fc] px-3 py-1 text-xs font-medium text-[#1a3a5c]"
-                      >
-                        {k}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {(seo.tags || []).length > 0 ? (
-                <div className="mt-4">
-                  <p className="mb-2 text-xs font-semibold text-[#246392]">Tags</p>
-                  <div className="flex flex-wrap gap-2">
-                    {seo.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full bg-[#f0f7fc] px-3 py-1 text-xs font-medium text-[#246392] ring-1 ring-[#93c5fd]/40"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {seo.formattedContent ? (
-                <div
-                  className="prose prose-sm mt-4 max-w-none text-[#333]"
-                  dangerouslySetInnerHTML={{ __html: seo.formattedContent }}
-                />
-              ) : null}
-            </ReadOnlyBlock>
-          ) : null}
         </div>
 
         <footer className="sticky bottom-0 border-t border-[#eef2fc] bg-[#fafafa] px-5 py-4 text-right sm:px-6">
