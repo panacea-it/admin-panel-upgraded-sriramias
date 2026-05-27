@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "verify:features": "node scripts/verify-features.mjs",
+    "verify:lazy-routes": "node scripts/verify-lazy-routes.mjs",
     "start:api": "npm run start --prefix backend"
   },
   "dependencies": {

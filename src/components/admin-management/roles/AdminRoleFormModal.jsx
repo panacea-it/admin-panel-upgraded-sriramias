@@ -9,7 +9,7 @@ import { cn } from '../../../utils/cn'
 import { useAdminRoles } from '../../../contexts/AdminRolesContext'
 
 const fieldLabelClass = cn(
-  'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400',
+  'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500',
 )
 
 function normalizeRoleCode(value) {
@@ -122,19 +122,19 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="relative z-[141] flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="relative z-[141] flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl"
           >
-            <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+            <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
               <h2
                 id="role-access-modal-title"
-                className="text-xl font-bold text-slate-900 dark:text-white"
+                className="text-xl font-bold text-slate-900"
               >
                 {modalTitle}
               </h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-800 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-800"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -152,7 +152,7 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
                 {isEdit ? (
                   <div>
                     <label className={fieldLabelClass}>Role Code</label>
-                    <p className="rounded-xl border border-slate-200/80 bg-slate-50 px-4 py-3 font-mono text-sm font-semibold tracking-wide text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                    <p className="rounded-xl border border-slate-200/80 bg-slate-50 px-4 py-3 font-mono text-sm font-semibold tracking-wide text-slate-700">
                       {roleCode}
                     </p>
                   </div>
@@ -166,11 +166,11 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
                 )}
               </div>
 
-              <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200/90 bg-white/98 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/98">
+              <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200/90 bg-white/98 px-6 py-4">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
                 >
                   Cancel
                 </button>

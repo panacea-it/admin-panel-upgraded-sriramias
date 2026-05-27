@@ -98,7 +98,7 @@ export default function BatchStatusSelector({
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
               style={{ position: 'fixed', top: coords.top, left: coords.left, zIndex: 140 }}
-              className="min-w-[180px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-600 dark:bg-slate-900"
+              className="min-w-[180px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
             >
               {BATCH_STATUSES.map((s) => (
                 <li key={s} role="option" aria-selected={s === status}>

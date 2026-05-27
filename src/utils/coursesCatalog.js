@@ -1,27 +1,27 @@
 import { fetchCourses } from '../api/coursesAPI'
 import { INITIAL_COURSES, SUB_CATEGORIES_BY_CATEGORY } from '../data/coursesData'
-import { CATEGORIES_HUB_INITIAL } from '../data/categoriesHubData'
 import { loadAcademicCourses } from './academicCoursesStorage'
+import { loadExamCategories } from './examCategoriesStorage'
+import { loadExamSubCategories } from './examSubCategoriesStorage'
 import { getCourseMarketingSectionTitles } from './academicCourseForm'
 
 /** Map course category name to exam category / subcategory for program linking UI */
 function resolveExamHierarchy(categoryName) {
-  const examCategories = CATEGORIES_HUB_INITIAL['exam-category'] || []
-  const examSubCategories = CATEGORIES_HUB_INITIAL['exam-sub-category'] || []
-
+  const examCategories = loadExamCategories()
+  const examSubCategories = loadExamSubCategories()
   const matchedExam = examCategories.find(
     (e) =>
       categoryName?.toLowerCase().includes(e.name.toLowerCase()) ||
       e.name.toLowerCase().includes(categoryName?.toLowerCase()?.split(' ')[0] || ''),
   )
-
   const examCategory = matchedExam?.name || 'UPSC'
   const subs = SUB_CATEGORIES_BY_CATEGORY[categoryName] || []
   const matchedSub = examSubCategories.find(
-    (s) => s.parentCategory === examCategory && subs.some((sub) => sub.includes(s.name) || s.name.includes(sub)),
+    (s) =>
+      s.parentCategory === examCategory &&
+      subs.some((sub) => sub.includes(s.name) || s.name.includes(sub)),
   )
   const examSubcategory = matchedSub?.name || subs[0] || 'Foundation'
-
   return { examCategory, examSubcategory }
 }
 
@@ -59,13 +59,10 @@ function mapRowToCatalog(row, index) {
   }
 }
 
-/**
- * Load all courses for Programs multi-select (API with mock fallback).
- */
+/** Load all courses for Programs multi-select (API with mock fallback). */
 export async function getCoursesCatalog() {
   const hub = loadAcademicCourses().filter((c) => c.status === 'Active')
   if (hub.length) return hub.map(mapHubCourseToCatalog)
-
   try {
     const rows = await fetchCourses()
     if (rows?.length) return rows.map(mapRowToCatalog)

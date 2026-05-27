@@ -35,11 +35,11 @@ const mobileRe = /^[6-9]\d{9}$/
 const selectClassName = cn(
   'w-full min-h-[3.25rem] rounded-xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 shadow-sm outline-none transition',
   'focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15',
-  'dark:border-slate-700 dark:bg-slate-900/70 dark:text-white',
+  '',
 )
 
 const fieldLabelClass = cn(
-  'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400',
+  'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500',
 )
 
 export default function CreateAdminModal({ open, onClose, onSuccess, editingRecord = null }) {
@@ -197,7 +197,7 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
             aria-modal="true"
             aria-labelledby="create-admin-modal-title"
             className={cn(
-              'relative z-[101] flex w-full flex-col overflow-hidden border border-slate-200/80 bg-white shadow-2xl transition-shadow dark:border-slate-700 dark:bg-slate-900',
+              'relative z-[101] flex w-full flex-col overflow-hidden border border-slate-200/80 bg-white shadow-2xl transition-shadow',
               'h-[100dvh] max-h-[100dvh] rounded-none sm:h-auto sm:max-h-[min(92vh,960px)] sm:w-[90vw] sm:max-w-[1024px] sm:rounded-2xl xl:max-w-[1100px]',
             )}
             initial={{ opacity: 0, scale: 0.97, y: 20 }}
@@ -206,22 +206,22 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 sm:px-8 sm:py-6">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 sm:px-8 sm:py-6">
               <div className="min-w-0 pr-2">
                 <h2
                   id="create-admin-modal-title"
-                  className="text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl"
+                  className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl"
                 >
                   Create Admin Access
                 </h2>
-                <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500 dark:text-slate-400">
+                <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">
                   Manage and assign secure administrative access across departments.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleCancel}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -238,7 +238,7 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                   <section aria-labelledby="section-profile">
                     <h3
                       id="section-profile"
-                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500 sm:mb-6"
+                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:mb-6"
                     >
                       Profile & credentials
                     </h3>
@@ -286,12 +286,12 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                   </section>
 
                   <section
-                    className="border-t border-slate-100 pt-10 dark:border-slate-800 sm:pt-12"
+                    className="border-t border-slate-100 pt-10 sm:pt-12"
                     aria-labelledby="section-role"
                   >
                     <h3
                       id="section-role"
-                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500 sm:mb-6"
+                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:mb-6"
                     >
                       Access scope
                     </h3>
@@ -354,7 +354,7 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                       {selectedRole ? (
                         <RoleOverviewCard role={selectedRole} />
                       ) : (
-                        <p className="rounded-xl border border-dashed border-slate-200 px-6 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                        <p className="rounded-xl border border-dashed border-slate-200 px-6 py-8 text-center text-sm text-slate-500">
                           No eligible access type selected. Configure and enable titles under{' '}
                           <strong>Role Access</strong>.
                         </p>
@@ -363,12 +363,12 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                   </section>
 
                   <section
-                    className="border-t border-slate-100 pt-10 dark:border-slate-800 sm:pt-12"
+                    className="border-t border-slate-100 pt-10 sm:pt-12"
                     aria-labelledby="section-security"
                   >
                     <h3
                       id="section-security"
-                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500 sm:mb-6"
+                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:mb-6"
                     >
                       Security
                     </h3>
@@ -393,12 +393,12 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                   </section>
 
                   <section
-                    className="border-t border-slate-100 pt-10 dark:border-slate-800 sm:pt-12"
+                    className="border-t border-slate-100 pt-10 sm:pt-12"
                     aria-labelledby="section-preferences"
                   >
                     <h3
                       id="section-preferences"
-                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500 sm:mb-6"
+                      className="mb-5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:mb-6"
                     >
                       Session & alerts
                     </h3>
@@ -427,7 +427,7 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                         checked={form.loginAlert}
                         onChange={(v) => setForm((f) => ({ ...f, loginAlert: v }))}
                       />
-                      <div className="flex flex-col justify-center rounded-xl border border-slate-200/80 bg-white/60 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                      <div className="flex flex-col justify-center rounded-xl border border-slate-200/80 bg-white/60 px-5 py-4">
                         <label htmlFor="modal-sessionTimeout" className={fieldLabelClass}>
                           Session timeout
                         </label>
@@ -446,11 +446,11 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                       </div>
                     </div>
 
-                    <div className="mt-10 flex justify-end border-t border-slate-100 pt-6 dark:border-slate-800">
+                    <div className="mt-10 flex justify-end border-t border-slate-100 pt-6">
                       <button
                         type="button"
                         onClick={resetAll}
-                        className="text-[15px] font-semibold text-slate-500 transition hover:text-violet-600 dark:text-slate-400 dark:hover:text-violet-400"
+                        className="text-[15px] font-semibold text-slate-500 transition hover:text-violet-600"
                       >
                         Reset form
                       </button>
@@ -461,14 +461,14 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
 
               <div
                 className={cn(
-                  'flex shrink-0 flex-col-reverse gap-3 border-t border-slate-200/90 bg-white/95 px-6 py-5 dark:border-slate-800 dark:bg-slate-950/95 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5',
+                  'flex shrink-0 flex-col-reverse gap-3 border-t border-slate-200/90 bg-white/95 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5',
                   'pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-5',
                 )}
               >
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="w-full rounded-xl border border-slate-200/80 bg-white px-6 py-3.5 text-[15px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 sm:w-auto sm:min-w-[8.5rem]"
+                  className="w-full rounded-xl border border-slate-200/80 bg-white px-6 py-3.5 text-[15px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto sm:min-w-[8.5rem]"
                 >
                   Cancel
                 </button>

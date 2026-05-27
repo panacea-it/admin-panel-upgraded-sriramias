@@ -50,7 +50,7 @@ export default function DashboardLayout() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:pl-[272px]">
         <Header onMenuClick={toggleSidebar} />
 
-        <main className="admin-main-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#f7f7f7] dark:bg-[var(--app-bg)]">
+        <main className="admin-main-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#f7f7f7]">
           <Suspense fallback={<LoadingState message="Loading page..." className="m-6" />}>
             <RouteErrorBoundary resetKey={location.pathname}>
               <Outlet />

@@ -11,17 +11,17 @@ const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const selectClassName = cn(
   'w-full min-h-[3rem] rounded-xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[14px] font-medium text-slate-900 shadow-sm outline-none transition',
   'focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15',
-  'dark:border-slate-700 dark:bg-slate-900/70 dark:text-white',
+  '',
 )
 
 const labelClass = cn(
-  'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400',
+  'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500',
 )
 
 const inputClass = cn(
   'w-full rounded-xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[14px] font-medium text-slate-900 shadow-sm outline-none transition',
   'focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15',
-  'dark:border-slate-700 dark:bg-slate-900/70 dark:text-white',
+  '',
 )
 
 function parseAdmins(raw) {
@@ -166,11 +166,11 @@ export default function CenterFormDrawer({
             exit={{ x: '100%', opacity: 0.6 }}
             transition={{ type: 'spring', stiffness: 380, damping: 38 }}
             className={cn(
-              'relative z-[101] flex h-full w-full max-w-[min(100%,440px)] flex-col border-l border-slate-200/80 bg-white shadow-[0_0_48px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950',
+              'relative z-[101] flex h-full w-full max-w-[min(100%,440px)] flex-col border-l border-slate-200/80 bg-white shadow-[0_0_48px_rgba(15,23,42,0.18)]',
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
               <div className="flex min-w-0 items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 text-white shadow-md">
                   <Building2 className="h-5 w-5" strokeWidth={2.3} />
@@ -178,11 +178,11 @@ export default function CenterFormDrawer({
                 <div className="min-w-0">
                   <h2
                     id="center-form-title"
-                    className="text-lg font-bold tracking-tight text-slate-900 dark:text-white"
+                    className="text-lg font-bold tracking-tight text-slate-900"
                   >
                     {title}
                   </h2>
-                  <p className="mt-1 text-[13px] leading-snug text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-[13px] leading-snug text-slate-500">
                     Configure center profile, regional details, and assigned administrators.
                   </p>
                 </div>
@@ -190,7 +190,7 @@ export default function CenterFormDrawer({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -321,7 +321,7 @@ export default function CenterFormDrawer({
                     <option value="active">Active</option>
                     <option value="disabled">Disabled</option>
                   </select>
-                  <p className="mt-2 text-[12px] font-medium text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-[12px] font-medium text-slate-500">
                     Disabled centers stay out of operational dropdowns until re-enabled.
                   </p>
                 </div>
@@ -341,11 +341,11 @@ export default function CenterFormDrawer({
                 </div>
               </div>
 
-              <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 bg-white/95 px-6 py-5 dark:border-slate-800 dark:bg-slate-950/95 sm:flex-row sm:justify-end">
+              <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 bg-white/95 px-6 py-5 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full rounded-xl border border-slate-200/80 bg-white px-5 py-3 text-[14px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:w-auto"
+                  className="w-full rounded-xl border border-slate-200/80 bg-white px-5 py-3 text-[14px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
                 >
                   Cancel
                 </button>

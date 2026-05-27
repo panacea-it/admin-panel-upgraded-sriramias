@@ -66,7 +66,7 @@ export default function BatchManagementTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80 dark:bg-slate-900 dark:ring-slate-700">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80">
       <div className="max-h-[min(70vh,720px)] overflow-auto overscroll-contain">
         <table className="w-full min-w-[1080px] border-collapse text-left">
           <thead className="sticky top-0 z-20 shadow-[0_2px_0_rgba(15,23,42,0.06)]">
@@ -159,7 +159,7 @@ function BatchTableRow({
   return (
     <tr
       className={cn(
-        'border-b border-slate-100 transition-colors duration-150 hover:bg-[#f8fbff] dark:hover:bg-slate-800/50',
+        'border-b border-slate-100 transition-colors duration-150 hover:bg-[#f8fbff]',
         selected && 'bg-[#eef6fc]/80',
       )}
     >
@@ -193,18 +193,18 @@ function BatchTableRow({
           )}
         </div>
       </td>
-      <td className="px-4 py-4 text-sm font-medium text-[#444] dark:text-slate-300">
+      <td className="px-4 py-4 text-sm font-medium text-[#444]">
         {batch.courseName}
       </td>
-      <td className="px-4 py-4 text-sm text-[#444] dark:text-slate-300">{batch.trainerName}</td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444] dark:text-slate-300">
+      <td className="px-4 py-4 text-sm text-[#444]">{batch.trainerName}</td>
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444]">
         {formatBatchDate(batch.startDate)}
       </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444] dark:text-slate-300">
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444]">
         {formatBatchDate(batch.endDate)}
       </td>
       <td className="px-4 py-4">
-        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-bold text-[#333] dark:bg-slate-700 dark:text-slate-200">
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-bold text-[#333]">
           <Users className="h-3.5 w-3.5 text-[#246392]" />
           {batch.totalStudents}
         </span>

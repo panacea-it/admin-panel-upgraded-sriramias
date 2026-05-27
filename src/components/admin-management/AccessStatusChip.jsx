@@ -4,15 +4,15 @@ import { cn } from '../../utils/cn'
 const STYLES = {
   full: {
     chip:
-      'bg-emerald-500/12 text-emerald-800 ring-emerald-500/25 dark:bg-emerald-950/35 dark:text-emerald-300',
+      'bg-emerald-500/12 text-emerald-800 ring-emerald-500/25',
     label: 'Full Access',
   },
   custom: {
-    chip: 'bg-amber-500/12 text-amber-900 ring-amber-400/35 dark:bg-amber-950/40 dark:text-amber-200',
+    chip: 'bg-amber-500/12 text-amber-900 ring-amber-400/35',
     label: 'Custom',
   },
   restricted: {
-    chip: 'bg-rose-500/10 text-rose-800 ring-rose-400/28 dark:bg-rose-950/35 dark:text-rose-200',
+    chip: 'bg-rose-500/10 text-rose-800 ring-rose-400/28',
     label: 'Restricted',
   },
 }

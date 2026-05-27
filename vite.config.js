@@ -21,6 +21,13 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react(), tailwindcss()],
     server: {
+      warmup: {
+        clientFiles: [
+          './src/routes/lazyRoute.js',
+          './src/pages/LazyLoadErrorPage.jsx',
+          './src/routes/lazyPages.js',
+        ],
+      },
       proxy: {
         '/api': {
           target: apiTarget,

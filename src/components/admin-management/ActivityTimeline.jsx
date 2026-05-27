@@ -29,14 +29,14 @@ export default function ActivityTimeline() {
       initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.1 }}
-      className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white/75 shadow-[0_8px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-900/50"
+      className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white/75 shadow-[0_8px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl"
     >
-      <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+      <div className="border-b border-slate-100 px-5 py-4">
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-violet-600" />
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Recent Activity</h2>
+          <h2 className="text-base font-bold text-slate-900">Recent Activity</h2>
         </div>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-xs text-slate-500">
           Admins, logins, permissions & security
         </p>
       </div>
@@ -54,7 +54,7 @@ export default function ActivityTimeline() {
             >
               {i < RECENT_ACTIVITY.length - 1 && (
                 <span
-                  className="absolute left-[15px] top-9 bottom-0 w-px bg-slate-200 dark:bg-slate-700"
+                  className="absolute left-[15px] top-9 bottom-0 w-px bg-slate-200"
                   aria-hidden
                 />
               )}
@@ -63,7 +63,7 @@ export default function ActivityTimeline() {
               </div>
               <div className="min-w-0 flex-1 pt-0.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <p className="text-sm font-semibold text-slate-900">
                     {item.title}
                   </p>
                   <span
@@ -75,7 +75,7 @@ export default function ActivityTimeline() {
                     {item.status}
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
                   {item.description}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-400">

@@ -19,14 +19,14 @@ export default function RoleOverviewCard({ role }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -6, scale: 0.99 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="overflow-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50/95 via-white/90 to-violet-50/30 p-6 shadow-sm ring-1 ring-slate-100/90 sm:p-7 md:p-8 dark:border-slate-600/60 dark:from-slate-800/80 dark:via-slate-900/50 dark:to-violet-950/20 dark:ring-slate-700/50"
+        className="overflow-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50/95 via-white/90 to-violet-50/30 p-6 shadow-sm ring-1 ring-slate-100/90 sm:p-7 md:p-8"
       >
         <div className="flex flex-wrap items-start justify-between gap-4 sm:gap-6">
           <div className="min-w-0 flex-1 space-y-1.5">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-400">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-600">
               Role overview
             </p>
-            <h3 className="text-xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+            <h3 className="text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-2xl">
               {role.label}
             </h3>
           </div>
@@ -41,7 +41,7 @@ export default function RoleOverviewCard({ role }) {
           </span>
         </div>
 
-        <p className="mt-5 max-w-none text-[15px] leading-[1.65] text-slate-600 dark:text-slate-300 sm:text-base sm:leading-relaxed">
+        <p className="mt-5 max-w-none text-[15px] leading-[1.65] text-slate-600 sm:text-base sm:leading-relaxed">
           {role.description}
         </p>
 
@@ -49,18 +49,18 @@ export default function RoleOverviewCard({ role }) {
           {role.modules.map((mod) => (
             <span
               key={mod}
-              className="inline-flex rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-[13px] font-medium leading-tight text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.06)] dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-200"
+              className="inline-flex rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-[13px] font-medium leading-tight text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
             >
               {mod}
             </span>
           ))}
         </div>
 
-        <div className="mt-7 flex flex-wrap items-center gap-4 border-t border-slate-200/90 pt-5 dark:border-slate-600/60">
-          <div className="flex items-center gap-2.5 text-[15px] text-slate-600 dark:text-slate-400">
+        <div className="mt-7 flex flex-wrap items-center gap-4 border-t border-slate-200/90 pt-5">
+          <div className="flex items-center gap-2.5 text-[15px] text-slate-600">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
             <span>
-              <strong className="font-bold text-slate-900 dark:text-white">
+              <strong className="font-bold text-slate-900">
                 {role.permissionCount}
               </strong>{' '}
               permissions mapped

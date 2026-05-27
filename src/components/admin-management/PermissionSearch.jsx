@@ -11,7 +11,7 @@ export default function PermissionSearch({ value, onChange, placeholder = 'Searc
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete="off"
-        className="w-full rounded-xl border border-slate-200/80 bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 dark:border-slate-700 dark:bg-slate-900/70 dark:text-white"
+        className="w-full rounded-xl border border-slate-200/80 bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
       />
     </label>
   )

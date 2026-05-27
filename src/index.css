@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 
+/* Disable Tailwind dark: utilities (default uses prefers-color-scheme). */
+@custom-variant dark (&:where(.___theme-dark-never___ *));
+
 :root {
   --color-primary: #246392;
   --color-primary-hover: #1a4d73;
@@ -28,32 +31,6 @@
   --app-text: #111111;
 }
 
-html.dark {
-  --color-primary: #55ace7;
-  --color-primary-hover: #3d96d4;
-  --color-primary-light: #1e3a5f;
-  --color-primary-text: #93c5fd;
-  --color-border: #334155;
-  --color-card: #0f172a;
-  --color-text-main: #f1f5f9;
-  --color-text-sub: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-input-border: #475569;
-  --color-input-bg: #1e293b;
-  --color-input-focus: #55ace7;
-  --color-success: #4ade80;
-  --color-success-bg: #14532d;
-  --color-danger: #f87171;
-  --color-danger-bg: #450a0a;
-  --color-warning: #fbbf24;
-  --color-warning-bg: #422006;
-  --color-info: #55ace7;
-  --color-info-bg: #1e3a5f;
-  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --app-bg: #0b1120;
-  --app-text: #f1f5f9;
-}
-
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -61,6 +38,13 @@ html.dark {
 html {
   overflow-x: hidden;
   min-width: 320px;
+  color-scheme: light only;
+  background-color: #ffffff;
+}
+
+html,
+html.dark {
+  color-scheme: light only;
 }
 
 body {
@@ -80,6 +64,25 @@ body {
   overflow-x: hidden;
   max-width: 100vw;
   min-height: 100vh;
+  background-color: #ffffff;
+  color: #111827;
+}
+
+/* Permanent light theme — ignore OS/browser dark mode */
+html,
+body,
+#root {
+  background-color: #ffffff !important;
+  color: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  #root {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
 }
 
 /* Dashboard shell: lock document scroll; only sidebar + main panel scroll */
@@ -259,16 +262,6 @@ html.dashboard-layout-active .app-shell {
   border: 0;
 }
 
-html.dark,
-html.dark body {
-  background: #0f172a;
-  color: #e2e8f0;
-}
-
-html.dark .figma-admin-section {
-  color: #e2e8f0;
-}
-
 /* ——— Toast notifications (Sonner + src/utils/toast.js) ——— */
 
 @keyframes toast-enter {
@@ -396,47 +389,6 @@ html.dark .figma-admin-section {
     0 12px 32px -4px rgba(36, 99, 146, 0.18),
     0 24px 48px -12px rgba(15, 23, 42, 0.12),
     0 0 0 1px rgba(255, 255, 255, 0.7) inset !important;
-}
-
-html.dark [data-sonner-toast].app-toast {
-  border-color: rgba(51, 65, 85, 0.9) !important;
-  background: rgba(15, 23, 42, 0.92) !important;
-  box-shadow:
-    0 8px 24px -6px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
-  color: var(--color-text-main) !important;
-}
-
-html.dark [data-sonner-toast].app-toast--success {
-  background: linear-gradient(
-    135deg,
-    rgba(15, 23, 42, 0.96) 0%,
-    rgba(20, 83, 45, 0.35) 100%
-  ) !important;
-}
-
-html.dark [data-sonner-toast].app-toast--error {
-  background: linear-gradient(
-    135deg,
-    rgba(15, 23, 42, 0.96) 0%,
-    rgba(69, 10, 10, 0.4) 100%
-  ) !important;
-}
-
-html.dark [data-sonner-toast].app-toast--warning {
-  background: linear-gradient(
-    135deg,
-    rgba(15, 23, 42, 0.96) 0%,
-    rgba(66, 32, 6, 0.4) 100%
-  ) !important;
-}
-
-html.dark [data-sonner-toast].app-toast--info {
-  background: linear-gradient(
-    135deg,
-    rgba(15, 23, 42, 0.96) 0%,
-    rgba(30, 58, 95, 0.45) 100%
-  ) !important;
 }
 
 [data-sonner-toast].app-toast::before {
@@ -592,11 +544,6 @@ html.dark [data-sonner-toast].app-toast--info {
   background: var(--color-primary-light) !important;
   color: var(--color-primary) !important;
   transform: scale(1.05);
-}
-
-html.dark .app-toast-close {
-  background: rgba(30, 41, 59, 0.8) !important;
-  border-color: var(--color-border) !important;
 }
 
 .app-toast-action,

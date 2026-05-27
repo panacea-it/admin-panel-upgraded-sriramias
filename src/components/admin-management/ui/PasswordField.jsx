@@ -69,15 +69,15 @@ export default function PasswordField({
                 key={i}
                 className={cn(
                   'h-1 flex-1 rounded-full transition-colors',
-                  i <= score ? meta.color : 'bg-slate-200 dark:bg-slate-700',
+                  i <= score ? meta.color : 'bg-slate-200',
                 )}
               />
             ))}
           </div>
           {meta.label && (
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium text-slate-500">
               Password strength:{' '}
-              <span className="text-slate-700 dark:text-slate-200">{meta.label}</span>
+              <span className="text-slate-700">{meta.label}</span>
             </p>
           )}
         </div>

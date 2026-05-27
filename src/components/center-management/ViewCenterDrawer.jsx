@@ -6,13 +6,13 @@ import { cn } from '../../utils/cn'
 
 function Row({ icon: Icon, label, value }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+    <div className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" strokeWidth={2.4} />
       <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
           {label}
         </p>
-        <p className="mt-1 whitespace-pre-wrap text-[14px] font-semibold text-slate-900 dark:text-white">
+        <p className="mt-1 whitespace-pre-wrap text-[14px] font-semibold text-slate-900">
           {value || '—'}
         </p>
       </div>
@@ -66,11 +66,11 @@ export default function ViewCenterDrawer({ open, center, onClose }) {
             exit={{ x: '100%', opacity: 0.6 }}
             transition={{ type: 'spring', stiffness: 380, damping: 38 }}
             className={cn(
-              'relative z-[101] flex h-full w-full max-w-[min(100%,420px)] flex-col border-l border-slate-200/80 bg-white shadow-[0_0_48px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950',
+              'relative z-[101] flex h-full w-full max-w-[min(100%,420px)] flex-col border-l border-slate-200/80 bg-white shadow-[0_0_48px_rgba(15,23,42,0.18)]',
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
               <div className="flex min-w-0 items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 text-white shadow-md">
                   <Building2 className="h-5 w-5" strokeWidth={2.3} />
@@ -78,18 +78,18 @@ export default function ViewCenterDrawer({ open, center, onClose }) {
                 <div className="min-w-0">
                   <h2
                     id="center-view-title"
-                    className="truncate text-lg font-bold tracking-tight text-slate-900 dark:text-white"
+                    className="truncate text-lg font-bold tracking-tight text-slate-900"
                   >
                     {center.centerName}
                   </h2>
-                  <p className="mt-1 text-[13px] font-semibold text-violet-700 dark:text-violet-300">
+                  <p className="mt-1 text-[13px] font-semibold text-violet-700">
                     {center.centerCode}{' '}
-                    <span className="font-medium text-slate-500 dark:text-slate-400">
+                    <span className="font-medium text-slate-500">
                       ·{' '}
                       {center.status === 'disabled' ? (
-                        <span className="text-amber-700 dark:text-amber-400">Disabled</span>
+                        <span className="text-amber-700">Disabled</span>
                       ) : (
-                        <span className="text-emerald-700 dark:text-emerald-400">Active</span>
+                        <span className="text-emerald-700">Active</span>
                       )}
                     </span>
                   </p>
@@ -98,7 +98,7 @@ export default function ViewCenterDrawer({ open, center, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -111,11 +111,11 @@ export default function ViewCenterDrawer({ open, center, onClose }) {
               <Row icon={Mail} label="Email" value={center.email} />
               <Row icon={Users} label="Assigned admins" value={admins} />
               {(center.linkedStudentCount || 0) > 0 && (
-                <div className="rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+                <div className="rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-[13px] font-semibold text-amber-900">
                   Linked students (guard): {center.linkedStudentCount}
                 </div>
               )}
-              <p className="pt-2 text-[12px] font-medium text-slate-500 dark:text-slate-400">
+              <p className="pt-2 text-[12px] font-medium text-slate-500">
                 Created{' '}
                 {center.createdAt
                   ? new Date(center.createdAt).toLocaleString(undefined, {
@@ -126,11 +126,11 @@ export default function ViewCenterDrawer({ open, center, onClose }) {
               </p>
             </div>
 
-            <div className="border-t border-slate-100 px-6 py-5 dark:border-slate-800">
+            <div className="border-t border-slate-100 px-6 py-5">
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full rounded-xl border border-slate-200/80 bg-white px-5 py-3 text-[14px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                className="w-full rounded-xl border border-slate-200/80 bg-white px-5 py-3 text-[14px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 Close
               </button>

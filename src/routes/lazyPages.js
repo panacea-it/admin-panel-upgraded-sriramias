@@ -43,6 +43,9 @@ export const CenterManagementPage = lazyRoute(() => import('../pages/users/Cente
 export const ManageUsersPage = lazyRoute(() => import('../pages/users/ManageUsersPage'))
 export const StudentDetailPage = lazyRoute(() => import('../pages/users/StudentDetailPage'))
 export const ModuleListPage = lazyRoute(() => import('../pages/ModuleListPage'))
-export const FinanceLayout = lazyRoute(() => import('../layouts/FinanceLayout'))
+export const FinanceLayout = lazyRoute(
+  () => import('../layouts/FinanceLayout'),
+  'Finance layout',
+)
 export const SalesAnalyticsLayout = lazyRoute(() => import('../layouts/SalesAnalyticsLayout'))
 export const BookstoreLayout = lazyRoute(() => import('../layouts/BookstoreLayout'))

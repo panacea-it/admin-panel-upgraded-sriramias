@@ -1,7 +1,7 @@
 import { Eye, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
-function ActionBtn({ label, onClick, className, children }) {
+function ActionBtn({ label, onClick, className, children, compact = false }) {
   return (
     <button
       type="button"
@@ -38,6 +38,7 @@ export default function CategoryTableActions({
     >
       <ActionBtn
         label="View"
+        compact={compact}
         onClick={onView}
         className="text-[#686868] hover:bg-slate-100 hover:text-[#246392]"
       >
@@ -45,6 +46,7 @@ export default function CategoryTableActions({
       </ActionBtn>
       <ActionBtn
         label="Edit"
+        compact={compact}
         onClick={onEdit}
         className="text-[#686868] hover:bg-slate-100 hover:text-[#246392]"
       >
@@ -52,6 +54,7 @@ export default function CategoryTableActions({
       </ActionBtn>
       <ActionBtn
         label={isActive ? 'Disable' : 'Enable'}
+        compact={compact}
         onClick={onToggleStatus}
         className="text-[#246392] hover:bg-[#eef2fc]"
       >
@@ -63,6 +66,7 @@ export default function CategoryTableActions({
       </ActionBtn>
       <ActionBtn
         label="Delete"
+        compact={compact}
         onClick={onDelete}
         className="text-[#c96565] hover:bg-red-50 hover:text-[#b94b4b]"
       >

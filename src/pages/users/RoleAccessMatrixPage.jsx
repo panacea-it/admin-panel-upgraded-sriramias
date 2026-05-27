@@ -31,7 +31,7 @@ export default function RoleAccessMatrixPage() {
   }
 
   return (
-    <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-10 pt-6 dark:bg-[var(--app-bg)] sm:px-5 lg:px-6">
+    <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-10 pt-6 sm:px-5 lg:px-6">
       <section className="mx-auto max-w-screen-2xl space-y-5 sm:space-y-6">
         <CategoryBreadcrumb items={BREADCRUMB} />
 

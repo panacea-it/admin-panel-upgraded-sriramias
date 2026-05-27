@@ -123,7 +123,7 @@ export default function PermissionDrawer({
             aria-modal="true"
             aria-labelledby="permission-dialog-title"
             className={cn(
-              'relative z-[121] flex max-h-[min(92vh,820px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900',
+              'relative z-[121] flex max-h-[min(92vh,820px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl',
             )}
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -131,34 +131,34 @@ export default function PermissionDrawer({
             transition={{ type: 'spring', stiffness: 400, damping: 32 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <header className="shrink-0 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+            <header className="shrink-0 border-b border-slate-100 px-6 py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
                     {ModIcon && (
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/60 dark:text-violet-300">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
                         <ModIcon className="h-5 w-5" strokeWidth={2} />
                       </span>
                     )}
                     <div className="min-w-0">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-violet-600">
                         {displayRoleTitle(role.label)}
                       </p>
                       <h2
                         id="permission-dialog-title"
-                        className="mt-0.5 text-xl font-bold text-slate-900 dark:text-white"
+                        className="mt-0.5 text-xl font-bold text-slate-900"
                       >
                         {mod.label}
                       </h2>
                     </div>
                   </div>
                   {mod.description && (
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 text-sm leading-relaxed text-slate-500">
                       {mod.description}
                     </p>
                   )}
                   <motion.div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <span className="text-xs font-semibold text-slate-500">
                       Module status
                     </span>
                     <AccessStatusChip status={status} disabled interactive={false} />
@@ -167,7 +167,7 @@ export default function PermissionDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                   aria-label="Close"
                 >
                   <X className="h-5 w-5" />
@@ -178,7 +178,7 @@ export default function PermissionDrawer({
                 <button
                   type="button"
                   onClick={handleEnableAll}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 sm:flex-none dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 sm:flex-none"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   Enable All
@@ -186,7 +186,7 @@ export default function PermissionDrawer({
                 <button
                   type="button"
                   onClick={handleRestrictAll}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800 transition hover:bg-rose-100 sm:flex-none dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800 transition hover:bg-rose-100 sm:flex-none"
                 >
                   <Ban className="h-3.5 w-3.5" />
                   Restrict All
@@ -194,7 +194,7 @@ export default function PermissionDrawer({
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:flex-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:flex-none"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Reset
@@ -204,7 +204,7 @@ export default function PermissionDrawer({
 
             <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-5">
               {status === 'restricted' && (
-                <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2.5 text-[13px] text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
+                <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2.5 text-[13px] text-amber-900">
                   <Shield className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>
                     Module is restricted. Use the switches below, <strong>Enable All</strong>, or{' '}
@@ -219,7 +219,7 @@ export default function PermissionDrawer({
                 total={summary.total}
               />
 
-              <div className="my-5 h-px bg-slate-100 dark:bg-slate-800" />
+              <div className="my-5 h-px bg-slate-100" />
 
               <PermissionSearch
                 id="perm-dialog-search"
@@ -228,7 +228,7 @@ export default function PermissionDrawer({
                 placeholder="Filter features…"
               />
 
-              <h3 className="mt-4 mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+              <h3 className="mt-4 mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
                 Feature-level access
               </h3>
 
@@ -241,11 +241,11 @@ export default function PermissionDrawer({
               />
             </div>
 
-            <footer className="flex shrink-0 justify-end gap-3 border-t border-slate-200/80 bg-white/98 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/98">
+            <footer className="flex shrink-0 justify-end gap-3 border-t border-slate-200/80 bg-white/98 px-6 py-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
               >
                 Cancel
               </button>

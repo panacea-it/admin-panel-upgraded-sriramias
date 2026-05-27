@@ -8,14 +8,11 @@ import {
   Plus,
   Search,
   Settings,
-  Sun,
-  Moon,
   User,
   Users,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { useTheme } from '../../hooks/useTheme'
 import { initialNotifications } from '../../data/notifications'
 import NotificationPanel from './NotificationPanel'
 import SriramLogo from '../brand/SriramLogo'
@@ -66,7 +63,6 @@ export default function Header({ onMenuClick }) {
   const [centerOpen, setCenterOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
-  const { isDark, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState(initialNotifications)
   const [searchOpen, setSearchOpen] = useState(false)
   const [headerSearch, setHeaderSearch] = useState('')
@@ -293,19 +289,6 @@ export default function Header({ onMenuClick }) {
             </div>
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="hidden h-9 w-9 items-center justify-center rounded-lg text-amber-600 transition hover:bg-amber-50 sm:flex dark:hover:bg-slate-800"
-          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {isDark ? (
-            <Moon className="h-[17px] w-[17px]" strokeWidth={2.2} />
-          ) : (
-            <Sun className="h-[17px] w-[17px]" strokeWidth={2.2} />
-          )}
-        </button>
 
         <div className="mx-0.5 hidden h-7 w-px bg-slate-200 sm:block" aria-hidden />
 

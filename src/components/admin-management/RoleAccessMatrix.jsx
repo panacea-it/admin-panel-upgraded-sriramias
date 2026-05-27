@@ -183,15 +183,15 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08 }}
-      className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-900/55"
+      className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl"
     >
-      <div className="border-b border-slate-100/90 px-5 py-5 dark:border-slate-800 sm:px-7 sm:py-6">
+      <div className="border-b border-slate-100/90 px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0 space-y-1">
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">
               Permission matrix
             </h2>
-            <p className="max-w-3xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            <p className="max-w-3xl text-sm leading-relaxed text-slate-500">
               Module-level access with granular feature RBAC. Click any status chip to open the permission
               drawer. Status reflects feature coverage: Full Access, Custom, or Restricted.
             </p>
@@ -204,7 +204,7 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
                 placeholder="Search roles…"
-                className="w-full rounded-xl border border-slate-200/80 bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 dark:border-slate-600 dark:bg-slate-800/90 dark:text-white"
+                className="w-full rounded-xl border border-slate-200/80 bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
               />
             </label>
             <button
@@ -226,7 +226,7 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                 'inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
                 editable
                   ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-md shadow-violet-500/25'
-                  : 'border border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80',
+                  : 'border border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50',
               )}
             >
               <Pencil className="h-4 w-4" />
@@ -242,11 +242,11 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
           style={{ minWidth: `min(100%, ${280 + PERMISSION_MODULES.length * 124}px)` }}
         >
           <div
-            className="sticky top-0 z-30 grid border-b border-slate-200/90 bg-slate-50/95 shadow-[0_4px_12px_rgba(15,23,42,0.06)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-800/95"
+            className="sticky top-0 z-30 grid border-b border-slate-200/90 bg-slate-50/95 shadow-[0_4px_12px_rgba(15,23,42,0.06)] backdrop-blur-md"
             style={matrixGridStyle}
           >
-            <div className="sticky left-0 z-40 border-r border-slate-200/80 bg-slate-50/98 px-5 py-4 dark:border-slate-700 dark:bg-slate-800/98">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+            <div className="sticky left-0 z-40 border-r border-slate-200/80 bg-slate-50/98 px-5 py-4">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
                 Role
               </span>
             </div>
@@ -255,16 +255,16 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                 key={mod.id}
                 className={cn(
                   'px-3 py-4 text-center transition-colors duration-200',
-                  hoveredModule === mod.id && 'bg-violet-100/50 dark:bg-violet-950/35',
+                  hoveredModule === mod.id && 'bg-violet-100/50',
                 )}
                 onMouseEnter={() => setHoveredModule(mod.id)}
                 onMouseLeave={() => setHoveredModule(null)}
               >
-                <mod.icon className="mx-auto h-[18px] w-[18px] text-violet-600 dark:text-violet-400" />
-                <p className="mt-2 text-xs font-bold leading-tight text-slate-800 dark:text-slate-100">
+                <mod.icon className="mx-auto h-[18px] w-[18px] text-violet-600" />
+                <p className="mt-2 text-xs font-bold leading-tight text-slate-800">
                   {mod.label}
                 </p>
-                <p className="mt-1 hidden text-[10px] font-medium text-slate-400 xl:block dark:text-slate-500">
+                <p className="mt-1 hidden text-[10px] font-medium text-slate-400 xl:block">
                   {mod.description}
                 </p>
               </div>
@@ -280,33 +280,33 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                 key={role.id}
                 onClick={() => setActiveRole(role.id)}
                 className={cn(
-                  'grid border-b border-slate-100/90 transition-colors duration-200 last:border-0 dark:border-slate-800',
-                  isActive && 'bg-violet-50/40 ring-1 ring-inset ring-violet-200/50 dark:bg-violet-950/15 dark:ring-violet-500/20',
-                  !isActive && 'hover:bg-slate-50/70 dark:hover:bg-slate-800/40',
+                  'grid border-b border-slate-100/90 transition-colors duration-200 last:border-0',
+                  isActive && 'bg-violet-50/40 ring-1 ring-inset ring-violet-200/50',
+                  !isActive && 'hover:bg-slate-50/70',
                   !role.enabled && 'opacity-[0.88]',
                 )}
                 style={matrixGridStyle}
               >
-                <div className="sticky left-0 z-20 flex items-center gap-3 border-r border-slate-100/90 bg-white/98 px-5 py-4 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/98">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300">
+                <div className="sticky left-0 z-20 flex items-center gap-3 border-r border-slate-100/90 bg-white/98 px-5 py-4 backdrop-blur-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
                     <role.icon className="h-[18px] w-[18px]" strokeWidth={2} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{role.label}</p>
+                      <p className="truncate text-sm font-bold text-slate-900">{role.label}</p>
                       {!role.fullAccess && !role.enabled ? (
-                        <span className="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                        <span className="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
                           Disabled
                         </span>
                       ) : null}
                     </div>
                     {role.fullAccess ? (
-                      <span className="mt-1 inline-flex items-center gap-0.5 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-400">
+                      <span className="mt-1 inline-flex items-center gap-0.5 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-500/20">
                         <Shield className="h-2.5 w-2.5" />
                         Full platform
                       </span>
                     ) : (
-                      <span className="mt-1 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      <span className="mt-1 block text-[11px] font-medium text-slate-500">
                         {count} of {PERMISSION_MODULES.length} modules active
                       </span>
                     )}
@@ -336,11 +336,11 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                       }}
                       className={cn(
                         'flex cursor-pointer items-center justify-center px-2 py-4 transition-colors duration-200',
-                        highlightCol && 'bg-violet-50/50 dark:bg-violet-950/25',
+                        highlightCol && 'bg-violet-50/50',
                       )}
                     >
                       {role.fullAccess ? (
-                        <span className="rounded-full bg-emerald-500/12 px-3 py-1.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-500/25 dark:text-emerald-400">
+                        <span className="rounded-full bg-emerald-500/12 px-3 py-1.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-500/25">
                           Full Access
                         </span>
                       ) : (
@@ -365,19 +365,19 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
           <div
             key={role.id}
             className={cn(
-              'overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900/50',
+              'overflow-hidden rounded-2xl border border-slate-200/80 bg-white',
               !role.enabled && 'opacity-[0.9]',
             )}
           >
-            <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 dark:border-slate-800">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/50">
+            <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
                 <role.icon className="h-[18px] w-[18px]" />
               </div>
               <div className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
-                  <span className="block truncate text-sm font-bold text-slate-900 dark:text-white">{role.label}</span>
+                  <span className="block truncate text-sm font-bold text-slate-900">{role.label}</span>
                   {!role.fullAccess && !role.enabled ? (
-                    <span className="shrink-0 rounded bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase dark:bg-slate-700 dark:text-slate-300">
+                    <span className="shrink-0 rounded bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase">
                       Off
                     </span>
                   ) : null}
@@ -391,7 +391,7 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                 )}
               </div>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="divide-y divide-slate-100">
               {PERMISSION_MODULES.map((mod) => {
                 const featureMap = role.fullAccess ? null : nestedRbac[role.id]?.[mod.id]
                 const status = role.fullAccess ? 'full' : deriveModuleAccessStatus(featureMap)
@@ -403,13 +403,13 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
                     disabled={role.fullAccess}
                     onClick={() => openDrawer(role.id, mod.id, role.fullAccess, role.enabled)}
                     className={cn(
-                      'flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50',
+                      'flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-slate-50',
                       role.fullAccess && 'opacity-80',
                     )}
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <mod.icon className="h-4 w-4 shrink-0 text-slate-400" />
-                      <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{mod.label}</span>
+                      <span className="truncate text-sm font-semibold text-slate-800">{mod.label}</span>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       {role.fullAccess ? (
@@ -428,7 +428,7 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
       </div>
 
       {editable && (
-        <div className="flex justify-end border-t border-slate-100 px-5 py-4 dark:border-slate-800 sm:px-7">
+        <div className="flex justify-end border-t border-slate-100 px-5 py-4 sm:px-7">
           <button
             type="button"
             onClick={submitMatrixSave}

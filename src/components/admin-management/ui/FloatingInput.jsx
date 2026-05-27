@@ -60,7 +60,7 @@ export default function FloatingInput({
           'peer w-full rounded-xl border bg-white/80 text-slate-900 shadow-sm backdrop-blur-sm transition-all outline-none',
           'border-slate-200/80 placeholder-transparent',
           'focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15',
-          'dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100',
+          '',
           Icon && s.iconPadding,
           error && 'border-rose-400 focus:border-rose-400 focus:ring-rose-500/15',
           s.input,
@@ -88,7 +88,7 @@ export default function FloatingInput({
           size === 'comfortable' && 'peer-focus:top-2.5 peer-focus:text-xs peer-placeholder-shown:text-[15px]',
           (focused || hasValue) && cn('translate-y-0 font-semibold text-violet-600', s.labelFloat),
           Icon && s.labelIcon,
-          'dark:text-slate-400 dark:peer-focus:text-violet-400',
+          '',
         )}
       >
         {label}
@@ -97,7 +97,7 @@ export default function FloatingInput({
         <p
           className={cn(
             'mt-2 text-[13px] leading-snug',
-            error ? 'text-rose-600' : 'text-slate-500 dark:text-slate-400',
+            error ? 'text-rose-600' : 'text-slate-500',
           )}
         >
           {error || helper}
