@@ -2,46 +2,29 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DoorOpen, PlusCircle } from 'lucide-react'
 import CategoryPageHeader from '../../../components/categories/CategoryPageHeader'
 import CategoryFilterBar from '../../../components/categories/CategoryFilterBar'
-import CategoryStatusBadge from '../../../components/categories/CategoryStatusBadge'
-import CategoryTableActions from '../../../components/categories/CategoryTableActions'
 import CategoryEmptyState from '../../../components/categories/CategoryEmptyState'
 import PaginatedFigmaTable from '../../../components/figma/PaginatedFigmaTable'
 import ClassroomFormModal from '../../../components/classrooms/ClassroomFormModal'
+import { buildClassroomTableColumns } from '../../../components/classrooms/ClassroomTable'
 import {
   deleteClassroom,
   fetchClassrooms,
-  getUsageStats,
   saveClassroom,
   toggleClassroomStatus,
 } from '../../../api/classroomsAPI'
 import { useCenters } from '../../../contexts/CentersContext'
-import { formatCategoryDateTime } from '../../../utils/formatDateTime'
+import { normalizeClassroomStatus } from '../../../utils/classroomsStorage'
 import { toast } from '../../../utils/toast'
 
-function OccupancyCell({ classroomId }) {
-  const stats = getUsageStats(classroomId)
-  const pct =
-    stats.totalBookings === 0
-      ? 0
-      : Math.min(100, Math.round((stats.upcomingBookings / Math.max(stats.totalBookings, 1)) * 100))
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-xs font-semibold text-[#246392]">
-        {stats.upcomingBookings} upcoming
-      </span>
-      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#e8f4fc]">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-[#55ace7] to-[#3dad4a]"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-[10px] text-[#94a3b8]">{stats.totalBookings} total bookings</span>
-    </div>
-  )
-}
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'Status' },
+  { value: 'Active', label: 'Active' },
+  { value: 'Inactive', label: 'Inactive' },
+]
 
 export default function ClassRoomsPage() {
   const { activeCenters } = useCenters()
+  const centreList = Array.isArray(activeCenters) ? activeCenters : []
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -52,12 +35,12 @@ export default function ClassRoomsPage() {
   const centerOptions = useMemo(
     () => [
       { value: 'all', label: 'Center' },
-      ...activeCenters.map((c) => ({
+      ...centreList.map((c) => ({
         value: String(c.centerId),
         label: c.centerName,
       })),
     ],
-    [activeCenters],
+    [centreList],
   )
 
   const load = useCallback(async () => {
@@ -88,6 +71,7 @@ export default function ClassRoomsPage() {
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase().trim()
     return rows.filter((row) => {
+      const rowStatus = normalizeClassroomStatus(row.status)
       const matchSearch =
         !q ||
         row.name?.toLowerCase().includes(q) ||
@@ -95,20 +79,37 @@ export default function ClassRoomsPage() {
         row.centerName?.toLowerCase().includes(q) ||
         row.placeName?.toLowerCase().includes(q) ||
         row.description?.toLowerCase().includes(q)
-      const matchStatus = filters.status === 'all' || row.status === filters.status
+      const matchStatus = filters.status === 'all' || rowStatus === filters.status
       const matchCenter =
         filters.center === 'all' || String(row.centerId) === String(filters.center)
       return matchSearch && matchStatus && matchCenter
     })
   }, [rows, filters])
 
+  const mergeSavedRow = useCallback((saved) => {
+    if (!saved?.id) return
+    setRows((prev) => {
+      const exists = prev.some((r) => r.id === saved.id)
+      if (exists) return prev.map((r) => (r.id === saved.id ? saved : r))
+      return [saved, ...prev]
+    })
+  }, [])
+
   const handleSave = async (form) => {
     setSaving(true)
     try {
-      await saveClassroom(form, { isEdit: Boolean(editRow), id: editRow?.id })
+      const saved = await saveClassroom(form, { isEdit: Boolean(editRow), id: editRow?.id })
+      mergeSavedRow(saved)
       toast.success(editRow ? 'Classroom updated' : 'Classroom created')
       setModalOpen(false)
       setEditRow(null)
+      if (!editRow && saved?.centerId) {
+        setFilters((f) => ({
+          ...f,
+          search: '',
+          center: String(saved.centerId),
+        }))
+      }
       await load()
     } catch (e) {
       const msg = e.validation
@@ -121,113 +122,66 @@ export default function ClassRoomsPage() {
     }
   }
 
-  const handleDelete = async (row) => {
+  const handleDelete = useCallback(async (row) => {
     if (!window.confirm(`Delete "${row.name}"?`)) return
     try {
       await deleteClassroom(row.id)
+      setRows((prev) => prev.filter((r) => r.id !== row.id))
       toast.success('Classroom deleted')
       await load()
     } catch (e) {
       toast.error(e.message || 'Delete failed')
     }
-  }
+  }, [load])
 
-  const handleToggle = async (row) => {
-    try {
-      await toggleClassroomStatus(row.id)
-      toast.success(row.status === 'Active' ? 'Classroom disabled' : 'Classroom enabled')
-      await load()
-    } catch (e) {
-      toast.error(e.message || 'Status update failed')
-    }
-  }
+  const handleToggle = useCallback(
+    async (row) => {
+      try {
+        const saved = await toggleClassroomStatus(row.id)
+        mergeSavedRow(saved)
+        toast.success(
+          normalizeClassroomStatus(row.status) === 'Active'
+            ? 'Classroom disabled'
+            : 'Classroom enabled',
+        )
+        await load()
+      } catch (e) {
+        toast.error(e.message || 'Status update failed')
+      }
+    },
+    [load, mergeSavedRow],
+  )
 
-  const columns = [
-    {
-      key: 'code',
-      label: 'Code',
-      render: (row) => (
-        <span className="font-mono text-sm font-semibold text-[#246392]">{row.code}</span>
-      ),
-    },
-    {
-      key: 'centerName',
-      label: 'Center',
-      render: (row) => (
-        <span className="text-sm font-medium text-[#1a3a5c]">{row.centerName || '—'}</span>
-      ),
-    },
-    {
-      key: 'placeName',
-      label: 'City / Place',
-      render: (row) => (
-        <span className="text-sm text-[#444]">{row.placeName || '—'}</span>
-      ),
-    },
-    {
-      key: 'name',
-      label: 'Classroom',
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: row.color || '#246392' }}
-          />
-          <span className="font-medium text-[#1a3a5c]">{row.name}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'capacity',
-      header: 'Capacity',
-      render: (row) => (
-        <span className="text-sm text-[#444]">{row.capacity != null ? row.capacity : '—'}</span>
-      ),
-    },
-    {
-      key: 'usage',
-      label: 'Usage',
-      render: (row) => <OccupancyCell classroomId={row.id} />,
-    },
-    {
-      key: 'createdAt',
-      label: 'Added On',
-      render: (row) => (
-        <span className="text-sm text-[#64748b]">{formatCategoryDateTime(row.createdAt)}</span>
-      ),
-    },
-    {
-      key: 'modifiedAt',
-      label: 'Modified On',
-      render: (row) => (
-        <span className="text-sm text-[#64748b]">{formatCategoryDateTime(row.modifiedAt)}</span>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => <CategoryStatusBadge status={row.status} />,
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (row) => (
-        <CategoryTableActions
-          status={row.status}
-          onView={() => toast.info(`${row.name} — ${row.description || 'No description'}`)}
-          onEdit={() => {
-            setEditRow(row)
-            setModalOpen(true)
-          }}
-          onToggleStatus={() => handleToggle(row)}
-          onDelete={() => handleDelete(row)}
-        />
-      ),
-    },
-  ]
+  const handleView = useCallback((row) => {
+    const location = [row.centerName, row.placeName].filter(Boolean).join(' · ')
+    toast.info(
+      location
+        ? `${row.name} — ${location}${row.description ? ` — ${row.description}` : ''}`
+        : `${row.name} — ${row.description || 'No description'}`,
+    )
+  }, [])
+
+  const handleEdit = useCallback((row) => {
+    setEditRow(row)
+    setModalOpen(true)
+  }, [])
+
+  const columns = useMemo(
+    () =>
+      buildClassroomTableColumns({
+        onView: handleView,
+        onEdit: handleEdit,
+        onToggle: handleToggle,
+        onDelete: handleDelete,
+      }),
+    [handleView, handleEdit, handleToggle, handleDelete],
+  )
+
+  const showEmpty = !loading && rows.length === 0
+  const showNoResults = !loading && rows.length > 0 && filtered.length === 0
 
   return (
-    <>
+    <div className="space-y-5 sm:space-y-6">
       <CategoryPageHeader
         icon={DoorOpen}
         title="Class Rooms"
@@ -252,6 +206,7 @@ export default function ClassRoomsPage() {
         searchPlaceholder="Search classrooms..."
         status={filters.status}
         onStatusChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+        statusOptions={STATUS_OPTIONS}
         centerFilter={filters.center}
         onCenterFilterChange={(e) => setFilters((f) => ({ ...f, center: e.target.value }))}
         centerOptions={centerOptions}
@@ -266,7 +221,7 @@ export default function ClassRoomsPage() {
             />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : showEmpty ? (
         <CategoryEmptyState
           title="No Classrooms Found"
           description="Add classrooms to assign them to live classes and prevent scheduling conflicts."
@@ -276,12 +231,25 @@ export default function ClassRoomsPage() {
             setModalOpen(true)
           }}
         />
-      ) : (
-        <PaginatedFigmaTable
-          data={filtered}
-          columns={columns}
-          itemLabel="classrooms"
+      ) : showNoResults ? (
+        <CategoryEmptyState
+          title="No matching classrooms"
+          description="Adjust search or filters to find classrooms."
+          ctaLabel="Clear filters"
+          onCta={() => setFilters({ search: '', status: 'all', center: 'all' })}
         />
+      ) : (
+        <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80">
+          <PaginatedFigmaTable
+            data={filtered}
+            columns={columns}
+            itemLabel="classrooms"
+            resetDeps={[filters, rows.length]}
+            density="comfortable"
+            tableClassName="min-w-[1080px]"
+            stickyHeader
+          />
+        </div>
       )}
 
       <ClassroomFormModal
@@ -294,6 +262,6 @@ export default function ClassRoomsPage() {
         onSave={handleSave}
         saving={saving}
       />
-    </>
+    </div>
   )
 }

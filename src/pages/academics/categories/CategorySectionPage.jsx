@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { PlusCircle } from 'lucide-react'
 import CategoryPageHeader from '../../../components/categories/CategoryPageHeader'
@@ -43,7 +43,14 @@ function nextId(list) {
 }
 
 function emptyFilters() {
-  return { search: '', status: 'all', category: 'all', subject: 'all', program: 'all' }
+  return {
+    search: '',
+    status: 'all',
+    category: 'all',
+    subject: 'all',
+    program: 'all',
+    center: 'all',
+  }
 }
 
 function CategoryIcon({ row }) {
@@ -145,7 +152,18 @@ export default function CategorySectionPage() {
         filters.category === 'all' || row.parentCategory === filters.category
       const matchSubject = filters.subject === 'all' || row.subject === filters.subject
       const matchProgram = filters.program === 'all' || row.program === filters.program
-      return matchSearch && matchStatus && matchCategory && matchSubject && matchProgram
+      const matchCenter =
+        filters.center === 'all' ||
+        String(row.centerId) === String(filters.center) ||
+        row.centerName === filters.center
+      return (
+        matchSearch &&
+        matchStatus &&
+        matchCategory &&
+        matchSubject &&
+        matchProgram &&
+        matchCenter
+      )
     })
   }, [rows, filters])
 
@@ -233,6 +251,7 @@ export default function CategorySectionPage() {
   const handleGenericSave = useCallback(
     (form, { isEdit, id }) => {
       const now = new Date().toISOString()
+      const centre = activeCenters.find((c) => String(c.centerId) === String(form.centerId))
       const payload = {
         name: form.name.trim(),
         description: form.description?.trim() || '',
@@ -240,6 +259,8 @@ export default function CategorySectionPage() {
         parentCategory: form.parentCategory || '',
         subject: form.subject || '',
         program: form.program || '',
+        centerId: form.centerId || centre?.centerId || '',
+        centerName: form.centerName || centre?.centerName || '',
         iconUrl: form.iconUrl || '',
         iconFileName: form.iconFileName || '',
         iconLabel: form.iconLabel || form.name.slice(0, 2).toUpperCase(),
@@ -265,7 +286,7 @@ export default function CategorySectionPage() {
       })
       toast.success(isEdit ? 'Updated successfully' : 'Created successfully')
     },
-    [activeTab],
+    [activeTab, activeCenters],
   )
 
   const handleDelete = (row) => {
@@ -475,7 +496,17 @@ export default function CategorySectionPage() {
     ]
 
     if (activeTab === 'topic' || activeTab === 'teachers') {
-      cols.push({ key: 'subject', label: 'Subject', render: (row) => row.subject })
+      cols.push({ key: 'subject', label: 'Subject', render: (row) => row.subject || '—' })
+    }
+
+    if (activeTab === 'teachers') {
+      cols.push({
+        key: 'centerName',
+        label: 'Center',
+        render: (row) => (
+          <span className="text-sm font-medium text-[#1a3a5c]">{row.centerName || '—'}</span>
+        ),
+      })
     }
 
     cols.push(
@@ -535,10 +566,34 @@ export default function CategorySectionPage() {
     ...SUBJECT_OPTIONS.map((s) => ({ value: s, label: s })),
   ]
 
+  const centerFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Center' },
+      ...activeCenters.map((c) => ({
+        value: String(c.centerId),
+        label: c.centerName,
+      })),
+    ],
+    [activeCenters],
+  )
+
   const showEmpty = rows.length === 0
   const showNoResults = !showEmpty && filtered.length === 0
 
-  if (!section) return null
+  if (!section) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
+        <p className="text-sm font-semibold text-[#111111]">This category section is not available.</p>
+        <p className="mt-2 text-sm text-[#686868]">Choose a section from the tabs above or return to Programs.</p>
+        <Link
+          to="/academics/categories/programs"
+          className="mt-5 inline-flex h-10 items-center rounded-xl bg-[#246392] px-5 text-sm font-semibold text-white"
+        >
+          Go to Programs
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -568,6 +623,9 @@ export default function CategorySectionPage() {
           subjectFilter={filters.subject}
           onSubjectFilterChange={(e) => updateFilters({ subject: e.target.value })}
           subjectOptions={section.filters?.includes('subject') ? subjectFilterOptions : undefined}
+          centerFilter={filters.center}
+          onCenterFilterChange={(e) => updateFilters({ center: e.target.value })}
+          centerOptions={section.filters?.includes('centre') ? centerFilterOptions : undefined}
         />
 
         {section.filters?.includes('program') && (

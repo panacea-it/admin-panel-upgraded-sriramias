@@ -98,7 +98,7 @@ export function CentersProvider({ children }) {
   }, [])
 
   const activeCenters = useMemo(
-    () => centers.filter((c) => c.status === 'active'),
+    () => (Array.isArray(centers) ? centers : []).filter((c) => c.status === 'active'),
     [centers],
   )
 
@@ -216,7 +216,7 @@ export function CentersProvider({ children }) {
   }, [persist])
 
   const getCenterById = useCallback(
-    (centerId) => centers.find((c) => c.centerId === centerId),
+    (centerId) => (Array.isArray(centers) ? centers : []).find((c) => c.centerId === centerId),
     [centers],
   )
 

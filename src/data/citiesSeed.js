@@ -8,10 +8,11 @@ export const CITIES_SEED_TEMPLATE = [
 ]
 
 export function seedCitiesFromCenters(centers, ts) {
+  const centerList = Array.isArray(centers) ? centers : []
   const now = ts || new Date().toISOString()
   let idx = 0
   return CITIES_SEED_TEMPLATE.map((row) => {
-    const center = centers.find((c) => c.centerCode === row.centerCode)
+    const center = centerList.find((c) => c.centerCode === row.centerCode)
     if (!center) return null
     idx += 1
     return {

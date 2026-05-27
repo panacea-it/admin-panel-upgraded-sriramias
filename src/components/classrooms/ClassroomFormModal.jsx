@@ -8,6 +8,7 @@ import ClassroomLocationSelector from '../academics/ClassroomLocationSelector'
 import { CourseFormField, CourseInput, CourseSelect } from '../courses/CourseFormField'
 import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
 import { findCityById } from '../../utils/citiesStorage'
+import { normalizeClassroomStatus } from '../../utils/classroomsStorage'
 import { useCenters } from '../../contexts/CentersContext'
 import { toast } from '../../utils/toast'
 import { cn } from '../../utils/cn'
@@ -29,7 +30,7 @@ function classroomToForm(classroom) {
     name: classroom.name || '',
     code: classroom.code || '',
     capacity: classroom.capacity ?? '',
-    status: classroom.status || 'Active',
+    status: normalizeClassroomStatus(classroom.status),
   }
 }
 
@@ -66,7 +67,8 @@ export default function ClassroomFormModal({ open, onClose, classroom, onSave, s
   })
 
   const onSubmit = async (values) => {
-    const centre = activeCenters.find((c) => String(c.centerId) === String(values.centerId))
+    const centreList = Array.isArray(activeCenters) ? activeCenters : []
+    const centre = centreList.find((c) => String(c.centerId) === String(values.centerId))
     const city = values.cityPlaceId ? findCityById(values.cityPlaceId) : null
     if (!centre) {
       setError('centerId', { message: 'Centre is required' })
@@ -162,7 +164,7 @@ export default function ClassroomFormModal({ open, onClose, classroom, onSave, s
           <CourseFormField label="Status">
             <CourseSelect {...register('status')}>
               <option value="Active">Active</option>
-              <option value="In Active">In Active</option>
+              <option value="Inactive">Inactive</option>
             </CourseSelect>
           </CourseFormField>
         </div>

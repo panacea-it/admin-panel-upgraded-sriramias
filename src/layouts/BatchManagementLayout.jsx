@@ -1,9 +1,11 @@
-import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Suspense } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { BatchManagementProvider } from '../contexts/BatchManagementContext'
+import RouteErrorBoundary from '../components/feedback/RouteErrorBoundary'
+import { lazyRoute } from '../routes/lazyRoute'
 
-const BatchesPage = lazy(() => import('../pages/academics/BatchesPage'))
-const BatchDetailsPage = lazy(() => import('../pages/academics/BatchDetailsPage'))
+const BatchesPage = lazyRoute(() => import('../pages/academics/BatchesPage'))
+const BatchDetailsPage = lazyRoute(() => import('../pages/academics/BatchDetailsPage'))
 
 function BatchListFallback() {
   return (
@@ -15,14 +17,18 @@ function BatchListFallback() {
 }
 
 export default function BatchManagementLayout() {
+  const location = useLocation()
+
   return (
     <BatchManagementProvider>
       <Suspense fallback={<BatchListFallback />}>
-        <Routes>
-          <Route index element={<BatchesPage />} />
-          <Route path=":batchId" element={<BatchDetailsPage />} />
-          <Route path="*" element={<Navigate to="/academics/batch" replace />} />
-        </Routes>
+        <RouteErrorBoundary resetKey={location.pathname}>
+          <Routes>
+            <Route index element={<BatchesPage />} />
+            <Route path=":batchId" element={<BatchDetailsPage />} />
+            <Route path="*" element={<Navigate to="/academics/batch" replace />} />
+          </Routes>
+        </RouteErrorBoundary>
       </Suspense>
     </BatchManagementProvider>
   )

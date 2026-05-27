@@ -6,10 +6,12 @@ import { cn } from '../../utils/cn'
 import { toast } from '../../utils/toast'
 import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
 import { validateUploadFile } from '../../utils/uploadValidation'
+import CenterDropdown from '../academics/CenterDropdown'
+import { useCenters } from '../../contexts/CentersContext'
 import { PARENT_CATEGORY_OPTIONS, SUBJECT_OPTIONS } from '../../data/categoriesHubData'
 import { formatProgramLabel, loadPrograms } from '../../utils/programsStorage'
 
-function createEmptyForm(section) {
+function createEmptyForm() {
   return {
     name: '',
     description: '',
@@ -17,6 +19,8 @@ function createEmptyForm(section) {
     program: '',
     parentCategory: '',
     subject: '',
+    centerId: '',
+    centerName: '',
     iconUrl: '',
     iconFileName: '',
     iconLabel: '',
@@ -31,6 +35,8 @@ function rowToForm(row) {
     program: row?.program || '',
     parentCategory: row?.parentCategory || '',
     subject: row?.subject || '',
+    centerId: row?.centerId ? String(row.centerId) : '',
+    centerName: row?.centerName || '',
     iconUrl: row?.iconUrl || '',
     iconFileName: row?.iconFileName || '',
     iconLabel: row?.iconLabel || row?.name?.slice(0, 2)?.toUpperCase() || '',
@@ -61,12 +67,13 @@ export default function CategoryHubFormModal({
   onSubmit,
 }) {
   const fileRef = useRef(null)
+  const { activeCenters } = useCenters()
   const programOptions = loadPrograms().map((p) => formatProgramLabel(p))
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
     item,
     rowToForm,
-    () => createEmptyForm(section),
+    createEmptyForm,
   )
   const [errors, setErrors] = useState({})
   const [uploadError, setUploadError] = useState(null)
@@ -84,6 +91,9 @@ export default function CategoryHubFormModal({
     }
     if (formFields.includes('subject') && !form.subject) {
       next.subject = 'Select a subject'
+    }
+    if (formFields.includes('center') && !form.centerId) {
+      next.centerId = 'Center is required'
     }
     setErrors(next)
     return Object.keys(next).length === 0
@@ -148,6 +158,23 @@ export default function CategoryHubFormModal({
         </div>
 
         <div className="space-y-4 px-5 py-6 sm:px-6 sm:py-7">
+          {formFields.includes('center') && (
+            <CenterDropdown
+              value={form.centerId}
+              onChange={(id) => {
+                const centre = activeCenters.find((c) => String(c.centerId) === String(id))
+                setForm((f) => ({
+                  ...f,
+                  centerId: id,
+                  centerName: centre?.centerName || '',
+                }))
+                if (errors.centerId) setErrors((p) => ({ ...p, centerId: undefined }))
+              }}
+              error={errors.centerId}
+              label="Center"
+            />
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             {formFields.includes('program') && (
               <Field label="Program" required>

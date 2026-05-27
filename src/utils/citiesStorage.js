@@ -7,19 +7,31 @@ function nowIso() {
   return new Date().toISOString()
 }
 
-function readCenters() {
+export function readCentersArray() {
   try {
     const raw = localStorage.getItem(CENTERS_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
+    if (Array.isArray(parsed)) return parsed
+    if (parsed && Array.isArray(parsed.centers)) return parsed.centers
+    return []
   } catch {
     return []
   }
 }
 
-export function normalizeCity(row, centers = readCenters()) {
-  const center = centers?.find((c) => String(c.centerId) === String(row.centerId))
+function readCenters() {
+  return readCentersArray()
+}
+
+function resolveCentersList(centersArg) {
+  if (Array.isArray(centersArg)) return centersArg
+  return readCenters()
+}
+
+export function normalizeCity(row, centersArg) {
+  const centers = resolveCentersList(centersArg)
+  const center = centers.find((c) => String(c.centerId) === String(row.centerId))
   return {
     id: row.id,
     centerId: String(row.centerId || ''),
@@ -35,9 +47,9 @@ export function normalizeCity(row, centers = readCenters()) {
 export function loadCities() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
+    if (raw != null) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length) return parsed.map(normalizeCity)
+      if (Array.isArray(parsed)) return parsed.map((row) => normalizeCity(row))
     }
   } catch {
     /* ignore */
@@ -49,7 +61,8 @@ export function loadCities() {
 }
 
 export function saveCities(list) {
-  const normalized = list.map(normalizeCity)
+  const centers = readCenters()
+  const normalized = list.map((row) => normalizeCity(row, centers))
   localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
   window.dispatchEvent(new CustomEvent('cities-updated', { detail: normalized }))
   return normalized

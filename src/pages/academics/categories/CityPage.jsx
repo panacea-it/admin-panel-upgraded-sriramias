@@ -70,13 +70,30 @@ export default function CityPage() {
     })
   }, [rows, filters])
 
+  const mergeSavedRow = useCallback((saved) => {
+    if (!saved?.id) return
+    setRows((prev) => {
+      const exists = prev.some((r) => r.id === saved.id)
+      if (exists) return prev.map((r) => (r.id === saved.id ? saved : r))
+      return [saved, ...prev]
+    })
+  }, [])
+
   const handleSave = async (form) => {
     setSaving(true)
     try {
-      await saveCity(form, { isEdit: Boolean(editRow), id: editRow?.id })
-      toast.success(editRow ? 'City updated' : 'City saved')
+      const saved = await saveCity(form, { isEdit: Boolean(editRow), id: editRow?.id })
+      mergeSavedRow(saved)
+      toast.success(editRow ? 'City updated' : 'City added successfully')
       setModalOpen(false)
       setEditRow(null)
+      if (!editRow) {
+        setFilters((f) => ({
+          ...f,
+          search: '',
+          center: saved.centerId ? String(saved.centerId) : 'all',
+        }))
+      }
       await load()
     } catch (e) {
       const msg = e.validation
@@ -94,6 +111,7 @@ export default function CityPage() {
     try {
       await deleteCity(row.id)
       toast.success('City removed')
+      setRows((prev) => prev.filter((r) => r.id !== row.id))
       await load()
     } catch (e) {
       toast.error(e.message || 'Delete failed')
@@ -102,13 +120,14 @@ export default function CityPage() {
 
   const handleToggle = useCallback(async (row) => {
     try {
-      await toggleCityStatus(row.id)
+      const saved = await toggleCityStatus(row.id)
+      mergeSavedRow(saved)
       toast.success(row.status === 'Active' ? 'City deactivated' : 'City activated')
       await load()
     } catch (e) {
       toast.error(e.message || 'Status update failed')
     }
-  }, [load])
+  }, [load, mergeSavedRow])
 
   const handleView = useCallback((row) => {
     toast.info(`${row.centerName} · ${row.placeName} (${row.code})`)
@@ -130,8 +149,11 @@ export default function CityPage() {
     [handleView, handleEdit, handleToggle, handleDelete],
   )
 
+  const showEmpty = !loading && rows.length === 0
+  const showNoResults = !loading && rows.length > 0 && filtered.length === 0
+
   return (
-    <>
+    <div className="space-y-5 sm:space-y-6">
       <CategoryPageHeader
         icon={MapPin}
         title="City"
@@ -171,7 +193,7 @@ export default function CityPage() {
             />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : showEmpty ? (
         <CategoryEmptyState
           title="No Cities Found"
           description="Add cities and branch places linked to your centres before assigning classrooms."
@@ -181,8 +203,23 @@ export default function CityPage() {
             setModalOpen(true)
           }}
         />
+      ) : showNoResults ? (
+        <CategoryEmptyState
+          title="No matching cities"
+          description="Try clearing search or filters to see all cities."
+          ctaLabel="Clear filters"
+          onCta={() => setFilters({ search: '', status: 'all', center: 'all' })}
+        />
       ) : (
-        <PaginatedFigmaTable data={filtered} columns={columns} itemLabel="cities" />
+        <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80">
+          <PaginatedFigmaTable
+            data={filtered}
+            columns={columns}
+            itemLabel="cities"
+            resetDeps={[filters, rows.length]}
+            tableClassName="min-w-[720px]"
+          />
+        </div>
       )}
 
       <AddCityModal
@@ -195,6 +232,6 @@ export default function CityPage() {
         onSave={handleSave}
         saving={saving}
       />
-    </>
+    </div>
   )
 }

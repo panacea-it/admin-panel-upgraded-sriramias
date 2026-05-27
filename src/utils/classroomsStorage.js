@@ -1,5 +1,5 @@
 import { CLASSROOMS_SEED } from '../data/classroomsSeed'
-import { findCityById } from './citiesStorage'
+import { findCityById, loadCities, readCentersArray } from './citiesStorage'
 
 const STORAGE_KEY = 'sriram_classrooms_v1'
 
@@ -7,37 +7,85 @@ function nowIso() {
   return new Date().toISOString()
 }
 
-function normalize(row) {
-  const city = row.cityPlaceId ? findCityById(row.cityPlaceId) : null
+export function normalizeClassroomStatus(status) {
+  if (status === 'Inactive' || status === 'In Active') return 'Inactive'
+  return 'Active'
+}
+
+function resolveCenterMeta(centerId, centers) {
+  if (!centerId) return null
+  const list = Array.isArray(centers) ? centers : readCentersArray()
+  return list.find((c) => String(c.centerId) === String(centerId)) || null
+}
+
+function assignDefaultLocation(row, cities) {
+  if (row.centerId && row.cityPlaceId) return row
+  if (!cities?.length) return row
+  const idx = parseInt(String(row.id || '').replace(/\D/g, ''), 10) || 0
+  const city = cities[idx % cities.length]
+  if (!city) return row
   return {
-    id: row.id,
-    centerId: String(row.centerId || city?.centerId || ''),
-    centerName: String(row.centerName || city?.centerName || '').trim(),
-    cityPlaceId: String(row.cityPlaceId || ''),
-    placeName: String(row.placeName || city?.placeName || '').trim(),
-    name: String(row.name || '').trim(),
-    code: String(row.code || '').trim().toUpperCase(),
-    capacity: row.capacity != null && row.capacity !== '' ? Number(row.capacity) : null,
-    description: String(row.description || '').trim(),
-    status: row.status === 'In Active' ? 'In Active' : 'Active',
-    color: row.color || '#246392',
-    createdAt: row.createdAt || nowIso(),
-    modifiedAt: row.modifiedAt || row.createdAt || nowIso(),
+    ...row,
+    centerId: row.centerId || city.centerId,
+    centerName: row.centerName || city.centerName,
+    cityPlaceId: row.cityPlaceId || city.id,
+    placeName: row.placeName || city.placeName,
+  }
+}
+
+function normalize(row, cities = loadCities()) {
+  const withLocation = assignDefaultLocation(row, cities)
+  const city = withLocation.cityPlaceId ? findCityById(withLocation.cityPlaceId) : null
+  const centers = readCentersArray()
+  const centerId = String(withLocation.centerId || city?.centerId || '')
+  const center = resolveCenterMeta(centerId, centers)
+
+  return {
+    id: withLocation.id,
+    centerId,
+    centerName: String(withLocation.centerName || city?.centerName || center?.centerName || '').trim(),
+    cityPlaceId: String(withLocation.cityPlaceId || city?.id || ''),
+    placeName: String(withLocation.placeName || city?.placeName || '').trim(),
+    name: String(withLocation.name || '').trim(),
+    code: String(withLocation.code || '').trim().toUpperCase(),
+    capacity:
+      withLocation.capacity != null && withLocation.capacity !== ''
+        ? Number(withLocation.capacity)
+        : null,
+    description: String(withLocation.description || '').trim(),
+    status: normalizeClassroomStatus(withLocation.status),
+    color: withLocation.color || '#246392',
+    createdAt: withLocation.createdAt || nowIso(),
+    modifiedAt: withLocation.modifiedAt || withLocation.createdAt || nowIso(),
   }
 }
 
 export function loadClassrooms() {
+  let rawList = null
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length) return parsed.map(normalize)
+      if (Array.isArray(parsed) && parsed.length) rawList = parsed
     }
   } catch {
     /* ignore */
   }
-  saveClassrooms(CLASSROOMS_SEED.map(normalize))
-  return CLASSROOMS_SEED.map(normalize)
+
+  const source = rawList ?? CLASSROOMS_SEED
+  const cities = loadCities()
+  const normalized = source.map((row) => normalize(row, cities))
+  const needsPersist =
+    !rawList ||
+    normalized.some(
+      (row, i) =>
+        row.centerId !== source[i]?.centerId ||
+        row.cityPlaceId !== source[i]?.cityPlaceId ||
+        row.status !== source[i]?.status,
+    )
+
+  if (needsPersist) saveClassrooms(normalized)
+  return normalized
 }
 
 export function saveClassrooms(list) {

@@ -4,6 +4,7 @@ import {
   nextClassroomId,
   validateClassroomUnique,
   findClassroomById,
+  normalizeClassroomStatus,
 } from '../utils/classroomsStorage'
 import { findCityById } from '../utils/citiesStorage'
 import {
@@ -61,7 +62,7 @@ export async function saveClassroom(payload, { isEdit, id } = {}) {
         ? Number(enriched.capacity)
         : null,
     description: enriched.description?.trim() || '',
-    status: enriched.status === 'In Active' ? 'In Active' : 'Active',
+    status: normalizeClassroomStatus(enriched.status),
     color: enriched.color || '#246392',
     modifiedAt: now,
   }
@@ -87,7 +88,7 @@ export async function toggleClassroomStatus(id) {
   const list = loadClassrooms()
   const row = list.find((c) => c.id === id)
   if (!row) throw new Error('Classroom not found')
-  const next = row.status === 'Active' ? 'In Active' : 'Active'
+  const next = row.status === 'Active' ? 'Inactive' : 'Active'
   return saveClassroom({ ...row, status: next }, { isEdit: true, id })
 }
 
@@ -109,7 +110,7 @@ export async function fetchAvailableClassrooms({
   })
 
   return loadClassrooms()
-    .filter((c) => c.status === 'Active')
+    .filter((c) => normalizeClassroomStatus(c.status) === 'Active')
     .map((c) => ({
       ...c,
       available: !occupied.has(c.id),

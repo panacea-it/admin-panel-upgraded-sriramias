@@ -155,6 +155,9 @@ export function getDefaultRouteForRole(role) {
   return prefixes[0] || '/dashboard'
 }
 
+/** Sidebar links under these prefixes follow route-prefix RBAC (not the scoped paths list). */
+const MODULE_NAV_PREFIXES = ['/finance/', '/sales-analytics/', '/admin/bookstore/']
+
 function childAllowedForRole(child, role, scope) {
   if (child.permission && !canAccessBookstorePermission(role, child.permission)) {
     return false
@@ -163,6 +166,13 @@ function childAllowedForRole(child, role, scope) {
     return false
   }
   if (scope.groups === '*') return true
+  if (
+    child.path &&
+    MODULE_NAV_PREFIXES.some((prefix) => child.path.startsWith(prefix)) &&
+    canAccessRoute(role, child.path)
+  ) {
+    return true
+  }
   if (scope.paths?.length && child.path) {
     return scope.paths.some((p) => child.path === p || child.path.startsWith(`${p}/`))
   }

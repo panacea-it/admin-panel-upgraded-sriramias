@@ -14,13 +14,15 @@ export default function CenterDropdown({
 }) {
   const { activeCenters } = useCenters()
 
+  const centreList = Array.isArray(activeCenters) ? activeCenters : []
+
   const options = useMemo(
     () =>
-      activeCenters.map((c) => ({
+      centreList.map((c) => ({
         value: String(c.centerId),
         label: c.centerName,
       })),
-    [activeCenters],
+    [centreList],
   )
 
   return (

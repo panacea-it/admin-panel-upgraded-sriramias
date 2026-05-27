@@ -2,6 +2,7 @@ import { cn } from '../../utils/cn'
 
 export default function CategoryStatusBadge({ status }) {
   const active = status === 'Active'
+  const label = status === 'In Active' ? 'Inactive' : status
   return (
     <span
       className={cn(
@@ -9,7 +10,7 @@ export default function CategoryStatusBadge({ status }) {
         active ? 'bg-[#69df66]' : 'bg-[#efb36d]',
       )}
     >
-      {status}
+      {label}
     </span>
   )
 }

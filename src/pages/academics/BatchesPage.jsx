@@ -452,6 +452,30 @@ export default function BatchesPage() {
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#55ace7] border-t-transparent" />
             <p className="mt-4 text-sm text-[#686868]">Loading batches...</p>
           </div>
+        ) : tableBatches.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+            <p className="text-base font-semibold text-[#111111]">No batches found</p>
+            <p className="mt-2 text-sm text-[#686868]">
+              {search || statusFilter !== 'all'
+                ? 'Try adjusting search or status filters.'
+                : 'Create your first batch to get started.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (search || statusFilter !== 'all') {
+                  setSearch('')
+                  setStatusFilter('all')
+                  setTablePage(1)
+                } else {
+                  modal.openCreate()
+                }
+              }}
+              className="mt-5 inline-flex h-10 items-center rounded-xl bg-[#246392] px-5 text-sm font-semibold text-white"
+            >
+              {search || statusFilter !== 'all' ? 'Clear filters' : 'Add Batch'}
+            </button>
+          </div>
         ) : (
           <BatchManagementTable
             batches={tableBatches}

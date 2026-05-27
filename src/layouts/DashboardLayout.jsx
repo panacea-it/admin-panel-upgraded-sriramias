@@ -1,10 +1,12 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import LoadingState from '../components/feedback/LoadingState'
+import RouteErrorBoundary from '../components/feedback/RouteErrorBoundary'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 
 export default function DashboardLayout() {
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 1024 : false,
@@ -50,7 +52,9 @@ export default function DashboardLayout() {
 
         <main className="admin-main-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#f7f7f7] dark:bg-[var(--app-bg)]">
           <Suspense fallback={<LoadingState message="Loading page..." className="m-6" />}>
-            <Outlet />
+            <RouteErrorBoundary resetKey={location.pathname}>
+              <Outlet />
+            </RouteErrorBoundary>
           </Suspense>
         </main>
       </div>

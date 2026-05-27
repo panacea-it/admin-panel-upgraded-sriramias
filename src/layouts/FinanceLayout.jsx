@@ -11,12 +11,15 @@ import PaymentAttemptLogsPage from '../pages/finance/PaymentAttemptLogsPage'
 import OfflinePaymentApprovalPage from '../pages/finance/OfflinePaymentApprovalPage'
 import PaymentCommunicationLogsPage from '../pages/finance/PaymentCommunicationLogsPage'
 import GstInvoiceSettingsPage from '../pages/finance/GstInvoiceSettingsPage'
+import FinanceRouteTabs from '../components/finance/FinanceRouteTabs'
+import NestedRouteRedirect from '../components/feedback/NestedRouteRedirect'
 
 export default function FinanceLayout() {
   return (
     <FinanceOperationsProvider>
       <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-8 pt-6 sm:px-5 lg:px-6">
-        <section className="mx-auto max-w-screen-2xl">
+        <section className="mx-auto max-w-screen-2xl space-y-5">
+          <FinanceRouteTabs />
           <FinanceErrorBoundary>
             <Routes>
               <Route index element={<Navigate to="dashboard" replace />} />
@@ -30,6 +33,7 @@ export default function FinanceLayout() {
               <Route path="offline-approval" element={<OfflinePaymentApprovalPage />} />
               <Route path="communication" element={<PaymentCommunicationLogsPage />} />
               <Route path="gst-settings" element={<GstInvoiceSettingsPage />} />
+              <Route path="*" element={<NestedRouteRedirect defaultSegment="dashboard" />} />
             </Routes>
           </FinanceErrorBoundary>
         </section>

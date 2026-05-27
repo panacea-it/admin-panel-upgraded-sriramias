@@ -33,12 +33,12 @@ function scrollElementIntoSidebarView(container, element) {
   })
 }
 
-function SubNavLink({ to, label, onNavigate }) {
+function SubNavLink({ to, label, onNavigate, end = false }) {
   return (
     <NavLink
       to={to}
       onClick={onNavigate}
-      end
+      end={end}
       className={({ isActive }) =>
         cn(
           'block px-4 py-2.5 text-[13px] font-medium leading-snug transition-colors duration-150',
@@ -239,6 +239,14 @@ function NavGroup({ group, isOpen, onToggle, onNavigate, onExpand }) {
               to={child.path}
               label={child.label}
               onNavigate={onNavigate}
+              end={
+                !child.path.includes('/academics/batch') &&
+                !child.path.startsWith('/academics/live-classes') &&
+                !child.path.startsWith('/academics/content-library') &&
+                !child.path.startsWith('/finance/') &&
+                !child.path.startsWith('/sales-analytics/') &&
+                !child.path.startsWith('/admin/bookstore/')
+              }
             />
           ),
         )}

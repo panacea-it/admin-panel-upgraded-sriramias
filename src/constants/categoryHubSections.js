@@ -116,8 +116,8 @@ export const CATEGORY_HUB_SECTIONS = {
     emptyTitle: 'No Teachers Found',
     emptyDescription: 'Add faculty linked to subjects.',
     emptyCta: 'Create Teacher',
-    filters: ['subject', 'status'],
-    formFields: ['subject', 'name', 'description', 'status'],
+    filters: ['subject', 'centre', 'status'],
+    formFields: ['center', 'subject', 'name', 'description', 'status'],
     dateColumns: { created: 'Added On', modified: 'Modified On' },
   },
   city: {

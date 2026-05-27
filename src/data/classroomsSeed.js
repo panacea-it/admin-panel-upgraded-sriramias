@@ -41,7 +41,7 @@ export const CLASSROOMS_SEED = [
     code: 'CR-05',
     capacity: 30,
     description: 'Hybrid enabled',
-    status: 'In Active',
+    status: 'Inactive',
     color: '#94a3b8',
   },
 ]

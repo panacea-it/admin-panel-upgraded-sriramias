@@ -43,7 +43,8 @@ export default function AddCityModal({ open, onClose, city, onSave, saving }) {
   })
 
   const onSubmit = async (values) => {
-    const centre = activeCenters.find((c) => String(c.centerId) === String(values.centerId))
+    const centreList = Array.isArray(activeCenters) ? activeCenters : []
+    const centre = centreList.find((c) => String(c.centerId) === String(values.centerId))
     if (!centre) {
       setError('centerId', { message: 'Centre is required' })
       return

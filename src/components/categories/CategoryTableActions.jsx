@@ -14,7 +14,7 @@ function ActionBtn({ label, onClick, className, children }) {
       )}
     >
       {children}
-      <span className="hidden sm:inline">{label}</span>
+      <span className={cn(compact ? 'sr-only' : 'hidden sm:inline')}>{label}</span>
     </button>
   )
 }
@@ -25,11 +25,17 @@ export default function CategoryTableActions({
   onEdit,
   onDelete,
   onToggleStatus,
+  compact = false,
 }) {
   const isActive = status === 'Active'
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    <div
+      className={cn(
+        'flex items-center',
+        compact ? 'flex-nowrap justify-end gap-0.5' : 'flex-wrap gap-2 sm:gap-3',
+      )}
+    >
       <ActionBtn
         label="View"
         onClick={onView}

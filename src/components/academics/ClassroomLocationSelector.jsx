@@ -17,7 +17,8 @@ export default function ClassroomLocationSelector({
 }) {
   const { activeCenters } = useCenters()
   const city = cityPlaceId ? findCityById(cityPlaceId) : null
-  const center = activeCenters.find((c) => String(c.centerId) === String(centerId))
+  const centreList = Array.isArray(activeCenters) ? activeCenters : []
+  const center = centreList.find((c) => String(c.centerId) === String(centerId))
 
   const preview = useMemo(() => {
     const parts = [

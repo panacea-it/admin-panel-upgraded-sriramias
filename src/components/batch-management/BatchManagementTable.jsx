@@ -114,7 +114,6 @@ export default function BatchManagementTable({
                   onStatusChange={onStatusChange}
                   onDuplicate={onDuplicate}
                   onChangeStatusAction={onChangeStatusAction}
-                  onArchive={onArchive}
                   onDelete={onDelete}
                   onMerge={onMerge}
                 />
