@@ -4,7 +4,6 @@ import { toast } from '@/utils/toast'
 import SectionBar from '../courses/SectionBar'
 import { CourseFormField, CourseInput } from '../courses/CourseFormField'
 import {
-  duplicateCurrentAffairsQuestion,
   generateQuestionsFromRange,
   parseSectionRange,
   QUESTION_LIST_RENDER_CHUNK,
@@ -17,10 +16,19 @@ function FieldError({ message }) {
   return <p className="mt-1 text-xs font-medium text-red-600">{message}</p>
 }
 
+function questionsMatchRange(existing, generated) {
+  if (existing.length !== generated.length) return false
+  return generated.every(
+    (q, i) =>
+      q.id === existing[i]?.id && String(q.questionNo) === String(existing[i]?.questionNo),
+  )
+}
+
 export default function CurrentAffairsQuestionPaperSection({
   form,
   errors,
   onPatch,
+  resetKey = 0,
 }) {
   const [bulkOpen, setBulkOpen] = useState(false)
   const [rangeErrors, setRangeErrors] = useState({})
@@ -91,12 +99,6 @@ export default function CurrentAffairsQuestionPaperSection({
     syncRangeErrors(nextFrom, nextTo)
   }
 
-  const handleRangeBlur = () => {
-    const result = syncRangeErrors(form.sectionFrom, form.sectionTo)
-    if (!result.valid) return
-    applyRangeGeneration({ silent: true })
-  }
-
   const handleGenerateClick = () => {
     applyRangeGeneration({ silent: false })
   }
@@ -110,30 +112,6 @@ export default function CurrentAffairsQuestionPaperSection({
       imageName: file?.name || '',
       image: file || null,
     })
-  }
-
-  const handleDelete = (index) => {
-    const next = questions.filter((_, i) => i !== index)
-    setQuestions(next)
-    if (next.length) {
-      const maxNo = Math.max(...next.map((q) => parseInt(q.questionNo, 10) || 0))
-      onPatch({ sectionTo: String(maxNo) })
-    }
-  }
-
-  const handleDuplicate = (index) => {
-    const result = parseSectionRange(form.sectionFrom, form.sectionTo)
-    const maxNo = questions.reduce(
-      (max, q) => Math.max(max, parseInt(q.questionNo, 10) || 0),
-      result.valid ? result.to : 0,
-    )
-    const nextNo = maxNo + 1
-    const copy = duplicateCurrentAffairsQuestion(questions[index], nextNo)
-    const next = [...questions]
-    next.splice(index + 1, 0, copy)
-    setQuestions(next)
-    onPatch({ sectionTo: String(nextNo) })
-    setExpandedIds((prev) => new Set([...prev, copy.id]))
   }
 
   const toggleExpanded = (id) => {
@@ -169,6 +147,30 @@ export default function CurrentAffairsQuestionPaperSection({
     setListWindow(Math.max(QUESTION_LIST_RENDER_CHUNK, merged.length))
     toast.success(`Imported ${imported.length} question(s)`)
   }
+
+  useEffect(() => {
+    setRangeErrors({})
+    setListWindow(QUESTION_LIST_RENDER_CHUNK)
+    setExpandedIds(new Set())
+  }, [resetKey])
+
+  useEffect(() => {
+    const result = parseSectionRange(form.sectionFrom, form.sectionTo)
+    if (!result.valid) return
+
+    const generated = generateQuestionsFromRange(result.from, result.to, questions)
+    if (questionsMatchRange(questions, generated)) return
+
+    setQuestions(generated)
+    setListWindow(Math.max(QUESTION_LIST_RENDER_CHUNK, generated.length))
+
+    if (generated.length <= 10) {
+      setExpandedIds(new Set(generated.map((q) => q.id)))
+    } else {
+      const firstId = generated[0]?.id
+      setExpandedIds(firstId ? new Set([firstId]) : new Set())
+    }
+  }, [form.sectionFrom, form.sectionTo])
 
   useEffect(() => {
     if (!questions.length) return
@@ -213,7 +215,6 @@ export default function CurrentAffairsQuestionPaperSection({
               inputMode="numeric"
               value={form.sectionFrom}
               onChange={handleRangeChange('sectionFrom')}
-              onBlur={handleRangeBlur}
               placeholder="From"
             />
             <FieldError message={rangeErrors.sectionFrom} />
@@ -223,7 +224,6 @@ export default function CurrentAffairsQuestionPaperSection({
               inputMode="numeric"
               value={form.sectionTo}
               onChange={handleRangeChange('sectionTo')}
-              onBlur={handleRangeBlur}
               placeholder="To"
             />
             <FieldError message={rangeErrors.sectionTo} />
@@ -254,8 +254,6 @@ export default function CurrentAffairsQuestionPaperSection({
                 onToggle={() => toggleExpanded(q.id)}
                 onChange={handleQuestionChange}
                 onImageChange={handleImageChange}
-                onDelete={() => handleDelete(i)}
-                onDuplicate={() => handleDuplicate(i)}
               />
             ))}
           </div>

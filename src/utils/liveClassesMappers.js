@@ -1,7 +1,7 @@
 import { createDefaultRecurrenceRule } from './recurrenceEngine'
 import { findClassroomById } from './classroomsStorage'
 
-export function createEmptyLessonForm() {
+export function createEmptyLessonForm(lessonType = 'Live') {
   return {
     lessonName: '',
     topic: '',
@@ -9,7 +9,7 @@ export function createEmptyLessonForm() {
     location: 'Delhi',
     classroomId: '',
     classroomName: '',
-    lessonType: 'Live',
+    lessonType: lessonType === 'Recording' ? 'Recording' : 'Live',
     subjectId: '',
     subjectName: '',
     mainCategoryName: '',
@@ -38,6 +38,18 @@ export function createEmptyLessonForm() {
   }
 }
 
+function normalizeRecurrenceRule(recurrence, row) {
+  const base = recurrence
+    ? { ...createDefaultRecurrenceRule(row), ...recurrence, enabled: true }
+    : createDefaultRecurrenceRule(row)
+  return {
+    ...base,
+    excludedDates: Array.isArray(base.excludedDates) ? [...base.excludedDates] : [],
+    weekdays: Array.isArray(base.weekdays) ? [...base.weekdays] : base.weekdays,
+    history: Array.isArray(base.history) ? [...base.history] : [],
+  }
+}
+
 export function lessonRowToForm(row) {
   if (!row) return createEmptyLessonForm()
   const recurring = Boolean(row.recurring)
@@ -47,18 +59,21 @@ export function lessonRowToForm(row) {
     lessonName: row.lessonName ?? row.name ?? '',
     recurring,
     recurrence: row.recurrence
-      ? { ...row.recurrence }
+      ? normalizeRecurrenceRule(row.recurrence, row)
       : recurring
-        ? createDefaultRecurrenceRule(row)
+        ? normalizeRecurrenceRule(null, row)
         : null,
-    recurrenceEditScope: 'series',
+    recurrenceEditScope: row.recurrenceEditScope || 'series',
   }
 }
 
 export function lessonFormToRow(form, existing) {
   const now = new Date().toISOString()
   const recurring = Boolean(form.recurring)
-  const recurrence = recurring && form.recurrence?.enabled ? form.recurrence : null
+  const recurrence =
+    recurring && form.recurrence
+      ? { ...form.recurrence, enabled: true }
+      : null
   const classroomId = form.classroomId || existing?.classroomId || ''
   const classroom = classroomId ? findClassroomById(classroomId) : null
 

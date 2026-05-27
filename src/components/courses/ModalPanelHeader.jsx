@@ -1,4 +1,4 @@
-import { BookMarked } from 'lucide-react'
+import { BookMarked, X } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
 export default function ModalPanelHeader({
@@ -8,8 +8,12 @@ export default function ModalPanelHeader({
   onClose,
   icon: Icon = BookMarked,
   iconClassName = 'text-[#dc2626]',
+  /** `back` = legacy underlined Go Back link; `icon` = top-right close (batch modals) */
+  closeVariant = 'back',
+  /** When true with `icon`, renders X only (no circular background behind it). */
+  plainCloseIcon = false,
 }) {
-  const handleBack = onBack ?? onClose
+  const handleClose = onClose ?? onBack
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-t-xl bg-gradient-to-r from-[#55ace7] via-[#5a7ba8] to-[#1a3a5c] px-5 py-4 sm:px-6">
@@ -24,10 +28,22 @@ export default function ModalPanelHeader({
           ) : null}
         </div>
       </div>
-      {handleBack ? (
+      {handleClose && closeVariant === 'icon' ? (
         <button
           type="button"
-          onClick={handleBack}
+          onClick={handleClose}
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center text-white transition',
+            plainCloseIcon ? 'hover:text-white/85' : 'rounded-full bg-white/20 hover:bg-white/30',
+          )}
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      ) : handleClose ? (
+        <button
+          type="button"
+          onClick={handleClose}
           className="text-sm font-semibold text-white underline underline-offset-4 transition hover:text-white/90"
         >
           Go Back

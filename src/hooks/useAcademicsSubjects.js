@@ -25,9 +25,10 @@ export function useAcademicsSubjects() {
 
   const upsertSubject = useCallback(
     (row) => {
+      const rowId = String(row.id)
       persist(
-        subjects.some((s) => s.id === row.id)
-          ? subjects.map((s) => (s.id === row.id ? row : s))
+        subjects.some((s) => String(s.id) === rowId)
+          ? subjects.map((s) => (String(s.id) === rowId ? row : s))
           : [...subjects, row],
       )
     },
@@ -36,7 +37,8 @@ export function useAcademicsSubjects() {
 
   const deleteSubject = useCallback(
     (id) => {
-      persist(subjects.filter((s) => s.id !== id))
+      const targetId = String(id)
+      persist(subjects.filter((s) => String(s.id) !== targetId))
     },
     [persist, subjects],
   )
@@ -106,12 +108,14 @@ export function useAcademicsSubjects() {
   const deleteLiveClassWithScope = useCallback(
     (subjectId, liveClass, scope = 'this') => {
       const seriesId = liveClass?.recurrenceSeriesId
+      const parentId = String(subjectId)
+      const liveClassId = String(liveClass?.id)
       persist(
         subjects.map((s) => {
-          if (s.id !== subjectId) return s
+          if (String(s.id) !== parentId) return s
           let list = s.liveClasses || []
           if (!seriesId || scope === 'this') {
-            list = list.filter((lc) => lc.id !== liveClass.id)
+            list = list.filter((lc) => String(lc.id) !== liveClassId)
           } else if (scope === 'series') {
             list = list.filter((lc) => lc.recurrenceSeriesId !== seriesId)
           } else if (scope === 'future' && liveClass.date) {

@@ -101,12 +101,18 @@ export default function AddCourseModal({
       : 'Add Batch'
 
   return (
-    <Modal open={open} onClose={handleClose} size="full" title={modalTitle}>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      size="full"
+      title={modalTitle}
+      showCloseButton={false}
+    >
       <form
         onSubmit={handleSubmit}
         className="flex max-h-[min(92vh,860px)] flex-col overflow-hidden rounded-2xl bg-[#eef2f7] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
-        <ModalPanelHeader title={modalTitle} onBack={handleClose} />
+        <ModalPanelHeader title={modalTitle} onClose={handleClose} closeVariant="icon" />
 
         <div
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#c5d9eb_transparent]"

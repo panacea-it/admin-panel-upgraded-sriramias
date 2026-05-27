@@ -10,6 +10,7 @@ import CategoryTableActions from '../../../components/categories/CategoryTableAc
 import CategoryEmptyState from '../../../components/categories/CategoryEmptyState'
 import ProgramFormModal from '../../../components/categories/ProgramFormModal'
 import ViewProgramModal from '../../../components/categories/ViewProgramModal'
+import ConfirmDeleteDialog from '../../../components/subjects/ConfirmDeleteDialog'
 import { seedProgramCenterIds } from '../../../data/programsData'
 import { loadPrograms, savePrograms } from '../../../utils/programsStorage'
 import { getCoursesCatalog, getCoursesByIds } from '../../../utils/coursesCatalog'
@@ -55,6 +56,7 @@ export default function ProgramsPage() {
   const [catalog, setCatalog] = useState([])
   const [filters, setFilters] = useState({ search: '', status: 'all', centre: 'all' })
   const [viewProgram, setViewProgram] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
 
   useEffect(() => {
@@ -171,9 +173,14 @@ export default function ProgramsPage() {
   }
 
   const handleDelete = (row) => {
-    if (!window.confirm(`Delete program "${row.name}"?`)) return
-    setPrograms((prev) => prev.filter((p) => p.id !== row.id))
-    setSelectedIds((prev) => prev.filter((sid) => sid !== row.id))
+    setDeleteTarget(row)
+  }
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return
+    setPrograms((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+    setSelectedIds((prev) => prev.filter((sid) => sid !== deleteTarget.id))
+    setDeleteTarget(null)
     toast.success('Program deleted')
   }
 
@@ -275,6 +282,9 @@ export default function ProgramsPage() {
     {
       key: 'actions',
       label: 'Action',
+      align: 'right',
+      headerClassName: 'min-w-[11rem] text-right',
+      cellClassName: 'min-w-[11rem] text-right',
       render: (row) => (
         <CategoryTableActions
           status={row.status}
@@ -305,11 +315,7 @@ export default function ProgramsPage() {
         transition={{ duration: 0.22 }}
         className="space-y-5 sm:space-y-6"
       >
-        <CategoryPageHeader
-          icon={LayoutGrid}
-          title="Programs"
-          subtitle="Manage Academic Programs"
-        >
+        <CategoryPageHeader icon={LayoutGrid} hideTitle>
           <CreateButton onClick={openCreate} />
         </CategoryPageHeader>
 
@@ -387,6 +393,15 @@ export default function ProgramsPage() {
           }}
           program={viewProgram}
           linkedCourses={viewLinked}
+        />
+
+        <ConfirmDeleteDialog
+          open={Boolean(deleteTarget)}
+          title="Delete item?"
+          message="Are you sure you want to delete this item?"
+          confirmLabel="Confirm Delete"
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
         />
       </motion.div>
     </AnimatePresence>

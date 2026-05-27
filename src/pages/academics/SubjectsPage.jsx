@@ -54,6 +54,7 @@ export default function SubjectsPage() {
   const [addContentSubject, setAddContentSubject] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [selectedIds, setSelectedIds] = useState([])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -186,13 +187,32 @@ export default function SubjectsPage() {
     }
   }
 
+  const handleStatusChange = (row, nextStatus) => {
+    upsertSubject({ ...row, status: nextStatus })
+    toast.success(
+      nextStatus === 'Active'
+        ? `${facultySubjectLabels.singular} activated`
+        : `${facultySubjectLabels.singular} deactivated`,
+    )
+  }
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
+
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return
+    if (!deleteTarget || deleteLoading) return
+    const targetId = String(deleteTarget.id)
     setDeleteLoading(true)
     try {
-      deleteSubject(deleteTarget.id)
+      deleteSubject(targetId)
+      setSelectedIds((prev) => prev.filter((id) => id !== targetId))
       toast.success(facultySubjectLabels.deleted)
       setDeleteTarget(null)
+    } catch (err) {
+      toast.error(err?.message || 'Failed to delete subject')
     } finally {
       setDeleteLoading(false)
     }
@@ -230,10 +250,13 @@ export default function SubjectsPage() {
               data={filtered}
               search={search}
               statusFilter={statusFilter}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
               onAddRow={openAddContent}
               onViewList={(row) => navigate(`/academics/subjects/${row.id}`)}
               onEdit={openEdit}
               onDelete={(row) => setDeleteTarget(row)}
+              onStatusChange={handleStatusChange}
             />
           </div>
         )}

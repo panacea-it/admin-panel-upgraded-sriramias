@@ -107,7 +107,8 @@ export default function ClassroomFormModal({ open, onClose, classroom, onSave, s
           icon={DoorOpen}
           title={isEdit ? 'Edit Classroom' : 'Add Classroom'}
           subtitle="Manage room details and capacity"
-          onBack={onClose}
+          onClose={onClose}
+          closeVariant="icon"
         />
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">

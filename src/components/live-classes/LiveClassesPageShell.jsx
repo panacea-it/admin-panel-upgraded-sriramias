@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion'
 import CategoryBreadcrumb from '../categories/CategoryBreadcrumb'
-import LiveClassesRouteTabs from './LiveClassesRouteTabs'
 
 export default function LiveClassesPageShell({ breadcrumb, banner, children }) {
   return (
@@ -13,7 +12,6 @@ export default function LiveClassesPageShell({ breadcrumb, banner, children }) {
       <section className="mx-auto max-w-screen-2xl space-y-5 sm:space-y-6">
         {breadcrumb?.length > 0 && <CategoryBreadcrumb items={breadcrumb} />}
         {banner}
-        <LiveClassesRouteTabs />
         {children}
       </section>
     </motion.div>

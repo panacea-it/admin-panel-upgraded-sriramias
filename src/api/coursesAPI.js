@@ -100,7 +100,7 @@ export async function fetchCourses(params = {}) {
     if (params.search?.trim()) query.search = params.search.trim()
     if (params.category && params.category !== 'all') query.category = params.category
     if (params.status && params.status !== 'all') query.status = params.status
-    const response = await api.get('/courses', { params: query })
+    const response = await api.get('/courses', { params: query, skipAuthRedirect: true })
     const body = response.data
     const list = Array.isArray(body) ? body : body?.data ?? []
     return list.map(mapCourseFromApi).filter(Boolean)
@@ -113,7 +113,7 @@ export async function fetchCourseById(id) {
   if (isFrontendOnly) return fetchCourseByIdLocal(id)
   try {
     const { default: api } = await import('./axiosInstance')
-    const response = await api.get(`/courses/${id}`)
+    const response = await api.get(`/courses/${id}`, { skipAuthRedirect: true })
     const body = response.data
     const doc = body?.data ?? body
     return mapCourseFromApi(doc)
@@ -126,7 +126,7 @@ export async function createCourse(payload) {
   if (isFrontendOnly) return createCourseLocal(payload)
   try {
     const { default: api } = await import('./axiosInstance')
-    const response = await api.post('/courses', payload)
+    const response = await api.post('/courses', payload, { skipAuthRedirect: true })
     const body = response.data
     return mapCourseFromApi(body?.data ?? body)
   } catch {
@@ -138,7 +138,7 @@ export async function updateCourse(id, payload) {
   if (isFrontendOnly) return updateCourseLocal(id, payload)
   try {
     const { default: api } = await import('./axiosInstance')
-    const response = await api.put(`/courses/${id}`, payload)
+    const response = await api.put(`/courses/${id}`, payload, { skipAuthRedirect: true })
     const body = response.data
     return mapCourseFromApi(body?.data ?? body)
   } catch {
@@ -150,7 +150,7 @@ export async function deleteCourse(id) {
   if (isFrontendOnly) return deleteCourseLocal(id)
   try {
     const { default: api } = await import('./axiosInstance')
-    await api.delete(`/courses/${id}`)
+    await api.delete(`/courses/${id}`, { skipAuthRedirect: true })
   } catch {
     await deleteCourseLocal(id)
   }

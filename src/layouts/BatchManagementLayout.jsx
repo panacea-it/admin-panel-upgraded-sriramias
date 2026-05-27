@@ -4,8 +4,14 @@ import { BatchManagementProvider } from '../contexts/BatchManagementContext'
 import RouteErrorBoundary from '../components/feedback/RouteErrorBoundary'
 import { lazyRoute } from '../routes/lazyRoute'
 
-const BatchesPage = lazyRoute(() => import('../pages/academics/BatchesPage'))
-const BatchDetailsPage = lazyRoute(() => import('../pages/academics/BatchDetailsPage'))
+const BatchesPage = lazyRoute(
+  () => import('../pages/academics/BatchesPage'),
+  'Batches page',
+)
+const BatchDetailsPage = lazyRoute(
+  () => import('../pages/academics/BatchDetailsPage'),
+  'Batch details page',
+)
 
 function BatchListFallback() {
   return (

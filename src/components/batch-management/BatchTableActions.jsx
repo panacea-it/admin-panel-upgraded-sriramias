@@ -3,7 +3,6 @@ import {
   Eye,
   GitMerge,
   Pencil,
-  RefreshCw,
   Trash2,
   Users,
 } from 'lucide-react'
@@ -15,7 +14,6 @@ export default function BatchTableActions({
   onQuickView,
   onEdit,
   onDuplicate,
-  onChangeStatus,
   onDelete,
   onMerge,
 }) {
@@ -39,11 +37,6 @@ export default function BatchTableActions({
       label: 'Duplicate Batch',
       icon: Copy,
       onClick: () => onDuplicate?.(batch),
-    },
-    {
-      label: 'Change Status',
-      icon: RefreshCw,
-      onClick: () => onChangeStatus?.(batch),
     },
     {
       label: 'Merge Batch',

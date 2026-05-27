@@ -109,6 +109,7 @@ function matchesMonthly(date, rule, anchor) {
 }
 
 function isExcluded(date, rule) {
+  if (!rule) return false
   const iso = formatISODate(date)
   return (rule.excludedDates || []).includes(iso)
 }
@@ -139,7 +140,7 @@ export function generateOccurrenceDates(rule, anchorDateISO) {
   if (type === 'daily' || type === 'custom') {
     let cursor = new Date(start)
     while (cursor <= end && dates.length < MAX_RECURRENCE_OCCURRENCES) {
-      if (!isExcluded(cursor) && !isPaused(cursor, rule)) {
+      if (!isExcluded(cursor, rule) && !isPaused(cursor, rule)) {
         const iso = formatISODate(cursor)
         if (!excluded.has(iso)) dates.push(iso)
       }
@@ -156,7 +157,7 @@ export function generateOccurrenceDates(rule, anchorDateISO) {
       const dow = cursor.getDay()
       if (weekdays.includes(dow)) {
         const weekOffset = weeksBetween(start, cursor)
-        if (weekOffset % repeatEvery === 0 && !isExcluded(cursor) && !isPaused(cursor, rule)) {
+        if (weekOffset % repeatEvery === 0 && !isExcluded(cursor, rule) && !isPaused(cursor, rule)) {
           dates.push(formatISODate(cursor))
         }
       }
@@ -174,7 +175,7 @@ export function generateOccurrenceDates(rule, anchorDateISO) {
         for (let day = 1; day <= daysInMonth; day += 1) {
           const d = new Date(cursor.getFullYear(), cursor.getMonth(), day)
           if (d < start || d > end) continue
-          if (matchesMonthly(d, rule, anchor) && !isExcluded(d) && !isPaused(d, rule)) {
+          if (matchesMonthly(d, rule, anchor) && !isExcluded(d, rule) && !isPaused(d, rule)) {
             dates.push(formatISODate(d))
           }
         }
@@ -308,13 +309,14 @@ export function detectRecurrenceConflicts(dates, lessons, form, excludeIds = [])
 }
 
 export function appendRecurrenceHistory(rule, entry) {
-  const history = Array.isArray(rule.history) ? [...rule.history] : []
+  const safeRule = rule || {}
+  const history = Array.isArray(safeRule.history) ? [...safeRule.history] : []
   history.unshift({
     id: `hist-${Date.now()}`,
     at: new Date().toISOString(),
     ...entry,
   })
-  return { ...rule, history: history.slice(0, 20) }
+  return { ...safeRule, history: history.slice(0, 20) }
 }
 
 /** Calendar integration payload (Google / Zoom / Teams ready) */

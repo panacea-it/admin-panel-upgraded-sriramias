@@ -17,18 +17,24 @@ export default function CategoryHubShell({ children }) {
             const isActive =
               location.pathname === tab.path ||
               location.pathname.startsWith(`${tab.path}/`)
+            const TabIcon = tab.icon
             return (
               <NavLink
                 key={tab.id}
                 to={tab.path}
+                title={tab.label}
+                aria-label={tab.label}
                 className={cn(
-                  'inline-flex min-h-[40px] items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 sm:px-5 sm:text-[15px]',
+                  'inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl px-3 py-2 transition-all duration-200 sm:min-w-[44px] sm:px-3.5',
                   isActive
                     ? 'bg-gradient-to-r from-[#55ace7] to-[#246392] text-white shadow-[0_4px_14px_rgba(36,99,146,0.35)]'
                     : 'bg-slate-50 text-[#222] hover:bg-white hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)]',
                 )}
               >
-                {tab.label}
+                {TabIcon ? (
+                  <TabIcon className="h-[18px] w-[18px] shrink-0 sm:h-5 sm:w-5" strokeWidth={2.2} />
+                ) : null}
+                <span className="sr-only">{tab.label}</span>
               </NavLink>
             )
           })}

@@ -23,6 +23,7 @@ export default function RecordedClassesPage() {
       }
     >
       <LiveClassesListSection
+        module="recordings"
         fixedLessonType="Recording"
         showLessonTypeFilter={false}
         emptyMessage="No recorded classes yet."

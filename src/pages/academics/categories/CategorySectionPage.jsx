@@ -36,6 +36,7 @@ import { nextExamSubCategoryId } from '../../../utils/examSubCategoryHelpers'
 import { loadSubjects, saveSubjects, nextSubjectId } from '../../../utils/subjectsStorage'
 import { formatProgramLabel, loadPrograms } from '../../../utils/programsStorage'
 import { toast } from '../../../utils/toast'
+import ConfirmDeleteDialog from '../../../components/subjects/ConfirmDeleteDialog'
 
 function nextId(list) {
   const max = list.reduce((m, row) => Math.max(m, parseInt(row.id, 10) || 0), 0)
@@ -104,6 +105,7 @@ export default function CategorySectionPage() {
 
   const modal = useEditModal()
   const [viewItem, setViewItem] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
     const refresh = () => setPrograms(loadPrograms(activeCenters))
@@ -290,12 +292,17 @@ export default function CategorySectionPage() {
   )
 
   const handleDelete = (row) => {
-    if (!window.confirm(`Delete "${row.name}"?`)) return
+    setDeleteTarget(row)
+  }
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return
     setDataBySection((prev) => ({
       ...prev,
-      [activeTab]: prev[activeTab].filter((c) => c.id !== row.id),
+      [activeTab]: prev[activeTab].filter((c) => c.id !== deleteTarget.id),
     }))
-    setSelectedIds((prev) => prev.filter((sid) => sid !== row.id))
+    setSelectedIds((prev) => prev.filter((sid) => sid !== deleteTarget.id))
+    setDeleteTarget(null)
     toast.success('Deleted successfully')
   }
 
@@ -395,12 +402,15 @@ export default function CategorySectionPage() {
         {
           key: 'actions',
           label: 'Actions',
+          align: 'right',
+          headerClassName: 'min-w-[11rem] text-right',
+          cellClassName: 'min-w-[11rem] text-right',
           render: (row) => (
             <CategoryTableActions
               status={row.status}
               onView={() => setViewItem(row)}
               onEdit={() => modal.openEdit(row)}
-              onDelete={() => handleDelete(row)}
+              onDelete={() => setDeleteTarget(row)}
               onToggleStatus={() => handleToggleStatus(row)}
             />
           ),
@@ -462,12 +472,15 @@ export default function CategorySectionPage() {
         {
           key: 'actions',
           label: 'Actions',
+          align: 'right',
+          headerClassName: 'min-w-[11rem] text-right',
+          cellClassName: 'min-w-[11rem] text-right',
           render: (row) => (
             <CategoryTableActions
               status={row.status}
               onView={() => setViewItem(row)}
               onEdit={() => modal.openEdit(row)}
-              onDelete={() => handleDelete(row)}
+              onDelete={() => setDeleteTarget(row)}
               onToggleStatus={() => handleToggleStatus(row)}
             />
           ),
@@ -532,12 +545,15 @@ export default function CategorySectionPage() {
       {
         key: 'actions',
         label: 'Actions',
+        align: 'right',
+        headerClassName: 'min-w-[11rem] text-right',
+        cellClassName: 'min-w-[11rem] text-right',
         render: (row) => (
           <CategoryTableActions
             status={row.status}
             onView={() => setViewItem(row)}
             onEdit={() => modal.openEdit(row)}
-            onDelete={() => handleDelete(row)}
+            onDelete={() => setDeleteTarget(row)}
             onToggleStatus={() => handleToggleStatus(row)}
           />
         ),
@@ -605,7 +621,7 @@ export default function CategorySectionPage() {
         transition={{ duration: 0.22 }}
         className="space-y-5 sm:space-y-6"
       >
-        <CategoryPageHeader icon={Icon} title={section.bannerTitle} subtitle={section.bannerSubtitle}>
+        <CategoryPageHeader icon={Icon} hideTitle>
           <AddButton onClick={modal.openCreate}>{section.addLabel}</AddButton>
         </CategoryPageHeader>
 
@@ -731,6 +747,15 @@ export default function CategorySectionPage() {
             />
           </>
         )}
+
+        <ConfirmDeleteDialog
+          open={Boolean(deleteTarget)}
+          title="Delete item?"
+          message="Are you sure you want to delete this item?"
+          confirmLabel="Confirm Delete"
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        />
       </motion.div>
     </AnimatePresence>
   )

@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { Controller } from 'react-hook-form'
 import { Calendar, FileText, Film } from 'lucide-react'
 import TimeDurationFields from './TimeDurationFields'
@@ -49,6 +50,8 @@ export default function SubjectContentFields({
   onRecordingUploadError,
   testSeriesErrors,
 }) {
+  const dateInputRef = useRef(null)
+  const dateField = register('date')
   const values = { categories: subject?.categories, contentType }
   const showLive = shouldShowLiveClassSection(values, { contentType })
   const showRecording = shouldShowRecordingSection(values, { contentType })
@@ -112,12 +115,20 @@ export default function SubjectContentFields({
             />
             <div>
               <FieldLabel required>Date</FieldLabel>
-              <div className="relative">
+              <div
+                className="relative cursor-pointer"
+                onClick={() => dateInputRef.current?.showPicker?.()}
+              >
                 <input
                   type="date"
-                  {...register('date')}
+                  {...dateField}
+                  ref={(el) => {
+                    dateField.ref(el)
+                    dateInputRef.current = el
+                  }}
                   className={cn(
-                    'h-11 w-full rounded-xl bg-[#d1e9f6] px-4 pr-11 text-sm text-[#222] outline-none focus:ring-2 focus:ring-[#55ace7]/40',
+                    'h-11 w-full cursor-pointer appearance-none rounded-xl bg-[#d1e9f6] px-4 pr-11 text-sm text-[#222] outline-none focus:ring-2 focus:ring-[#55ace7]/40',
+                    '[&::-webkit-calendar-picker-indicator]:hidden',
                     errors.date && 'ring-2 ring-red-400',
                   )}
                 />

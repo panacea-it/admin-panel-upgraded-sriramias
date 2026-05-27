@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PaginatedFigmaTable from '../figma/PaginatedFigmaTable'
-import { BannerButton, ResourceNameCell } from '../academics/AcademicsUi'
+import { BannerButton } from '../academics/AcademicsUi'
 import { liveClassesTw } from '../../constants/liveClassesTheme'
 import { useLiveClasses } from '../../contexts/LiveClassesContext'
 import { useEditModal } from '../../hooks/useEditModal'
@@ -19,7 +19,8 @@ import {
 } from '../common/TableActionMenu'
 import ScheduleClassModal from './ScheduleClassModal'
 import RecurrenceScopeDialog from './RecurrenceScopeDialog'
-import { RECURRENCE_DELETE_SCOPES } from '../../constants/recurrence'
+import { RECURRENCE_DELETE_SCOPES, RECURRENCE_EDIT_SCOPES } from '../../constants/recurrence'
+import { LIVE_CLASS_MODULES } from '../../constants/liveClassesModuleConfig'
 
 function TableSkeleton() {
   return (
@@ -32,14 +33,17 @@ function TableSkeleton() {
 }
 
 export default function LiveClassesListSection({
+  module = 'schedule',
   fixedLessonType,
   emptyMessage = 'No lessons found.',
   showLessonTypeFilter = true,
 }) {
+  const moduleConfig = LIVE_CLASS_MODULES[module] ?? LIVE_CLASS_MODULES.schedule
   const navigate = useNavigate()
   const { lessons, loading, saveLesson, removeLesson, toggleDisabled } = useLiveClasses()
   const modal = useEditModal()
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [editTarget, setEditTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const [search, setSearch] = useState('')
@@ -69,7 +73,31 @@ export default function LiveClassesListSection({
     sort,
   })
 
+  useEffect(() => {
+    const visibleIds = new Set(filtered.map((r) => r.id))
+    setSelected((prev) => {
+      const next = new Set([...prev].filter((id) => visibleIds.has(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [filtered])
+
   const selectedCount = selected.size
+
+  const clearRowSelection = () => setSelected(new Set())
+
+  const requestEdit = (row) => {
+    if (row.recurrenceSeriesId) {
+      setEditTarget(row)
+      return
+    }
+    modal.openEdit(row)
+  }
+
+  const confirmRecurringEdit = (scope) => {
+    if (!editTarget) return
+    modal.openEdit({ ...editTarget, recurrenceEditScope: scope })
+    setEditTarget(null)
+  }
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -88,6 +116,9 @@ export default function LiveClassesListSection({
   const handleSave = async (form, meta) => {
     await saveLesson(form, meta)
   }
+
+  const lessonCheckboxClass =
+    'h-4 w-4 shrink-0 rounded border-slate-300 text-[#246392] accent-[#246392] focus:ring-[#55ace7]/40'
 
   const requestDelete = (row) => {
     if (row.recurrenceSeriesId) {
@@ -138,6 +169,7 @@ export default function LiveClassesListSection({
           checked={filtered.length > 0 && selected.size === filtered.length}
           onChange={toggleSelectAll}
           aria-label="Select all"
+          className={lessonCheckboxClass}
         />
       ),
       headerClassName: 'w-12 pl-6',
@@ -147,7 +179,9 @@ export default function LiveClassesListSection({
           type="checkbox"
           checked={selected.has(row.id)}
           onChange={() => toggleSelect(row.id)}
+          onClick={(e) => e.stopPropagation()}
           aria-label={`Select ${row.lessonName}`}
+          className={lessonCheckboxClass}
         />
       ),
     },
@@ -162,7 +196,7 @@ export default function LiveClassesListSection({
           onClick={() => navigate(`${LIVE_CLASSES_BASE}/${row.id}`)}
           className="text-left"
         >
-          <ResourceNameCell name={row.lessonName} />
+          <span className="truncate font-medium">{row.lessonName}</span>
           {row.recurring && (
             <span className="mt-1 inline-flex rounded-md bg-[#eef6fc] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#246392]">
               Recurring
@@ -200,7 +234,7 @@ export default function LiveClassesListSection({
           <LiveClassesTableActions
             row={row}
             onView={() => navigate(`${LIVE_CLASSES_BASE}/${row.id}`)}
-            onEdit={() => modal.openEdit(row)}
+            onEdit={() => requestEdit(row)}
             onDelete={() => requestDelete(row)}
             onDisable={() => toggleDisabled(row.id)}
             onDuplicate={() => handleDuplicate(row)}
@@ -213,7 +247,7 @@ export default function LiveClassesListSection({
   return (
     <>
       <div className="flex justify-end">
-        <BannerButton onClick={modal.openCreate}>Add class</BannerButton>
+        <BannerButton onClick={modal.openCreate}>{moduleConfig.addButtonLabel}</BannerButton>
       </div>
 
       <LiveClassesFilterBar
@@ -242,7 +276,7 @@ export default function LiveClassesListSection({
           columns={columns}
           data={filtered}
           emptyMessage={emptyMessage}
-          itemLabel="lessons"
+          itemLabel={moduleConfig.tableItemLabel}
           resetDeps={[search, effectiveType, status, subjectFilter, sort]}
           rowClassName={liveClassesTw.rowHover}
         />
@@ -254,6 +288,28 @@ export default function LiveClassesListSection({
         item={modal.selectedItem}
         onSubmit={handleSave}
         lessons={lessons}
+        defaultLessonType={moduleConfig.defaultLessonType}
+        lockLessonType={moduleConfig.lockLessonType}
+        labels={{
+          modalTitle: moduleConfig.modalTitle,
+          createHeader: moduleConfig.createHeader,
+          editHeader: moduleConfig.editHeader,
+          createLabel: moduleConfig.createSubmitLabel,
+          updateLabel: moduleConfig.updateSubmitLabel,
+          createSuccess: moduleConfig.createSuccess,
+          updateSuccess: moduleConfig.updateSuccess,
+        }}
+        onAfterReset={clearRowSelection}
+      />
+
+      <RecurrenceScopeDialog
+        open={Boolean(editTarget)}
+        mode="edit"
+        title="Edit recurring class"
+        lessonName={editTarget?.lessonName ?? ''}
+        scopes={RECURRENCE_EDIT_SCOPES}
+        onCancel={() => setEditTarget(null)}
+        onConfirm={confirmRecurringEdit}
       />
 
       <RecurrenceScopeDialog

@@ -82,7 +82,7 @@ export function shouldShowTestSeriesSection(
   { liveClassOnly = false, subjectOnly = false, contentType } = {},
 ) {
   if (subjectOnly || liveClassOnly) return false
-  if (contentType === 'test') return true
+  if (contentType) return contentType === 'test'
   return isTestSeriesCategory(values.categories ?? values.category)
 }
 

@@ -37,8 +37,9 @@ export function useModalForm(open, item, rowToForm, createEmpty, options = {}) {
   }
 
   const clear = () => {
-    setForm(createEmptyRef.current())
-    setInitialSnapshot(null)
+    const empty = createEmptyRef.current()
+    setForm(empty)
+    setInitialSnapshot(structuredClone(empty))
   }
 
   return { form, setForm, isEditMode, reset, clear, editKey }

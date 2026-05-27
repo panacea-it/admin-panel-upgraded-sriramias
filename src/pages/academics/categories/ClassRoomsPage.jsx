@@ -5,6 +5,8 @@ import CategoryFilterBar from '../../../components/categories/CategoryFilterBar'
 import CategoryEmptyState from '../../../components/categories/CategoryEmptyState'
 import PaginatedFigmaTable from '../../../components/figma/PaginatedFigmaTable'
 import ClassroomFormModal from '../../../components/classrooms/ClassroomFormModal'
+import ViewClassroomModal from '../../../components/classrooms/ViewClassroomModal'
+import ConfirmDeleteDialog from '../../../components/subjects/ConfirmDeleteDialog'
 import { buildClassroomTableColumns } from '../../../components/classrooms/ClassroomTable'
 import {
   deleteClassroom,
@@ -31,6 +33,9 @@ export default function ClassRoomsPage() {
   const [filters, setFilters] = useState({ search: '', status: 'all', center: 'all' })
   const [modalOpen, setModalOpen] = useState(false)
   const [editRow, setEditRow] = useState(null)
+  const [viewRow, setViewRow] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const centerOptions = useMemo(
     () => [
@@ -122,17 +127,25 @@ export default function ClassRoomsPage() {
     }
   }
 
-  const handleDelete = useCallback(async (row) => {
-    if (!window.confirm(`Delete "${row.name}"?`)) return
+  const handleDelete = useCallback((row) => {
+    setDeleteTarget(row)
+  }, [])
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await deleteClassroom(row.id)
-      setRows((prev) => prev.filter((r) => r.id !== row.id))
+      await deleteClassroom(deleteTarget.id)
+      setRows((prev) => prev.filter((r) => r.id !== deleteTarget.id))
       toast.success('Classroom deleted')
+      setDeleteTarget(null)
       await load()
     } catch (e) {
       toast.error(e.message || 'Delete failed')
+    } finally {
+      setDeleting(false)
     }
-  }, [load])
+  }, [deleteTarget, load])
 
   const handleToggle = useCallback(
     async (row) => {
@@ -153,12 +166,7 @@ export default function ClassRoomsPage() {
   )
 
   const handleView = useCallback((row) => {
-    const location = [row.centerName, row.placeName].filter(Boolean).join(' · ')
-    toast.info(
-      location
-        ? `${row.name} — ${location}${row.description ? ` — ${row.description}` : ''}`
-        : `${row.name} — ${row.description || 'No description'}`,
-    )
+    setViewRow(row)
   }, [])
 
   const handleEdit = useCallback((row) => {
@@ -182,11 +190,7 @@ export default function ClassRoomsPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <CategoryPageHeader
-        icon={DoorOpen}
-        title="Class Rooms"
-        subtitle="Manage physical classrooms for live sessions"
-      >
+      <CategoryPageHeader icon={DoorOpen} hideTitle>
         <button
           type="button"
           onClick={() => {
@@ -261,6 +265,22 @@ export default function ClassRoomsPage() {
         classroom={editRow}
         onSave={handleSave}
         saving={saving}
+      />
+
+      <ViewClassroomModal
+        open={Boolean(viewRow)}
+        onClose={() => setViewRow(null)}
+        classroom={viewRow}
+      />
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete item?"
+        message="Are you sure you want to delete this item?"
+        confirmLabel="Confirm Delete"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        loading={deleting}
       />
     </div>
   )

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Layers, ArrowLeft } from 'lucide-react'
+import { Layers, X } from 'lucide-react'
 import Modal from '../ui/Modal'
 import { useModalForm } from '../../hooks/useModalForm'
 import { cn } from '../../utils/cn'
@@ -142,12 +142,10 @@ export default function CategoryHubFormModal({
           <button
             type="button"
             onClick={handleClose}
-            className="text-sm font-semibold text-white underline-offset-2 transition hover:underline"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+            aria-label="Close"
           >
-            <span className="inline-flex items-center gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Go Back
-            </span>
+            <X className="h-5 w-5" />
           </button>
         </div>
 

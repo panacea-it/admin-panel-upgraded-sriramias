@@ -13,9 +13,9 @@ export default function BatchFormModalShell({
   saving = false,
 }) {
   return (
-    <Modal open={open} onClose={onClose} size={size} title={title}>
+    <Modal open={open} onClose={onClose} size={size} title={title} showCloseButton={false}>
       <div className="flex max-h-[min(88vh,820px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200/80">
-        <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-[#55ace7]/10 to-[#246392]/5 px-5 py-4 sm:px-6">
+        <div className="shrink-0 border-b border-slate-100 bg-[#f0f6fb] px-5 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-[#1a3a5c] sm:text-xl">

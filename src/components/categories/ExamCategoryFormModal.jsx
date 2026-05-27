@@ -133,7 +133,8 @@ export default function ExamCategoryFormModal({ open, onClose, item, onSubmit })
       >
         <ModalPanelHeader
           title={title}
-          onBack={handleClose}
+          onClose={handleClose}
+          closeVariant="icon"
           icon={Layers}
           iconClassName="text-[#246392]"
         />

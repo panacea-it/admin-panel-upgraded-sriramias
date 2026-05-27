@@ -1,5 +1,5 @@
 import { Mail, Phone, Hash, CreditCard, BarChart3, CalendarCheck } from 'lucide-react'
-import Modal from '../ui/Modal'
+import BatchFormModalShell from './BatchFormModalShell'
 import PaymentStatusBadge from './PaymentStatusBadge'
 import ProgressBar from './ProgressBar'
 import CategoryStatusBadge from '../categories/CategoryStatusBadge'
@@ -21,62 +21,59 @@ function DetailRow({ icon: Icon, label, value }) {
 export default function StudentViewModal({ open, onClose, student, batch }) {
   if (!student) return null
 
+  const initials = student.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
   return (
-    <Modal open={open} onClose={onClose} title="Student details" size="md">
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl">
-        <div className="border-b border-slate-100 bg-gradient-to-r from-[#55ace7]/10 to-white px-6 py-5">
-          <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#cbeeff] text-lg font-bold text-[#246392]">
-              {student.name
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()}
-            </span>
-            <div>
-              <h2 className="text-xl font-bold text-[#111]">{student.name}</h2>
-              <p className="text-sm text-[#686868]">
-                {batch?.displayName ?? '—'}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <PaymentStatusBadge status={student.paymentStatus} />
-                <CategoryStatusBadge status={student.status ?? 'Active'} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-3 px-6 py-5 sm:grid-cols-2">
-          <DetailRow icon={Mail} label="Email" value={student.email} />
-          <DetailRow icon={Phone} label="Phone" value={student.phone} />
-          <DetailRow icon={Hash} label="Enrollment ID" value={student.enrollmentId} />
-          <DetailRow icon={CreditCard} label="Payment" value={student.paymentStatus} />
-          <div className="sm:col-span-2">
-            <DetailRow icon={CalendarCheck} label="Attendance" value={`${student.attendance}%`} />
-            <div className="mt-2 px-1">
-              <ProgressBar value={student.attendance} />
-            </div>
-          </div>
-          <div className="sm:col-span-2">
-            <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#9ca0a8]">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Course Progress
-            </p>
-            <ProgressBar value={student.progress} />
-          </div>
-        </div>
-
-        <div className="border-t border-slate-100 px-6 py-4">
+    <BatchFormModalShell
+      open={open}
+      onClose={onClose}
+      title={student.name}
+      subtitle={batch?.displayName ?? '—'}
+      size="md"
+      footer={
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="h-10 w-full rounded-xl border border-slate-200 text-sm font-semibold text-[#444] transition hover:bg-slate-50 sm:w-auto sm:px-8"
+            className="h-11 rounded-xl bg-gradient-to-r from-[#55ace7] to-[#246392] px-8 text-sm font-bold text-white shadow-[0_4px_12px_rgba(85,172,231,0.4)] transition hover:scale-[1.01]"
           >
             Close
           </button>
         </div>
+      }
+    >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#cbeeff] text-sm font-bold text-[#246392]">
+          {initials}
+        </span>
+        <PaymentStatusBadge status={student.paymentStatus} />
+        <CategoryStatusBadge status={student.status ?? 'Active'} />
       </div>
-    </Modal>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <DetailRow icon={Mail} label="Email" value={student.email} />
+        <DetailRow icon={Phone} label="Phone" value={student.phone} />
+        <DetailRow icon={Hash} label="Enrollment ID" value={student.enrollmentId} />
+        <DetailRow icon={CreditCard} label="Payment" value={student.paymentStatus} />
+        <div className="sm:col-span-2">
+          <DetailRow icon={CalendarCheck} label="Attendance" value={`${student.attendance}%`} />
+          <div className="mt-2 px-1">
+            <ProgressBar value={student.attendance} />
+          </div>
+        </div>
+        <div className="sm:col-span-2">
+          <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#9ca0a8]">
+            <BarChart3 className="h-3.5 w-3.5" />
+            Course Progress
+          </p>
+          <ProgressBar value={student.progress} />
+        </div>
+      </div>
+    </BatchFormModalShell>
   )
 }

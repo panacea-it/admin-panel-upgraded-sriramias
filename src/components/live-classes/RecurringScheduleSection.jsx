@@ -48,7 +48,15 @@ export default function RecurringScheduleSection({
   subjectId = '',
   actorName = 'Admin',
 }) {
-  const rule = recurrence || {}
+  const rule = recurrence
+    ? {
+        excludedDates: [],
+        weekdays: [],
+        history: [],
+        ...recurrence,
+        excludedDates: Array.isArray(recurrence.excludedDates) ? recurrence.excludedDates : [],
+      }
+    : {}
   const dates = useMemo(
     () => (enabled ? generateOccurrenceDates(rule, anchorDate) : []),
     [enabled, rule, anchorDate],

@@ -5,6 +5,8 @@ import CategoryFilterBar from '../../../components/categories/CategoryFilterBar'
 import CategoryEmptyState from '../../../components/categories/CategoryEmptyState'
 import PaginatedFigmaTable from '../../../components/figma/PaginatedFigmaTable'
 import AddCityModal from '../../../components/cities/AddCityModal'
+import ViewCityModal from '../../../components/cities/ViewCityModal'
+import ConfirmDeleteDialog from '../../../components/subjects/ConfirmDeleteDialog'
 import { buildCityTableColumns } from '../../../components/cities/CityTable'
 import { deleteCity, fetchCities, saveCity, toggleCityStatus } from '../../../api/citiesAPI'
 import { useCenters } from '../../../contexts/CentersContext'
@@ -24,6 +26,9 @@ export default function CityPage() {
   const [filters, setFilters] = useState({ search: '', status: 'all', center: 'all' })
   const [modalOpen, setModalOpen] = useState(false)
   const [editRow, setEditRow] = useState(null)
+  const [viewRow, setViewRow] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const centerOptions = useMemo(
     () => [
@@ -106,17 +111,25 @@ export default function CityPage() {
     }
   }
 
-  const handleDelete = useCallback(async (row) => {
-    if (!window.confirm(`Delete "${row.placeName}" (${row.code})?`)) return
+  const handleDelete = useCallback((row) => {
+    setDeleteTarget(row)
+  }, [])
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await deleteCity(row.id)
+      await deleteCity(deleteTarget.id)
       toast.success('City removed')
-      setRows((prev) => prev.filter((r) => r.id !== row.id))
+      setRows((prev) => prev.filter((r) => r.id !== deleteTarget.id))
+      setDeleteTarget(null)
       await load()
     } catch (e) {
       toast.error(e.message || 'Delete failed')
+    } finally {
+      setDeleting(false)
     }
-  }, [load])
+  }, [deleteTarget, load])
 
   const handleToggle = useCallback(async (row) => {
     try {
@@ -130,7 +143,7 @@ export default function CityPage() {
   }, [load, mergeSavedRow])
 
   const handleView = useCallback((row) => {
-    toast.info(`${row.centerName} · ${row.placeName} (${row.code})`)
+    setViewRow(row)
   }, [])
 
   const handleEdit = useCallback((row) => {
@@ -154,11 +167,7 @@ export default function CityPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <CategoryPageHeader
-        icon={MapPin}
-        title="City"
-        subtitle="Manage cities and learning centers"
-      >
+      <CategoryPageHeader icon={MapPin} hideTitle>
         <button
           type="button"
           onClick={() => {
@@ -231,6 +240,18 @@ export default function CityPage() {
         city={editRow}
         onSave={handleSave}
         saving={saving}
+      />
+
+      <ViewCityModal open={Boolean(viewRow)} onClose={() => setViewRow(null)} city={viewRow} />
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete item?"
+        message="Are you sure you want to delete this item?"
+        confirmLabel="Confirm Delete"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        loading={deleting}
       />
     </div>
   )

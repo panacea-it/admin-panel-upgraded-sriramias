@@ -1,31 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, ChevronDown } from 'lucide-react'
+import { CourseDateInput } from '../courses/CourseFormField'
 import BatchFormModalShell from './BatchFormModalShell'
+import {
+  BatchCheckboxCard,
+  BatchField,
+  BatchModalFooter,
+  batchInputReadonlyClass,
+  batchSelectClass,
+  batchTextareaClass,
+} from './batchModalUi'
 import {
   canTransferToBatch,
   getAvailableSeats,
   getBatchCapacity,
-  getBatchStrength,
   NON_TRANSFER_TARGET_STATUSES,
 } from '../../utils/batchOperations'
 import { cn } from '../../utils/cn'
-
-const inputClass =
-  'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#222] outline-none transition focus:border-[#55ace7] focus:ring-2 focus:ring-[#55ace7]/30 read-only:bg-slate-50'
-
-function CheckboxField({ label, checked, onChange }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-100 bg-[#f8fbff] px-3 py-2.5">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-[#246392]"
-      />
-      <span className="text-sm font-medium text-[#333]">{label}</span>
-    </label>
-  )
-}
 
 export default function MoveStudentModal({
   open,
@@ -78,9 +69,7 @@ export default function MoveStudentModal({
   }, [open, student?.id])
 
   const canSubmit =
-    capacityInfo?.check?.ok &&
-    targetBatchId &&
-    reason.trim().length >= 3
+    capacityInfo?.check?.ok && targetBatchId && reason.trim().length >= 3
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -115,62 +104,47 @@ export default function MoveStudentModal({
       onClose={onClose}
       title="Move Student"
       subtitle={`${student.name} · ${student.enrollmentId}`}
+      size="md"
       saving={saving}
       footer={
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="h-11 rounded-xl border border-slate-200 px-6 text-sm font-semibold text-[#444] transition hover:bg-slate-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="move-student-form"
-            disabled={saving || !canSubmit}
-            className={cn(
-              'h-11 rounded-xl bg-gradient-to-r from-[#55ace7] to-[#246392] px-8 text-sm font-bold text-white shadow-md',
-              'disabled:cursor-not-allowed disabled:opacity-50',
-            )}
-          >
-            {saving ? 'Moving…' : 'Move Student'}
-          </button>
-        </div>
+        <BatchModalFooter
+          onCancel={onClose}
+          submitLabel={saving ? 'Moving…' : 'Move Student'}
+          saving={saving}
+          submitDisabled={!canSubmit}
+          submitForm="move-student-form"
+          submitType="submit"
+        />
       }
     >
       <form id="move-student-form" onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#686868]">
-            Current Batch
-          </label>
-          <input readOnly value={currentBatch.displayName} className={inputClass} />
-        </div>
+        <BatchField label="Current Batch">
+          <input readOnly value={currentBatch.displayName} className={batchInputReadonlyClass} />
+        </BatchField>
 
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#686868]">
-            Select New Batch <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={targetBatchId}
-            onChange={(e) => {
-              setTargetBatchId(e.target.value)
-              setErrors((x) => ({ ...x, target: undefined }))
-            }}
-            className={inputClass}
-          >
-            <option value="">Choose target batch…</option>
-            {eligibleTargets.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.displayName} ({b.status})
-              </option>
-            ))}
-          </select>
+        <BatchField label="Select New Batch" required>
+          <div className="relative">
+            <select
+              value={targetBatchId}
+              onChange={(e) => {
+                setTargetBatchId(e.target.value)
+                setErrors((x) => ({ ...x, target: undefined }))
+              }}
+              className={batchSelectClass}
+            >
+              <option value="">Choose target batch…</option>
+              {eligibleTargets.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.displayName} ({b.status})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#686868]" />
+          </div>
           {errors.target && (
             <p className="mt-1 text-xs font-medium text-red-600">{errors.target}</p>
           )}
-        </div>
+        </BatchField>
 
         {capacityInfo && selectedTarget && (
           <div
@@ -199,46 +173,39 @@ export default function MoveStudentModal({
           </div>
         )}
 
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#686868]">
-            Effective Transfer Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
+        <BatchField label="Effective Transfer Date" required>
+          <CourseDateInput
             value={transferDate}
             onChange={(e) => setTransferDate(e.target.value)}
-            className={inputClass}
+            required
           />
-        </div>
+        </BatchField>
 
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#686868]">
-            Transfer Reason <span className="text-red-500">*</span>
-          </label>
+        <BatchField label="Transfer Reason" required>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            className={cn(inputClass, 'h-auto min-h-[80px] py-2')}
+            className={batchTextareaClass}
             placeholder="Reason for transfer…"
           />
           {errors.reason && (
             <p className="mt-1 text-xs font-medium text-red-600">{errors.reason}</p>
           )}
-        </div>
+        </BatchField>
 
-        <div className="grid gap-2 sm:grid-cols-1">
-          <CheckboxField
+        <div className="grid gap-2">
+          <BatchCheckboxCard
             label="Transfer Attendance Records"
             checked={transferAttendance}
             onChange={setTransferAttendance}
           />
-          <CheckboxField
+          <BatchCheckboxCard
             label="Transfer Fee Records"
             checked={transferFee}
             onChange={setTransferFee}
           />
-          <CheckboxField
+          <BatchCheckboxCard
             label="Transfer Test Records"
             checked={transferTests}
             onChange={setTransferTests}

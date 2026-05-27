@@ -110,8 +110,8 @@ export function buildClassroomTableColumns({ onView, onEdit, onToggle, onDelete 
       key: 'actions',
       label: 'Actions',
       align: 'right',
-      headerClassName: 'min-w-[168px] text-right',
-      cellClassName: 'min-w-[168px] text-right',
+      headerClassName: 'min-w-[11rem] text-right',
+      cellClassName: 'min-w-[11rem] text-right',
       render: (row) => (
         <CategoryTableActions
           compact

@@ -1,8 +1,11 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { cn } from '../../utils/cn'
 import { usePagination } from '../../hooks/usePagination'
 import FigmaTable from './FigmaTable'
 import TablePagination from './TablePagination'
+
+const CHECKBOX_CLASS =
+  'h-4 w-4 shrink-0 cursor-pointer rounded border-white/40 text-[#246392] accent-[#246392] focus:ring-[#55ace7]/50'
 
 export default function PaginatedFigmaTable({
   columns,
@@ -23,11 +26,55 @@ export default function PaginatedFigmaTable({
   stickyHeader = false,
   stickyLastColumn = false,
   animateRows = false,
+  /** { selectedIds, onToggle(id), onTogglePage(pageIds, select), getRowId? } */
+  selection,
 }) {
   const internalRef = useRef(null)
   const tableRef = externalRef ?? internalRef
 
   const pagination = usePagination(data, { initialPageSize, resetDeps })
+
+  const resolvedColumns = useMemo(() => {
+    if (!selection) return columns
+    const getRowId = selection.getRowId ?? ((row) => row.id)
+    const pageIds = pagination.paginatedItems.map((row) => getRowId(row))
+    const allPageSelected =
+      pageIds.length > 0 && pageIds.every((id) => selection.selectedIds.includes(id))
+    const somePageSelected = pageIds.some((id) => selection.selectedIds.includes(id))
+
+    return [
+      {
+        key: '__select',
+        label: (
+          <input
+            type="checkbox"
+            checked={allPageSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = somePageSelected && !allPageSelected
+            }}
+            onChange={() => selection.onTogglePage?.(pageIds, !allPageSelected)}
+            aria-label="Select all on this page"
+            className={CHECKBOX_CLASS}
+          />
+        ),
+        headerClassName: 'w-12 pl-5 sm:pl-6',
+        cellClassName: 'w-12 pl-5 sm:pl-6',
+        render: (row) => {
+          const id = getRowId(row)
+          return (
+            <input
+              type="checkbox"
+              checked={selection.selectedIds.includes(id)}
+              onChange={() => selection.onToggle?.(id)}
+              aria-label={`Select row ${id}`}
+              className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#55ace7]/40 text-[#246392] accent-[#246392] focus:ring-[#55ace7]/50"
+            />
+          )
+        },
+      },
+      ...columns,
+    ]
+  }, [columns, selection, pagination.paginatedItems])
 
   const handlePageChange = (nextPage) => {
     pagination.setPage(nextPage)
@@ -43,7 +90,7 @@ export default function PaginatedFigmaTable({
       )}
     >
       <FigmaTable
-        columns={columns}
+        columns={resolvedColumns}
         data={pagination.paginatedItems}
         emptyMessage={emptyMessage}
         emptyState={emptyState}

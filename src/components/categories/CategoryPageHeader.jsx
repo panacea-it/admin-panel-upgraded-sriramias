@@ -6,6 +6,8 @@ export default function CategoryPageHeader({
   subtitle,
   children,
   className,
+  /** When true, hides the banner title/subtitle (section tabs already indicate context). */
+  hideTitle = false,
 }) {
   return (
     <div
@@ -22,12 +24,14 @@ export default function CategoryPageHeader({
                 <Icon className="h-5 w-5 text-[#246392] sm:h-6 sm:w-6" strokeWidth={2.2} />
               </div>
             )}
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">{title}</h1>
-              {subtitle && (
-                <p className="mt-1 text-sm font-medium text-white/85">{subtitle}</p>
-              )}
-            </div>
+            {!hideTitle && title ? (
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">{title}</h1>
+                {subtitle ? (
+                  <p className="mt-1 text-sm font-medium text-white/85">{subtitle}</p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           {children && <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>}
         </div>

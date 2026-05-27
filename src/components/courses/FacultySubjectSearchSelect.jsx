@@ -1,7 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Check, ChevronDown, Loader2, Search, X } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { buildFacultySubjectOptionsForBatch } from '../../utils/facultySubjectBatch'
+import { usePortalMenuPosition } from '../ui/usePortalMenuPosition'
 
 export default function FacultySubjectSearchSelect({
   subjects = [],
@@ -13,6 +15,8 @@ export default function FacultySubjectSearchSelect({
 }) {
   const listboxId = useId()
   const rootRef = useRef(null)
+  const menuRef = useRef(null)
+  const triggerRef = useRef(null)
   const searchRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -35,13 +39,21 @@ export default function FacultySubjectSearchSelect({
     )
   }, [options, query])
 
+  const coords = usePortalMenuPosition(triggerRef, open, 8)
+
   useEffect(() => {
     setHighlight(0)
   }, [query, open])
 
   useEffect(() => {
     const onDoc = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false)
+      if (
+        rootRef.current?.contains(e.target) ||
+        menuRef.current?.contains(e.target)
+      ) {
+        return
+      }
+      setOpen(false)
     }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
@@ -96,6 +108,7 @@ export default function FacultySubjectSearchSelect({
         type="button"
         disabled={disabled || loading || empty}
         onClick={() => setOpen((o) => !o)}
+        ref={triggerRef}
         className={cn(
           'flex h-12 min-h-[48px] w-full items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 text-left text-sm shadow-sm transition',
           'hover:border-[#93c5fd] focus:border-[#55ace7] focus:ring-2 focus:ring-blue-400/35',
@@ -122,12 +135,21 @@ export default function FacultySubjectSearchSelect({
         )}
       </button>
 
-      {open && (
-        <div
-          className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-[#e8f4fc] bg-white shadow-[0_16px_40px_rgba(36,99,146,0.15)]"
-          role="listbox"
-          id={listboxId}
-        >
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="listbox"
+            id={listboxId}
+            style={{
+              position: 'fixed',
+              top: coords.top,
+              left: coords.left,
+              width: coords.width,
+              zIndex: 220,
+            }}
+            className="overflow-hidden rounded-xl border border-[#e8f4fc] bg-white shadow-[0_16px_40px_rgba(36,99,146,0.15)]"
+          >
           <div className="border-b border-[#eef2fc] p-2">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca0a8]" />
@@ -191,8 +213,9 @@ export default function FacultySubjectSearchSelect({
               ))
             )}
           </ul>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

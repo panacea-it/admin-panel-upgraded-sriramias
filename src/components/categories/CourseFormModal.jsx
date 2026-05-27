@@ -256,7 +256,8 @@ export default function CourseFormModal({ open, onClose, item, onSubmit }) {
       >
         <ModalPanelHeader
           title={title}
-          onBack={handleClose}
+          onClose={handleClose}
+          closeVariant="icon"
           icon={BookOpen}
           iconClassName="text-[#246392]"
         />

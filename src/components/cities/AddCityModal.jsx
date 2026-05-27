@@ -79,7 +79,8 @@ export default function AddCityModal({ open, onClose, city, onSave, saving }) {
           icon={MapPin}
           title={isEdit ? 'Edit Place' : 'Add City'}
           subtitle="Link a branch place to a centre"
-          onBack={onClose}
+          onClose={onClose}
+          closeVariant="icon"
         />
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">

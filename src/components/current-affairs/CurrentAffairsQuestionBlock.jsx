@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, Copy, Trash2 } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import {
   CourseFormField,
   CourseInput,
@@ -23,8 +23,6 @@ function CurrentAffairsQuestionBlock({
   onToggle,
   onChange,
   onImageChange,
-  onDelete,
-  onDuplicate,
 }) {
   const prefix = `q${index}`
   const update = (patch) => onChange(index, patch)
@@ -56,24 +54,6 @@ function CurrentAffairsQuestionBlock({
           <ChevronDown
             className={cn('h-5 w-5 shrink-0 text-[#246392] transition', expanded && 'rotate-180')}
           />
-        </button>
-        <button
-          type="button"
-          onClick={onDuplicate}
-          title="Duplicate question"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-[#686868] transition hover:bg-white hover:text-[#246392]"
-        >
-          <Copy className="h-4 w-4" />
-          Duplicate
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          title="Delete question"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-[#c96565] transition hover:bg-white hover:text-[#b94b4b]"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete
         </button>
       </div>
 

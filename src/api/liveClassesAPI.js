@@ -36,7 +36,7 @@ function removeSeriesRows(seriesId, { fromDate, scope }) {
 }
 
 function buildOccurrenceRows(base, dates, seriesId, parentId, actor) {
-  const rule = base.recurrence
+  const rule = base.recurrence || {}
   const history = appendRecurrenceHistory(rule, {
     action: 'Series generated',
     by: actor,

@@ -173,6 +173,8 @@ export default function SubjectAddContentModal({
                     onClick={() => {
                       setActiveType(type)
                       setValue('contentType', type)
+                      clearErrors()
+                      setTestSeriesErrors({})
                     }}
                     className={cn(
                       'rounded-lg px-4 py-2 text-sm font-semibold transition',

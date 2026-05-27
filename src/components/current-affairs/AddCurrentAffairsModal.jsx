@@ -18,6 +18,7 @@ import CurrentAffairsQuestionPaperSection from './CurrentAffairsQuestionPaperSec
 export default function AddCurrentAffairsModal({ open, onClose, item, onSubmit }) {
   const [errors, setErrors] = useState({})
   const [fileInputKey, setFileInputKey] = useState(0)
+  const [questionSectionKey, setQuestionSectionKey] = useState(0)
 
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
@@ -40,6 +41,7 @@ export default function AddCurrentAffairsModal({ open, onClose, item, onSubmit }
     reset()
     clearFileInputs()
     setErrors({})
+    setQuestionSectionKey((k) => k + 1)
   }
 
   const handleCategoryChange = (e) => {
@@ -47,6 +49,7 @@ export default function AddCurrentAffairsModal({ open, onClose, item, onSubmit }
     setForm(createEmptyCurrentAffairsForm(nextCategory))
     clearFileInputs()
     setErrors({})
+    setQuestionSectionKey((k) => k + 1)
   }
 
   const onFieldChange = (key) => (e) => {
@@ -134,8 +137,9 @@ export default function AddCurrentAffairsModal({ open, onClose, item, onSubmit }
       >
         <ModalPanelHeader
           title={isEditMode ? 'Edit Current Affairs' : 'Add Current Affairs'}
-          onBack={handleClose}
+          onClose={handleClose}
           icon={Layers}
+          closeVariant="icon"
         />
 
         <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6">
@@ -153,9 +157,11 @@ export default function AddCurrentAffairsModal({ open, onClose, item, onSubmit }
 
           {showQuestions ? (
             <CurrentAffairsQuestionPaperSection
+              key={questionSectionKey}
               form={form}
               errors={errors}
               onPatch={handlePatch}
+              resetKey={questionSectionKey}
             />
           ) : null}
 

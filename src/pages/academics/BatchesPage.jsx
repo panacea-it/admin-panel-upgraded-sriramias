@@ -7,12 +7,10 @@ import AddCourseModal from '../../components/courses/AddCourseModal'
 import BatchManagementTable from '../../components/batch-management/BatchManagementTable'
 import BatchBulkActionsBar from '../../components/batch-management/BatchBulkActionsBar'
 import ViewBatchModal from '../../components/courses/ViewBatchModal'
-import ChangeBatchStatusModal from '../../components/batch-management/ChangeBatchStatusModal'
 import MergeBatchesModal from '../../components/batch-management/MergeBatchesModal'
 import MergeTwoBatchesModal from '../../components/batch-management/MergeTwoBatchesModal'
 import BulkChangeStatusModal from '../../components/batch-management/BulkChangeStatusModal'
-import ConfirmActionDialog from '../../components/batch-management/ConfirmActionDialog'
-import ConfirmDeleteDialog from '../../components/subjects/ConfirmDeleteDialog'
+import BatchConfirmDialog from '../../components/batch-management/BatchConfirmDialog'
 import { useBatchManagementContext } from '../../contexts/BatchManagementContext'
 import { useEditModal } from '../../hooks/useEditModal'
 import { useBatchesData } from '../../hooks/useBatchesData'
@@ -78,13 +76,13 @@ export default function BatchesPage() {
 
   const modal = useEditModal()
   const [viewItem, setViewItem] = useState(null)
-  const [statusModalBatch, setStatusModalBatch] = useState(null)
+  const [optimisticStatus, setOptimisticStatus] = useState({})
+  const [statusUpdatingIds, setStatusUpdatingIds] = useState(() => new Set())
   const [mergeOpen, setMergeOpen] = useState(false)
   const [mergeTwoOpen, setMergeTwoOpen] = useState(false)
   const [mergePreselected, setMergePreselected] = useState([])
   const [actionLoading, setActionLoading] = useState(false)
 
-  const [statusConfirm, setStatusConfirm] = useState(null)
   const [archiveConfirm, setArchiveConfirm] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false)
@@ -97,12 +95,17 @@ export default function BatchesPage() {
 
   const filteredRows = useMemo(() => {
     const q = search.toLowerCase().trim()
-    return sourceRows.filter((row) => {
-      const matchSearch = rowMatchesSearch(row, q)
-      const matchStatus = statusFilter === 'all' || row.status === statusFilter
-      return matchSearch && matchStatus
-    })
-  }, [sourceRows, search, statusFilter])
+    return sourceRows
+      .map((row) => {
+        const override = optimisticStatus[String(row.id)]
+        return override != null ? { ...row, status: override } : row
+      })
+      .filter((row) => {
+        const matchSearch = rowMatchesSearch(row, q)
+        const matchStatus = statusFilter === 'all' || row.status === statusFilter
+        return matchSearch && matchStatus
+      })
+  }, [sourceRows, search, statusFilter, optimisticStatus])
 
   const tableBatches = useMemo(
     () =>
@@ -205,23 +208,33 @@ export default function BatchesPage() {
     [apiBatches, modal],
   )
 
-  const handleStatusChangeRequest = useCallback((batch, nextStatus) => {
-    if (nextStatus === batch.status) return
-    setStatusConfirm({ batch, nextStatus })
-  }, [])
-
-  const handleStatusConfirm = async () => {
-    if (!statusConfirm) return
-    setActionLoading(true)
-    try {
-      await updateBatchStatus(statusConfirm.batch, statusConfirm.nextStatus)
-      setStatusConfirm(null)
-    } catch {
-      toast.error('Failed to update batch status')
-    } finally {
-      setActionLoading(false)
-    }
-  }
+  const handleStatusChange = useCallback(
+    async (batch, nextStatus) => {
+      if (nextStatus === batch.status) return
+      const id = String(batch.id)
+      const previous = batch.status
+      setOptimisticStatus((prev) => ({ ...prev, [id]: nextStatus }))
+      setStatusUpdatingIds((prev) => new Set(prev).add(id))
+      try {
+        await updateBatchStatus(batch, nextStatus)
+        setOptimisticStatus((prev) => {
+          const next = { ...prev }
+          delete next[id]
+          return next
+        })
+      } catch (err) {
+        setOptimisticStatus((prev) => ({ ...prev, [id]: previous }))
+        toast.error(err?.message || 'Failed to update batch status')
+      } finally {
+        setStatusUpdatingIds((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      }
+    },
+    [updateBatchStatus],
+  )
 
   const handleDuplicateBatch = useCallback(
     (tableBatch) => {
@@ -493,9 +506,9 @@ export default function BatchesPage() {
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             onToggleSelectAll={toggleSelectAll}
-            onStatusChange={handleStatusChangeRequest}
+            onStatusChange={handleStatusChange}
+            statusUpdatingIds={statusUpdatingIds}
             onDuplicate={handleDuplicateBatch}
-            onChangeStatusAction={setStatusModalBatch}
             onDelete={(b) => setDeleteConfirm(b)}
             onMerge={(b) => {
               setMergePreselected([String(b.id)])
@@ -520,17 +533,6 @@ export default function BatchesPage() {
         item={viewItem}
       />
 
-      <ChangeBatchStatusModal
-        open={Boolean(statusModalBatch)}
-        onClose={() => setStatusModalBatch(null)}
-        batch={statusModalBatch}
-        saving={actionLoading}
-        onSubmit={async (nextStatus) => {
-          setStatusConfirm({ batch: statusModalBatch, nextStatus })
-          setStatusModalBatch(null)
-        }}
-      />
-
       <MergeTwoBatchesModal
         open={mergeTwoOpen}
         onClose={() => setMergeTwoOpen(false)}
@@ -548,22 +550,7 @@ export default function BatchesPage() {
         saving={actionLoading}
       />
 
-      <ConfirmActionDialog
-        open={Boolean(statusConfirm)}
-        title="Change batch status?"
-        message={
-          statusConfirm
-            ? `Change "${statusConfirm.batch.displayName}" from ${statusConfirm.batch.status} to ${statusConfirm.nextStatus}?`
-            : ''
-        }
-        confirmLabel="Change Status"
-        variant="primary"
-        loading={actionLoading}
-        onCancel={() => setStatusConfirm(null)}
-        onConfirm={handleStatusConfirm}
-      />
-
-      <ConfirmActionDialog
+      <BatchConfirmDialog
         open={Boolean(archiveConfirm)}
         title={archiveConfirm?.bulk ? 'Archive selected batches?' : 'Archive batch?'}
         message={
@@ -576,7 +563,8 @@ export default function BatchesPage() {
         confirmLabel="Archive"
         variant="warning"
         loading={actionLoading}
-        onCancel={() => setArchiveConfirm(null)}
+        loadingLabel="Archiving…"
+        onClose={() => setArchiveConfirm(null)}
         onConfirm={() =>
           archiveConfirm?.bulk
             ? handleBulkArchive()
@@ -592,7 +580,7 @@ export default function BatchesPage() {
         saving={actionLoading}
       />
 
-      <ConfirmDeleteDialog
+      <BatchConfirmDialog
         open={Boolean(deleteConfirm)}
         title={deleteConfirm?.bulk ? 'Delete selected batches?' : 'Delete batch?'}
         message={
@@ -602,8 +590,11 @@ export default function BatchesPage() {
               ? `Permanently delete "${deleteConfirm.displayName}"? This cannot be undone.`
               : ''
         }
+        confirmLabel="Delete"
+        variant="danger"
         loading={actionLoading}
-        onCancel={() => setDeleteConfirm(null)}
+        loadingLabel="Deleting…"
+        onClose={() => setDeleteConfirm(null)}
         onConfirm={handleDelete}
       />
 

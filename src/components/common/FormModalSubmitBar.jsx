@@ -3,11 +3,18 @@ import { cn } from '../../utils/cn'
 export default function FormModalSubmitBar({
   isEditMode,
   onReset,
+  isSubmitting = false,
+  disableSubmit = false,
+  disableReset = false,
   createLabel = 'Create',
   updateLabel = 'Update',
   resetLabel = 'Reset',
+  loadingLabel = 'Saving...',
   className,
 }) {
+  const submitDisabled = isSubmitting || disableSubmit
+  const resetDisabled = isSubmitting || disableReset
+
   return (
     <div
       className={cn(
@@ -18,15 +25,18 @@ export default function FormModalSubmitBar({
       <button
         type="button"
         onClick={onReset}
-        className="min-w-[148px] rounded-full bg-gradient-to-r from-[#5eb8f5] to-[#2b78a5] px-10 py-3.5 text-base font-bold text-white shadow-[0_6px_18px_rgba(43,120,165,0.35)] transition hover:scale-[1.02] hover:brightness-105 active:scale-[0.98]"
+        disabled={resetDisabled}
+        className="min-w-[148px] rounded-full bg-gradient-to-r from-[#5eb8f5] to-[#2b78a5] px-10 py-3.5 text-base font-bold text-white shadow-[0_6px_18px_rgba(43,120,165,0.35)] transition hover:scale-[1.02] hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:scale-100 disabled:hover:brightness-100"
       >
         {resetLabel}
       </button>
       <button
         type="submit"
-        className="min-w-[148px] rounded-full bg-gradient-to-r from-[#0d3b66] to-[#05192d] px-10 py-3.5 text-base font-bold text-white shadow-[0_6px_18px_rgba(5,25,45,0.4)] transition hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]"
+        disabled={submitDisabled}
+        aria-busy={isSubmitting}
+        className="min-w-[148px] rounded-full bg-gradient-to-r from-[#0d3b66] to-[#05192d] px-10 py-3.5 text-base font-bold text-white shadow-[0_6px_18px_rgba(5,25,45,0.4)] transition hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:scale-100 disabled:hover:brightness-100"
       >
-        {isEditMode ? updateLabel : createLabel}
+        {isSubmitting ? loadingLabel : isEditMode ? updateLabel : createLabel}
       </button>
     </div>
   )

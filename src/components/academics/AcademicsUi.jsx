@@ -36,10 +36,5 @@ export function StatusBadge({ status }) {
 }
 
 export function ResourceNameCell({ name }) {
-  return (
-    <div className="flex items-center gap-4 sm:gap-5">
-      <span className="h-6 w-6 shrink-0 rounded bg-[#cbeeff]" />
-      <span className="truncate font-medium">{name}</span>
-    </div>
-  )
+  return <span className="truncate font-medium">{name}</span>
 }

@@ -15,7 +15,7 @@ import StudentFormModal from './StudentFormModal'
 import StudentViewModal from './StudentViewModal'
 import StudentTableActions from './StudentTableActions'
 import CategoryStatusBadge from '../categories/CategoryStatusBadge'
-import ConfirmDeleteDialog from '../subjects/ConfirmDeleteDialog'
+import BatchConfirmDialog from './BatchConfirmDialog'
 import MoveStudentModal from './MoveStudentModal'
 import { PAYMENT_STATUSES, STUDENT_STATUSES } from '../../data/batchManagementData'
 import { cn } from '../../utils/cn'
@@ -344,7 +344,7 @@ export default function BatchStudentPanel({
         batch={batch}
       />
 
-      <ConfirmDeleteDialog
+      <BatchConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete student?"
         message={
@@ -352,9 +352,12 @@ export default function BatchStudentPanel({
             ? `Remove ${deleteTarget.name} from ${batch.displayName}? This cannot be undone.`
             : ''
         }
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
+        confirmLabel="Delete"
+        variant="danger"
         loading={saving}
+        loadingLabel="Deleting…"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
       />
 
       <MoveStudentModal

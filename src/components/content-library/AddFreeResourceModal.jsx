@@ -153,7 +153,7 @@ export default function AddFreeResourceModal({ open, onClose, item, categories, 
   const showStickySave = category === FREE_RESOURCE_CATEGORY.MOCK_TEST
 
   return (
-    <Modal open={open} onClose={handleClose} size="full" title="Free Resource">
+    <Modal open={open} onClose={handleClose} size="full" title="Free Resource" showCloseButton={false}>
       <form
         onSubmit={handleSubmit(onFormSubmit)}
         className="flex max-h-[min(92vh,920px)] flex-col overflow-hidden rounded-2xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
@@ -161,8 +161,9 @@ export default function AddFreeResourceModal({ open, onClose, item, categories, 
         <div className="shrink-0">
           <ModalPanelHeader
             title="Free Resource"
-            onBack={handleClose}
+            onClose={handleClose}
             icon={Layers}
+            closeVariant="icon"
           />
         </div>
 
@@ -245,8 +246,11 @@ export default function AddFreeResourceModal({ open, onClose, item, categories, 
           <FormModalSubmitBar
             isEditMode={isEditMode}
             onReset={handleReset}
-            createLabel={saving ? 'Saving…' : 'Save'}
-            updateLabel={saving ? 'Saving…' : 'Update'}
+            isSubmitting={saving}
+            disableReset={saving}
+            createLabel="Save"
+            updateLabel="Update"
+            loadingLabel="Saving…"
             className="border-0 pt-0"
           />
         </div>

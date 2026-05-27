@@ -80,7 +80,13 @@ export default function ViewBatchModal({ open, onClose, item }) {
   const currency = feeDetails?.currency || 'INR'
 
   return (
-    <Modal open={open} onClose={onClose} size="full" title={`View ${item.batchName || item.name}`}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="full"
+      title={`View ${item.batchName || item.name}`}
+      showCloseButton={false}
+    >
       <div className="overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
         <header className="flex items-start justify-between gap-3 bg-gradient-to-r from-[#55ace7] via-[#8b98bb] to-[#b8887a] px-5 py-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">

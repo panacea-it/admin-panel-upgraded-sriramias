@@ -4,7 +4,7 @@ import CategoryStatusBadge from './CategoryStatusBadge'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 
 export default function ViewMainCategoryModal({ open, onClose, item }) {
-  if (!item) return null
+  if (!open || !item) return null
 
   return (
     <Modal open={open} onClose={onClose} size="md" title={`View ${item.name}`}>
@@ -51,6 +51,36 @@ export default function ViewMainCategoryModal({ open, onClose, item }) {
           ) : null}
 
           <dl className="grid gap-3 sm:grid-cols-2">
+            {item.subject ? (
+              <div>
+                <dt className="text-xs font-medium text-[#686868]">Subject</dt>
+                <dd className="mt-1 text-sm font-medium text-[#222]">{item.subject}</dd>
+              </div>
+            ) : null}
+            {item.parentCategory ? (
+              <div>
+                <dt className="text-xs font-medium text-[#686868]">Category</dt>
+                <dd className="mt-1 text-sm font-medium text-[#222]">{item.parentCategory}</dd>
+              </div>
+            ) : null}
+            {item.program ? (
+              <div>
+                <dt className="text-xs font-medium text-[#686868]">Program</dt>
+                <dd className="mt-1 text-sm font-medium text-[#222]">{item.program}</dd>
+              </div>
+            ) : null}
+            {item.centerName ? (
+              <div>
+                <dt className="text-xs font-medium text-[#686868]">Centre</dt>
+                <dd className="mt-1 text-sm font-medium text-[#222]">{item.centerName}</dd>
+              </div>
+            ) : null}
+            {item.subjectId ? (
+              <div>
+                <dt className="text-xs font-medium text-[#686868]">Subject ID</dt>
+                <dd className="mt-1 text-sm font-medium text-[#222]">{item.subjectId}</dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-xs font-medium text-[#686868]">Created On</dt>
               <dd className="mt-1 text-sm font-medium text-[#222]">

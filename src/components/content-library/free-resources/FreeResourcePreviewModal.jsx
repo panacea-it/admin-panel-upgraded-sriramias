@@ -4,9 +4,9 @@ import { Layers } from 'lucide-react'
 
 export default function FreeResourcePreviewModal({ open, onClose, title, questions = [] }) {
   return (
-    <Modal open={open} onClose={onClose} size="lg" title="Preview Mock Test">
+    <Modal open={open} onClose={onClose} size="lg" title="Preview Mock Test" showCloseButton={false}>
       <div className="overflow-hidden rounded-2xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]">
-        <ModalPanelHeader title="Preview Mock Test" onBack={onClose} icon={Layers} />
+        <ModalPanelHeader title="Preview Mock Test" onClose={onClose} icon={Layers} closeVariant="icon" />
         <div className="max-h-[70vh] space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
           <h3 className="text-center text-lg font-bold text-[#246392]">{title || 'Untitled'}</h3>
           <p className="text-center text-sm text-[#686868]">{questions.length} questions</p>

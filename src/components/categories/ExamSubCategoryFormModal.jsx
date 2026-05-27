@@ -181,7 +181,8 @@ export default function ExamSubCategoryFormModal({ open, onClose, item, onSubmit
       >
         <ModalPanelHeader
           title={title}
-          onBack={handleClose}
+          onClose={handleClose}
+          closeVariant="icon"
           icon={FolderTree}
           iconClassName="text-[#246392]"
         />

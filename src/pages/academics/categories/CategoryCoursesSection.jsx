@@ -20,6 +20,7 @@ import { useEditModal } from '../../../hooks/useEditModal'
 import { formatCategoryDateTime } from '../../../utils/formatDateTime'
 import { syncAcademicCoursesCatalog } from '../../../api/academicCoursesAPI'
 import { toast } from '../../../utils/toast'
+import ConfirmDeleteDialog from '../../../components/subjects/ConfirmDeleteDialog'
 
 const section = CATEGORY_HUB_SECTIONS.courses
 
@@ -48,6 +49,7 @@ export default function CategoryCoursesSection() {
   const [selectedIds, setSelectedIds] = useState([])
   const modal = useEditModal()
   const [viewItem, setViewItem] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const refresh = useCallback(() => setCourses(loadAcademicCourses()), [])
 
@@ -153,16 +155,17 @@ export default function CategoryCoursesSection() {
     toast.success(isEdit ? 'Course updated' : 'Course created')
   }, [])
 
-  const handleDelete = (row) => {
-    if (!window.confirm(`Delete course "${row.name}"?`)) return
+  const confirmDelete = useCallback(() => {
+    if (!deleteTarget) return
     setCourses((prev) => {
-      const next = prev.filter((c) => c.id !== row.id)
+      const next = prev.filter((c) => c.id !== deleteTarget.id)
       saveAcademicCourses(next)
       return next
     })
-    setSelectedIds((prev) => prev.filter((sid) => sid !== row.id))
+    setSelectedIds((prev) => prev.filter((sid) => sid !== deleteTarget.id))
+    setDeleteTarget(null)
     toast.success('Course deleted')
-  }
+  }, [deleteTarget])
 
   const handleToggleStatus = (row) => {
     const nextStatus = row.status === 'Active' ? 'In Active' : 'Active'
@@ -265,12 +268,15 @@ export default function CategoryCoursesSection() {
       {
         key: 'actions',
         label: 'Actions',
+        align: 'right',
+        headerClassName: 'min-w-[11rem] text-right',
+        cellClassName: 'min-w-[11rem] text-right',
         render: (row) => (
           <CategoryTableActions
             status={row.status}
             onView={() => setViewItem(row)}
             onEdit={() => modal.openEdit(row)}
-            onDelete={() => handleDelete(row)}
+            onDelete={() => setDeleteTarget(row)}
             onToggleStatus={() => handleToggleStatus(row)}
           />
         ),
@@ -288,11 +294,7 @@ export default function CategoryCoursesSection() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-5 sm:space-y-6"
     >
-      <CategoryPageHeader
-        icon={BookOpen}
-        title={section.bannerTitle}
-        subtitle={section.bannerSubtitle}
-      >
+      <CategoryPageHeader icon={BookOpen} hideTitle>
         <AddCourseButton onClick={modal.openCreate} />
       </CategoryPageHeader>
 
@@ -362,6 +364,15 @@ export default function CategoryCoursesSection() {
         open={Boolean(viewItem)}
         onClose={() => setViewItem(null)}
         item={viewItem}
+      />
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete item?"
+        message="Are you sure you want to delete this item?"
+        confirmLabel="Confirm Delete"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
       />
     </motion.div>
   )

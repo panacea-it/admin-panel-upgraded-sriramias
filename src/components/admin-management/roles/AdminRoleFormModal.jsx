@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { getModalEditKey, useInitOnModalOpen } from '../../../hooks/modalFormSync'
-import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, X } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import FloatingInput from '../ui/FloatingInput'
 import { cn } from '../../../utils/cn'
 import { useAdminRoles } from '../../../contexts/AdminRolesContext'
+import Modal from '../../ui/Modal'
 
 const fieldLabelClass = cn(
   'mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500',
@@ -32,15 +31,6 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
   initialRoleRef.current = initialRole
   const editKey = getModalEditKey(initialRole)
 
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [open])
-
   useInitOnModalOpen(open, editKey, () => {
     const role = initialRoleRef.current
     if (role) {
@@ -55,15 +45,6 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
       setRoleCode('')
     }
   })
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
-    if (!open) return
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -102,92 +83,60 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
 
   const modalTitle = isEdit ? 'Edit Role Access' : 'Create Role Access'
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[140] flex items-end justify-center p-4 sm:items-center">
-          <motion.button
-            type="button"
-            aria-label="Close"
-            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="role-access-modal-title"
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="relative z-[141] flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl"
-          >
-            <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-              <h2
-                id="role-access-modal-title"
-                className="text-xl font-bold text-slate-900"
-              >
-                {modalTitle}
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </header>
+  return (
+    <Modal open={open} onClose={onClose} size="md" title={modalTitle}>
+      <div className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl">
+        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 pr-14">
+          <h2 id="role-access-modal-title" className="text-xl font-bold text-slate-900">
+            {modalTitle}
+          </h2>
+        </header>
 
-            <form onSubmit={handleSubmit} className="flex flex-col">
-              <div className="space-y-6 px-6 py-6">
-                <FloatingInput
-                  label="Role Title (Display)"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  disabled={isSystemRole}
-                />
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <div className="space-y-6 px-6 py-6">
+            <FloatingInput
+              label="Role Title (Display)"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              disabled={isSystemRole}
+            />
 
-                {isEdit ? (
-                  <div>
-                    <label className={fieldLabelClass}>Role Code</label>
-                    <p className="rounded-xl border border-slate-200/80 bg-slate-50 px-4 py-3 font-mono text-sm font-semibold tracking-wide text-slate-700">
-                      {roleCode}
-                    </p>
-                  </div>
-                ) : (
-                  <FloatingInput
-                    label="Role Code"
-                    value={roleCode}
-                    onChange={(e) => setRoleCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. SUPER_ADMIN"
-                  />
-                )}
+            {isEdit ? (
+              <div>
+                <label className={fieldLabelClass}>Role Code</label>
+                <p className="rounded-xl border border-slate-200/80 bg-slate-50 px-4 py-3 font-mono text-sm font-semibold tracking-wide text-slate-700">
+                  {roleCode}
+                </p>
               </div>
+            ) : (
+              <FloatingInput
+                label="Role Code"
+                value={roleCode}
+                onChange={(e) => setRoleCode(e.target.value.toUpperCase())}
+                placeholder="e.g. SUPER_ADMIN"
+              />
+            )}
+          </div>
 
-              <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200/90 bg-white/98 px-6 py-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || (isSystemRole && isEdit)}
-                  className="inline-flex min-w-[8rem] items-center justify-center gap-2 rounded-xl bg-[#1a3a5c] px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#152f4a] disabled:opacity-60"
-                >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {isEdit ? 'Save' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>,
-    document.body,
+          <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200/90 bg-white/98 px-6 py-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || (isSystemRole && isEdit)}
+              className="inline-flex min-w-[8rem] items-center justify-center gap-2 rounded-xl bg-[#1a3a5c] px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#152f4a] disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {isEdit ? 'Save' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Modal>
   )
 }

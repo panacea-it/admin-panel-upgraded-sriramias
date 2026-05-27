@@ -25,8 +25,8 @@ export default function BatchManagementTable({
   onToggleSelect,
   onToggleSelectAll,
   onStatusChange,
+  statusUpdatingIds,
   onDuplicate,
-  onChangeStatusAction,
   onDelete,
   onMerge,
 }) {
@@ -112,8 +112,8 @@ export default function BatchManagementTable({
                   onEditBatch={onEditBatch}
                   onQuickViewBatch={onQuickViewBatch}
                   onStatusChange={onStatusChange}
+                  statusUpdating={statusUpdatingIds?.has(String(batch.id))}
                   onDuplicate={onDuplicate}
-                  onChangeStatusAction={onChangeStatusAction}
                   onDelete={onDelete}
                   onMerge={onMerge}
                 />
@@ -147,8 +147,8 @@ function BatchTableRow({
   onEditBatch,
   onQuickViewBatch,
   onStatusChange,
+  statusUpdating = false,
   onDuplicate,
-  onChangeStatusAction,
   onDelete,
   onMerge,
 }) {
@@ -212,6 +212,7 @@ function BatchTableRow({
       <td className="px-4 py-4">
         <BatchStatusSelector
           status={batch.status}
+          disabled={statusUpdating}
           onStatusChange={(next) => onStatusChange?.(batch, next)}
         />
       </td>
@@ -222,7 +223,6 @@ function BatchTableRow({
           onQuickView={() => onQuickViewBatch?.(batch)}
           onEdit={() => onEditBatch?.(batch)}
           onDuplicate={() => onDuplicate?.(batch)}
-          onChangeStatus={() => onChangeStatusAction?.(batch)}
           onDelete={() => onDelete?.(batch)}
           onMerge={() => onMerge?.(batch)}
         />

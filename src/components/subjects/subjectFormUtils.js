@@ -290,7 +290,8 @@ export function shouldShowLiveClassSection(
   { liveClassOnly = false, subjectOnly = false, contentType } = {},
 ) {
   if (subjectOnly) return false
-  if (liveClassOnly || contentType === 'live') return true
+  if (liveClassOnly) return true
+  if (contentType) return contentType === 'live'
   return isLiveClassCategory(values.categories ?? values.category)
 }
 
@@ -299,7 +300,7 @@ export function shouldShowRecordingSection(
   { liveClassOnly = false, subjectOnly = false, contentType } = {},
 ) {
   if (subjectOnly || liveClassOnly) return false
-  if (contentType === 'recording') return true
+  if (contentType) return contentType === 'recording'
   return isRecordedClassCategory(values.categories ?? values.category)
 }
 
@@ -308,7 +309,7 @@ export function shouldShowPdfSection(
   { subjectOnly = false, contentType } = {},
 ) {
   if (subjectOnly) return false
-  if (contentType === 'pdf') return true
+  if (contentType) return contentType === 'pdf'
   return isPdfCategory(values.categories ?? values.category)
 }
 

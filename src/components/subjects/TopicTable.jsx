@@ -1,12 +1,18 @@
 import PaginatedFigmaTable from '../figma/PaginatedFigmaTable'
-import StatusBadge from './StatusBadge'
+import SubjectStatusToggle from './SubjectStatusToggle'
 import { TopicRowActions } from './ActionButtons'
 import { parseDateForDisplay } from '../../utils/academicsSubjectsStorage'
 
-function IdCell({ id }) {
+function IdCell({ id, selected, onToggleSelect }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="h-6 w-6 shrink-0 rounded bg-[#cbeeff]" aria-hidden />
+      <input
+        type="checkbox"
+        checked={Boolean(selected)}
+        onChange={() => onToggleSelect?.(String(id))}
+        aria-label={`Select live class ${id}`}
+        className="h-4 w-4 shrink-0 cursor-pointer rounded border-[#55ace7]/40 text-[#246392] focus:ring-[#55ace7]/50"
+      />
       <span className="font-mono text-sm font-semibold text-[#111]">{id}</span>
     </div>
   )
@@ -16,16 +22,25 @@ export default function TopicTable({
   data,
   onEdit,
   onDelete,
+  onStatusChange,
   search,
   statusFilter,
   categoryFilter,
+  selectedIds = [],
+  onToggleSelect,
   emptyMessage = 'No live classes found.',
 }) {
   const columns = [
     {
       key: 'id',
       label: 'ID',
-      render: (row) => <IdCell id={row.id} />,
+      render: (row) => (
+        <IdCell
+          id={row.id}
+          selected={selectedIds.includes(String(row.id))}
+          onToggleSelect={onToggleSelect}
+        />
+      ),
     },
     {
       key: 'classTitle',
@@ -71,7 +86,12 @@ export default function TopicTable({
     {
       key: 'status',
       label: 'Status',
-      render: (row) => <StatusBadge status={row.status} />,
+      render: (row) => (
+        <SubjectStatusToggle
+          status={row.status}
+          onChange={(next) => onStatusChange?.(row, next)}
+        />
+      ),
     },
     {
       key: 'actions',

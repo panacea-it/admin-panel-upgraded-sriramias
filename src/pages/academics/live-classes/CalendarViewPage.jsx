@@ -12,7 +12,6 @@ import { useLiveClasses } from '../../../contexts/LiveClassesContext'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useCenters } from '../../../contexts/CentersContext'
 import { useEditModal } from '../../../hooks/useEditModal'
-import { lessonRowToForm } from '../../../utils/liveClassesMappers'
 import { LIVE_CLASSES_BASE } from '../../../constants/liveClassesNav'
 import {
   RECURRENCE_DELETE_SCOPES,
@@ -71,7 +70,7 @@ export default function CalendarViewPage() {
         setRecurrenceDialog({ mode: 'edit', event })
         return
       }
-      editModal.openEdit(lessonRowToForm(lesson))
+      editModal.openEdit(lesson)
       closeDetail()
     },
     [editModal, closeDetail],
@@ -79,9 +78,7 @@ export default function CalendarViewPage() {
 
   const openEditWithScope = useCallback(
     (event, scope) => {
-      const form = lessonRowToForm(event.lesson)
-      form.recurrenceEditScope = scope
-      editModal.openEdit(form)
+      editModal.openEdit({ ...event.lesson, recurrenceEditScope: scope })
     },
     [editModal],
   )

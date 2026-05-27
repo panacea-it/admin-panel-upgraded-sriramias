@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, BookMarked } from 'lucide-react'
@@ -6,7 +6,6 @@ import CategoryBreadcrumb from '../../components/categories/CategoryBreadcrumb'
 import BatchDetailsInfoCard from '../../components/batch-management/BatchDetailsInfoCard'
 import BatchDetailsSkeleton from '../../components/batch-management/BatchDetailsSkeleton'
 import BatchStudentPanel from '../../components/batch-management/BatchStudentPanel'
-import BatchAuditHistoryPanel from '../../components/batch-management/BatchAuditHistoryPanel'
 import AddCourseModal from '../../components/courses/AddCourseModal'
 import PageBanner from '../../components/figma/PageBanner'
 import { useBatchManagementContext } from '../../contexts/BatchManagementContext'
@@ -34,8 +33,6 @@ export default function BatchDetailsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const modal = useEditModal()
-  const [auditRefresh, setAuditRefresh] = useState(0)
-
   const { sourceRows, loading, loadBatches, apiBatches, existingCourseIds } = useBatchesData()
   const {
     getStudents,
@@ -179,7 +176,6 @@ export default function BatchDetailsPage() {
       message: `${student.name} transferred from ${batch.displayName}`,
       meta: values,
     })
-    setAuditRefresh((k) => k + 1)
     toast.success('Student moved successfully')
   }
 
@@ -233,8 +229,6 @@ export default function BatchDetailsPage() {
           targetBatches={allTableBatches}
           getTargetStrength={getTargetStrength}
         />
-
-        <BatchAuditHistoryPanel batchId={batch.id} refreshKey={auditRefresh} />
       </section>
 
       <AddCourseModal

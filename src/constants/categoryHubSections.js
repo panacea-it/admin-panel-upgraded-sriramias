@@ -2,15 +2,20 @@ import { Layers, GraduationCap, BookOpen, Users, FolderTree, LayoutGrid, DoorOpe
 
 /** Tab order: Programs first, then full academic hierarchy */
 export const CATEGORY_HUB_TABS = [
-  { id: 'programs', label: 'Programs', path: '/academics/categories/programs' },
-  { id: 'exam-category', label: 'Exam Category', path: '/academics/categories/exam-category' },
-  { id: 'exam-sub-category', label: 'Exam Sub-Category', path: '/academics/categories/exam-sub-category' },
-  { id: 'courses', label: 'Courses', path: '/academics/categories/courses' },
-  { id: 'subject', label: 'Subject', path: '/academics/categories/subject' },
-  { id: 'topic', label: 'Topic', path: '/academics/categories/topic' },
-  { id: 'teachers', label: 'Teachers', path: '/academics/categories/teachers' },
-  { id: 'city', label: 'City', path: '/academics/categories/city' },
-  { id: 'class-rooms', label: 'Class Rooms', path: '/academics/categories/class-rooms' },
+  { id: 'programs', label: 'Programs', path: '/academics/categories/programs', icon: LayoutGrid },
+  { id: 'exam-category', label: 'Exam Category', path: '/academics/categories/exam-category', icon: Layers },
+  {
+    id: 'exam-sub-category',
+    label: 'Exam Sub-Category',
+    path: '/academics/categories/exam-sub-category',
+    icon: FolderTree,
+  },
+  { id: 'courses', label: 'Courses', path: '/academics/categories/courses', icon: BookOpen },
+  { id: 'subject', label: 'Subject', path: '/academics/categories/subject', icon: GraduationCap },
+  { id: 'topic', label: 'Topic', path: '/academics/categories/topic', icon: Layers },
+  { id: 'teachers', label: 'Teachers', path: '/academics/categories/teachers', icon: Users },
+  { id: 'city', label: 'City', path: '/academics/categories/city', icon: MapPin },
+  { id: 'class-rooms', label: 'Class Rooms', path: '/academics/categories/class-rooms', icon: DoorOpen },
 ]
 
 export const DEFAULT_CATEGORY_TAB = 'programs'

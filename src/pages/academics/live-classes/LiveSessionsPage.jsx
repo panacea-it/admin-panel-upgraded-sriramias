@@ -23,6 +23,7 @@ export default function LiveSessionsPage() {
       }
     >
       <LiveClassesListSection
+        module="liveSessions"
         fixedLessonType="Live"
         showLessonTypeFilter={false}
         emptyMessage="No live sessions scheduled."

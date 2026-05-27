@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import BatchFormModalShell from './BatchFormModalShell'
+import { BatchModalFooter } from './batchModalUi'
 import BatchStatusSelector from './BatchStatusSelector'
 
 export default function BulkChangeStatusModal({
@@ -10,6 +11,10 @@ export default function BulkChangeStatusModal({
   saving = false,
 }) {
   const [status, setStatus] = useState('Active')
+
+  useEffect(() => {
+    if (open) setStatus('Active')
+  }, [open])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -25,24 +30,13 @@ export default function BulkChangeStatusModal({
       size="md"
       saving={saving}
       footer={
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="h-11 rounded-xl border border-slate-200 px-6 text-sm font-semibold text-[#444]"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="bulk-status-form"
-            disabled={saving}
-            className="h-11 rounded-xl bg-gradient-to-r from-[#55ace7] to-[#246392] px-8 text-sm font-bold text-white disabled:opacity-60"
-          >
-            {saving ? 'Updating…' : 'Apply to All'}
-          </button>
-        </div>
+        <BatchModalFooter
+          onCancel={onClose}
+          submitLabel={saving ? 'Updating…' : 'Apply to All'}
+          saving={saving}
+          submitForm="bulk-status-form"
+          submitType="submit"
+        />
       }
     >
       <form id="bulk-status-form" onSubmit={handleSubmit}>

@@ -19,6 +19,7 @@ export default function ClassroomSelectField({
   error,
   required,
   label = 'Select Classroom',
+  showLabel = true,
   disabled,
   className,
 }) {
@@ -48,10 +49,12 @@ export default function ClassroomSelectField({
 
   return (
     <div className={className}>
-      <label className="mb-1.5 block text-sm font-medium text-[#333]">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </label>
+      {showLabel && label ? (
+        <label className="mb-1.5 block text-sm font-medium text-[#333]">
+          {label}
+          {required && <span className="text-red-500"> *</span>}
+        </label>
+      ) : null}
       <select
         value={value || ''}
         onChange={(e) => onChange?.(e.target.value)}

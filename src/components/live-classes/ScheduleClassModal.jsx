@@ -1,3 +1,4 @@
+import { useCallback, useMemo, useState } from 'react'
 import { Calendar } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import FormModalSubmitBar from '../common/FormModalSubmitBar'
@@ -52,15 +53,46 @@ function Toggle({ checked, onChange, label }) {
   )
 }
 
-export default function ScheduleClassModal({ open, onClose, item, onSubmit, lessons = [] }) {
+export default function ScheduleClassModal({
+  open,
+  onClose,
+  item,
+  onSubmit,
+  lessons = [],
+  defaultLessonType = null,
+  lockLessonType = false,
+  labels = {},
+  onAfterReset,
+}) {
   const { user } = useAuth()
   const actorName = user?.name || user?.email || 'Admin'
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { form, setForm, isEditMode, reset } = useModalForm(
+  const resolvedDefaultType = defaultLessonType === 'Recording' ? 'Recording' : 'Live'
+
+  const createEmpty = useCallback(
+    () => createEmptyLessonForm(resolvedDefaultType),
+    [resolvedDefaultType],
+  )
+
+  const copy = useMemo(
+    () => ({
+      modalTitle: labels.modalTitle ?? 'Schedule class',
+      createHeader: labels.createHeader ?? 'Schedule class',
+      editHeader: labels.editHeader ?? 'Edit lesson',
+      createLabel: labels.createLabel ?? 'Schedule class',
+      updateLabel: labels.updateLabel ?? 'Save changes',
+      createSuccess: labels.createSuccess ?? 'Class scheduled',
+      updateSuccess: labels.updateSuccess ?? 'Lesson updated',
+    }),
+    [labels],
+  )
+
+  const { form, setForm, isEditMode, reset, clear } = useModalForm(
     open,
     item,
     lessonRowToForm,
-    createEmptyLessonForm,
+    createEmpty,
   )
 
   const update = (key) => (e) => {
@@ -82,14 +114,22 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
       recurring: enabled,
       recurrence: enabled
         ? f.recurrence?.enabled
-          ? f.recurrence
+          ? { ...createDefaultRecurrenceRule(f), ...f.recurrence, enabled: true }
           : createDefaultRecurrenceRule(f)
         : null,
     }))
   }
 
   const handleRecurrenceChange = (nextRule) => {
-    setForm((f) => ({ ...f, recurrence: nextRule }))
+    setForm((f) => ({
+      ...f,
+      recurrence: {
+        ...createDefaultRecurrenceRule(f),
+        ...f.recurrence,
+        ...nextRule,
+        enabled: true,
+      },
+    }))
   }
 
   const validate = () => {
@@ -176,17 +216,36 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
     return true
   }
 
-  const handleSubmit = (e) => {
+  const handleReset = () => {
+    if (isEditMode) {
+      reset()
+    } else {
+      clear()
+    }
+    onAfterReset?.()
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validate()) return
-    onSubmit?.(form, {
-      isEdit: isEditMode,
-      id: item?.id,
-      scope: form.recurrenceEditScope || 'series',
-      actor: actorName,
-    })
-    toast.success(isEditMode ? 'Lesson updated' : 'Class scheduled')
-    onClose()
+    const payload = lockLessonType
+      ? { ...form, lessonType: resolvedDefaultType }
+      : form
+    setIsSubmitting(true)
+    try {
+      await onSubmit?.(payload, {
+        isEdit: isEditMode,
+        id: item?.id,
+        scope: payload.recurrenceEditScope || 'series',
+        actor: actorName,
+      })
+      toast.success(isEditMode ? copy.updateSuccess : copy.createSuccess)
+      onClose()
+    } catch {
+      // saveLesson surfaces toast; keep modal open for corrections
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const excludeLessonIds = isEditMode && item?.recurrenceSeriesId
@@ -194,14 +253,16 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
     : [item?.id].filter(Boolean)
 
   return (
-    <Modal open={open} onClose={onClose} size="full" title="Schedule class">
+    <Modal open={open} onClose={onClose} size="full" title={copy.modalTitle} showCloseButton={false}>
       <form
         onSubmit={handleSubmit}
         className="overflow-hidden rounded-2xl bg-[#f7f7f7] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
       >
         <ModalPanelHeader
-          title={isEditMode ? 'Edit lesson' : 'Schedule class'}
-          onBack={onClose}
+          title={isEditMode ? copy.editHeader : copy.createHeader}
+          onClose={onClose}
+          closeVariant="icon"
+          plainCloseIcon
           icon={Calendar}
         />
 
@@ -244,15 +305,18 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
                   durationMinutes={form.duration}
                   excludeSourceIds={excludeLessonIds}
                   required
+                  showLabel={false}
                 />
               </CourseFormField>
             )}
-            <CourseFormField label="Lesson type" required>
-              <CourseSelect value={form.lessonType} onChange={update('lessonType')}>
-                <option value="Live">Live</option>
-                <option value="Recording">Recording</option>
-              </CourseSelect>
-            </CourseFormField>
+            {!lockLessonType && (
+              <CourseFormField label="Lesson type" required>
+                <CourseSelect value={form.lessonType} onChange={update('lessonType')}>
+                  <option value="Live">Live</option>
+                  <option value="Recording">Recording</option>
+                </CourseSelect>
+              </CourseFormField>
+            )}
             <CourseFormField label="Status">
               <CourseSelect value={form.status} onChange={update('status')}>
                 <option value="Scheduled">Scheduled</option>
@@ -433,9 +497,10 @@ export default function ScheduleClassModal({ open, onClose, item, onSubmit, less
 
           <FormModalSubmitBar
             isEditMode={isEditMode}
-            onReset={reset}
-            createLabel="Schedule class"
-            updateLabel="Save changes"
+            isSubmitting={isSubmitting}
+            onReset={handleReset}
+            createLabel={copy.createLabel}
+            updateLabel={copy.updateLabel}
           />
         </div>
       </form>

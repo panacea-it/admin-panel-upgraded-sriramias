@@ -170,9 +170,19 @@ export default function BatchQuestionBulkUploadModal({
   }
 
   return (
-    <Modal open={open} onClose={handleClose} size="xl" title="Bulk Upload Questions">
+    <Modal
+      open={open}
+      onClose={handleClose}
+      size="xl"
+      title="Bulk Upload Questions"
+      showCloseButton={false}
+    >
       <div className="overflow-hidden rounded-2xl bg-[#f7f9fc] shadow-[0_24px_60px_rgba(15,23,42,0.2)]">
-        <ModalPanelHeader title="Bulk Upload Questions" onBack={handleClose} />
+        <ModalPanelHeader
+          title="Bulk Upload Questions"
+          onClose={handleClose}
+          closeVariant="icon"
+        />
 
         <div className="space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div

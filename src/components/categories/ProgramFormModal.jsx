@@ -115,7 +115,8 @@ export default function ProgramFormModal({ open, onClose, program, programs = []
       >
         <ModalPanelHeader
           title={title}
-          onBack={handleClose}
+          onClose={handleClose}
+          closeVariant="icon"
           icon={LayoutGrid}
           iconClassName="text-[#246392]"
         />

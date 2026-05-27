@@ -22,6 +22,7 @@ export default function ScheduleClassPage() {
       }
     >
       <LiveClassesListSection
+        module="schedule"
         emptyMessage="No classes scheduled yet. Click Add class to create your first lesson."
         showLessonTypeFilter
       />

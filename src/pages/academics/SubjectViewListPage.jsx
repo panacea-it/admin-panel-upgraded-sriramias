@@ -39,6 +39,7 @@ export default function SubjectViewListPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [recurrenceDialog, setRecurrenceDialog] = useState(null)
+  const [selectedIds, setSelectedIds] = useState([])
 
   const liveClasses = subject?.liveClasses || []
 
@@ -116,13 +117,28 @@ export default function SubjectViewListPage() {
     setDeleteTarget(row)
   }
 
+  const handleLiveClassStatusChange = (row, nextStatus) => {
+    upsertLiveClass(subject.id, { ...row, status: nextStatus })
+    toast.success(nextStatus === 'Active' ? 'Live class activated' : 'Live class deactivated')
+  }
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
+
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return
+    if (!deleteTarget || deleteLoading || !subject) return
+    const targetId = String(deleteTarget.id)
     setDeleteLoading(true)
     try {
       deleteLiveClassWithScope(subject.id, deleteTarget, 'this')
+      setSelectedIds((prev) => prev.filter((id) => id !== targetId))
       toast.success('Live class deleted')
       setDeleteTarget(null)
+    } catch (err) {
+      toast.error(err?.message || 'Failed to delete live class')
     } finally {
       setDeleteLoading(false)
     }
@@ -179,8 +195,11 @@ export default function SubjectViewListPage() {
               search={search}
               statusFilter={statusFilter}
               categoryFilter={categoryFilter}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
               onEdit={openEdit}
               onDelete={handleDeleteRequest}
+              onStatusChange={handleLiveClassStatusChange}
             />
           </div>
         )}

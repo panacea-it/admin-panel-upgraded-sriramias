@@ -42,11 +42,22 @@ export function CourseSelect({ children, className, ...props }) {
   )
 }
 
+const dateInputClass = cn(
+  courseFieldShell,
+  'pr-11',
+  '[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0',
+  '[&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full',
+  '[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0',
+)
+
 export function CourseDateInput({ className, ...props }) {
   return (
     <div className={cn('relative', className)}>
-      <input type="date" className={cn(courseFieldShell, 'pr-11')} {...props} />
-      <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#246392]" />
+      <input type="date" className={dateInputClass} {...props} />
+      <Calendar
+        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#246392]"
+        aria-hidden
+      />
     </div>
   )
 }

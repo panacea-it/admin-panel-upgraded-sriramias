@@ -25,7 +25,8 @@ export default function TableActionMenu({
   const triggerRef = useRef(null)
   const menuRef = useRef(null)
 
-  const enabledItems = items.filter((item) => item && !item.disabled)
+  const normalizedItems = items.filter(Boolean)
+  const enabledItems = normalizedItems.filter((item) => !item.disabled)
 
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current
@@ -53,7 +54,7 @@ export default function TableActionMenu({
     )
 
     setCoords({ top, left, placement })
-  }, [align, enabledItems.length])
+  }, [align, normalizedItems.length])
 
   useEffect(() => {
     if (!open) return undefined
@@ -117,7 +118,11 @@ export default function TableActionMenu({
     }
 
     document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
+    document.addEventListener('touchstart', onPointerDown, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('touchstart', onPointerDown)
+    }
   }, [open])
 
   useEffect(() => {
@@ -135,19 +140,23 @@ export default function TableActionMenu({
     buttons[focusIndex]?.focus()
   }, [open, focusIndex])
 
-  const toggle = () => setOpen((o) => !o)
+  const toggle = () => {
+    if (!normalizedItems.length) return
+    setOpen((o) => !o)
+  }
 
   const runItem = (item, index) => {
     if (item.disabled) return
     item.onClick?.()
     setOpen(false)
     triggerRef.current?.focus()
-    setFocusIndex(index)
+    const enabledIndex = enabledItems.indexOf(item)
+    setFocusIndex(enabledIndex >= 0 ? enabledIndex : index)
   }
 
   const menu = (
     <AnimatePresence>
-      {open && enabledItems.length > 0 ? (
+      {open && normalizedItems.length > 0 ? (
         <motion.div
           ref={menuRef}
           id={menuId}
@@ -170,18 +179,22 @@ export default function TableActionMenu({
             'ring-1 ring-[#55ace7]/10',
           )}
         >
-          {enabledItems.map((item, index) => {
+          {normalizedItems.map((item, index) => {
             const Icon = item.icon
-            const isFocused = focusIndex === index
+            const isFocused = enabledItems[focusIndex] === item
             return (
               <button
-                key={item.label}
+                key={`${item.label}-${index}`}
                 type="button"
                 role="menuitem"
                 data-action-item
                 disabled={item.disabled}
                 onClick={() => runItem(item, index)}
-                onMouseEnter={() => setFocusIndex(index)}
+                onMouseEnter={() => {
+                  if (item.disabled) return
+                  const enabledIndex = enabledItems.indexOf(item)
+                  if (enabledIndex >= 0) setFocusIndex(enabledIndex)
+                }}
                 className={cn(
                   'flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-sm font-medium transition-colors duration-150',
                   'focus-visible:outline-none',
@@ -225,6 +238,7 @@ export default function TableActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
+        disabled={!normalizedItems.length}
         onClick={toggle}
         className={cn(
           'flex h-9 w-9 min-h-[36px] min-w-[36px] cursor-pointer items-center justify-center rounded-lg',
@@ -232,6 +246,7 @@ export default function TableActionMenu({
           'transition-colors duration-150',
           'hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-slate-300/80',
+          'disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-slate-200/90 disabled:hover:bg-white disabled:hover:text-slate-500',
           open && 'border-slate-300 bg-slate-50 text-slate-700',
         )}
       >
