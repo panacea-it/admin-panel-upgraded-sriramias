@@ -5,7 +5,8 @@ import { getModalEditKey, useInitOnModalOpen } from './modalFormSync'
  * Syncs modal form state when opened for create vs edit.
  * Re-initializes only on open or when the edited record identity changes.
  */
-export function useModalForm(open, item, rowToForm, createEmpty) {
+export function useModalForm(open, item, rowToForm, createEmpty, options = {}) {
+  const { forceCreateMode = false } = options
   const itemRef = useRef(item)
   itemRef.current = item
   const rowToFormRef = useRef(rowToForm)
@@ -13,8 +14,13 @@ export function useModalForm(open, item, rowToForm, createEmpty) {
   const createEmptyRef = useRef(createEmpty)
   createEmptyRef.current = createEmpty
 
-  const editKey = getModalEditKey(item)
-  const isEditMode = editKey !== '__create__' && item != null
+  const editKey = forceCreateMode
+    ? item
+      ? `create:${getModalEditKey(item)}`
+      : '__create__'
+    : getModalEditKey(item)
+  const isEditMode =
+    !forceCreateMode && editKey !== '__create__' && item != null
 
   const [form, setForm] = useState(() => createEmptyRef.current())
   const [initialSnapshot, setInitialSnapshot] = useState(null)

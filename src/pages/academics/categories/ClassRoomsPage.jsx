@@ -14,6 +14,7 @@ import {
   saveClassroom,
   toggleClassroomStatus,
 } from '../../../api/classroomsAPI'
+import { useCenters } from '../../../contexts/CentersContext'
 import { formatCategoryDateTime } from '../../../utils/formatDateTime'
 import { toast } from '../../../utils/toast'
 
@@ -40,12 +41,24 @@ function OccupancyCell({ classroomId }) {
 }
 
 export default function ClassRoomsPage() {
+  const { activeCenters } = useCenters()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [filters, setFilters] = useState({ search: '', status: 'all' })
+  const [filters, setFilters] = useState({ search: '', status: 'all', center: 'all' })
   const [modalOpen, setModalOpen] = useState(false)
   const [editRow, setEditRow] = useState(null)
+
+  const centerOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Center' },
+      ...activeCenters.map((c) => ({
+        value: String(c.centerId),
+        label: c.centerName,
+      })),
+    ],
+    [activeCenters],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -63,9 +76,11 @@ export default function ClassRoomsPage() {
     load()
     const onUpdate = () => load()
     window.addEventListener('classrooms-updated', onUpdate)
+    window.addEventListener('cities-updated', onUpdate)
     window.addEventListener('academics-subjects-updated', onUpdate)
     return () => {
       window.removeEventListener('classrooms-updated', onUpdate)
+      window.removeEventListener('cities-updated', onUpdate)
       window.removeEventListener('academics-subjects-updated', onUpdate)
     }
   }, [load])
@@ -77,9 +92,13 @@ export default function ClassRoomsPage() {
         !q ||
         row.name?.toLowerCase().includes(q) ||
         row.code?.toLowerCase().includes(q) ||
+        row.centerName?.toLowerCase().includes(q) ||
+        row.placeName?.toLowerCase().includes(q) ||
         row.description?.toLowerCase().includes(q)
       const matchStatus = filters.status === 'all' || row.status === filters.status
-      return matchSearch && matchStatus
+      const matchCenter =
+        filters.center === 'all' || String(row.centerId) === String(filters.center)
+      return matchSearch && matchStatus && matchCenter
     })
   }, [rows, filters])
 
@@ -96,6 +115,7 @@ export default function ClassRoomsPage() {
         ? Object.values(e.validation)[0]
         : e.message || 'Save failed'
       toast.error(msg)
+      throw e
     } finally {
       setSaving(false)
     }
@@ -131,8 +151,22 @@ export default function ClassRoomsPage() {
       ),
     },
     {
+      key: 'centerName',
+      label: 'Center',
+      render: (row) => (
+        <span className="text-sm font-medium text-[#1a3a5c]">{row.centerName || '—'}</span>
+      ),
+    },
+    {
+      key: 'placeName',
+      label: 'City / Place',
+      render: (row) => (
+        <span className="text-sm text-[#444]">{row.placeName || '—'}</span>
+      ),
+    },
+    {
       key: 'name',
-      label: 'Classroom Name',
+      label: 'Classroom',
       render: (row) => (
         <div className="flex items-center gap-2">
           <span
@@ -218,6 +252,9 @@ export default function ClassRoomsPage() {
         searchPlaceholder="Search classrooms..."
         status={filters.status}
         onStatusChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+        centerFilter={filters.center}
+        onCenterFilterChange={(e) => setFilters((f) => ({ ...f, center: e.target.value }))}
+        centerOptions={centerOptions}
       />
 
       {loading ? (

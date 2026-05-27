@@ -1,4 +1,5 @@
 import { ACADEMICS_SUBJECTS_SEED } from '../data/academicsSubjectsSeed'
+import { canonicalCategory, normalizeCategories } from './subjectCategoryHelpers'
 
 const STORAGE_KEY = 'academics_subjects_module_v1'
 
@@ -8,18 +9,20 @@ function migrateSubjectRow(row) {
     : row.topic
       ? [row.topic]
       : []
-  const categories = row.categories?.length
+  const rawCategories = row.categories?.length
     ? row.categories
     : row.category
       ? [row.category]
       : []
+  const categories = normalizeCategories(rawCategories)
   return {
     ...row,
     topics,
     topic: topics[0] || row.topic || '',
     categories,
-    category: categories[0] || row.category || '',
+    category: canonicalCategory(categories[0] || row.category || ''),
     recordings: row.recordings || [],
+    pdfs: row.pdfs || [],
     liveClasses: row.liveClasses || [],
     enableTestSeries: Boolean(row.enableTestSeries),
     testSeries: row.testSeries ?? null,
@@ -69,6 +72,14 @@ export function nextLiveClassId(liveClasses = []) {
 
 export function nextRecordingId(recordings = []) {
   const max = recordings.reduce((m, row) => {
+    const num = parseInt(String(row.id || '').replace(/\D/g, ''), 10) || 0
+    return Math.max(m, num)
+  }, 0)
+  return String(max + 1).padStart(3, '0')
+}
+
+export function nextPdfId(pdfs = []) {
+  const max = pdfs.reduce((m, row) => {
     const num = parseInt(String(row.id || '').replace(/\D/g, ''), 10) || 0
     return Math.max(m, num)
   }, 0)

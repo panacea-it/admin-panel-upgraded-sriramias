@@ -109,14 +109,18 @@ export default function SubjectTable({
     },
     {
       key: 'actions',
-      label: 'Action',
+      label: 'Actions',
+      headerClassName: 'whitespace-nowrap text-center',
+      cellClassName: 'align-middle whitespace-nowrap',
       render: (row) => (
-        <SubjectRowActions
-          onAdd={() => onAddRow(row)}
-          onViewList={() => onViewList(row)}
-          onEdit={() => onEdit(row)}
-          onDelete={() => onDelete(row)}
-        />
+        <div className="flex justify-center py-1">
+          <SubjectRowActions
+            onAdd={() => onAddRow(row)}
+            onViewList={() => onViewList(row)}
+            onEdit={() => onEdit(row)}
+            onDelete={() => onDelete(row)}
+          />
+        </div>
       ),
     },
   ]

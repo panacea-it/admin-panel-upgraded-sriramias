@@ -5,7 +5,7 @@ export const ACADEMICS_SUBJECTS_SEED = [
     subjectName: 'Polity',
     topic: 'Topic 1',
     topics: ['Topic 1', 'Fundamentals'],
-    categories: ['Live Class', 'Recorded Class'],
+    categories: ['Live Class', 'Recording'],
     category: 'Live Class',
     teacher: 'Darshan Kotla',
     batch: 'Batch A',
@@ -72,8 +72,8 @@ export const ACADEMICS_SUBJECTS_SEED = [
     subjectName: 'Geography',
     topic: 'World Maps',
     topics: ['World Maps'],
-    categories: ['Recorded Class'],
-    category: 'Recorded Class',
+    categories: ['Recording'],
+    category: 'Recording',
     teacher: 'Rahul Verma',
     batch: 'Batch B',
     status: 'In Active',
@@ -122,6 +122,17 @@ export const CLASSROOM_DROPDOWN_OPTIONS = [
 
 export const CATEGORY_OPTIONS = [
   { value: 'Live Class', label: 'Live Class' },
-  { value: 'Recorded Class', label: 'Recorded Class' },
-  { value: 'Test Series', label: 'Test Series' },
+  { value: 'Recording', label: 'Recording' },
+  { value: 'Test', label: 'Test' },
+  { value: 'PDF', label: 'PDF' },
+]
+
+export const ACADEMIC_YEAR_OPTIONS = ['2024–25', '2025–26', '2026–27']
+
+export const SEMESTER_COURSE_OPTIONS = [
+  'Foundation',
+  'Prelims',
+  'Mains',
+  'Optional',
+  'Interview Prep',
 ]

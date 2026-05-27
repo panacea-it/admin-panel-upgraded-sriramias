@@ -1,7 +1,24 @@
-import { Eye, Pencil, Users } from 'lucide-react'
+import {
+  Copy,
+  Eye,
+  GitMerge,
+  Pencil,
+  RefreshCw,
+  Trash2,
+  Users,
+} from 'lucide-react'
 import TableActionMenu from '../common/TableActionMenu'
 
-export default function BatchTableActions({ batch, onViewDetails, onEdit, onQuickView }) {
+export default function BatchTableActions({
+  batch,
+  onViewDetails,
+  onQuickView,
+  onEdit,
+  onDuplicate,
+  onChangeStatus,
+  onDelete,
+  onMerge,
+}) {
   const items = [
     {
       label: 'Batch Details',
@@ -17,6 +34,27 @@ export default function BatchTableActions({ batch, onViewDetails, onEdit, onQuic
       label: 'Edit Batch',
       icon: Pencil,
       onClick: () => onEdit?.(batch),
+    },
+    {
+      label: 'Duplicate Batch',
+      icon: Copy,
+      onClick: () => onDuplicate?.(batch),
+    },
+    {
+      label: 'Change Status',
+      icon: RefreshCw,
+      onClick: () => onChangeStatus?.(batch),
+    },
+    {
+      label: 'Merge Batch',
+      icon: GitMerge,
+      onClick: () => onMerge?.(batch),
+    },
+    {
+      label: 'Delete Batch',
+      icon: Trash2,
+      onClick: () => onDelete?.(batch),
+      danger: true,
     },
   ]
 

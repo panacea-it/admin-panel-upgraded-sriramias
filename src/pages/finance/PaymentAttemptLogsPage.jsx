@@ -7,9 +7,12 @@ import { fetchPaymentAttemptLogs } from '../../api/financeAPI'
 import { formatINR } from '../../utils/financeFilters'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useFinancePermissions } from '../../hooks/useFinancePermissions'
+import FinanceExportToolbar from '../../components/finance/FinanceExportToolbar'
 import { toast } from '../../utils/toast'
 
 export default function PaymentAttemptLogsPage() {
+  const { canExport } = useFinancePermissions()
   const [logs, setLogs] = useState([])
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search)
@@ -52,7 +55,19 @@ export default function PaymentAttemptLogsPage() {
   ]
 
   return (
-    <FinancePageShell icon={History} title="Payment Attempt Logs">
+    <FinancePageShell
+      icon={History}
+      title="Payment Attempt Logs"
+      actions={
+        <FinanceExportToolbar
+          rows={filtered}
+          filenameBase="payment-attempts"
+          title="Payment Attempt Logs"
+          canExport={canExport}
+          variant="banner"
+        />
+      }
+    >
       <div className="flex flex-wrap gap-3">
         <input
           type="search"

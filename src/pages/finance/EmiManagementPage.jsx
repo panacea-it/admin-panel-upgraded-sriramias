@@ -9,15 +9,25 @@ import { fetchEmiPlans, updateEmiPlan } from '../../api/financeAPI'
 import { formatINR } from '../../utils/financeFilters'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useFinancePermissions } from '../../hooks/useFinancePermissions'
+import FinanceExportToolbar from '../../components/finance/FinanceExportToolbar'
 import { toast } from '../../utils/toast'
 
+const EMI_EXPORT_COLUMNS = [
+  { key: 'studentId', label: 'Student ID' },
+  { key: 'studentName', label: 'Student Name' },
+  { key: 'courseName', label: 'Course' },
+  { key: 'totalFees', label: 'Total Fees' },
+  { key: 'totalPaid', label: 'Paid' },
+  { key: 'pendingAmount', label: 'Pending' },
+  { key: 'completionPercent', label: 'Progress %', export: (r) => `${r.completionPercent ?? 0}%` },
+]
+
 export default function EmiManagementPage() {
-  const { canManageEmi } = useFinancePermissions()
+  const { canManageEmi, canExport } = useFinancePermissions()
   const [plans, setPlans] = useState([])
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search)
   const [editPlan, setEditPlan] = useState(null)
-  const [installments, setInstallments] = useState([])
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -54,14 +64,13 @@ export default function EmiManagementPage() {
 
   const openEdit = (plan) => {
     setEditPlan(plan)
-    setInstallments(JSON.parse(JSON.stringify(plan.installments)))
   }
 
-  const handleSave = async () => {
-    if (!editPlan) return
+  const handleSave = async (installments, meta) => {
+    if (!meta?.planId) return
     setSaving(true)
     try {
-      await updateEmiPlan(editPlan.id, installments)
+      await updateEmiPlan(meta.planId, installments, meta.plan)
       toast.success('EMI plan updated')
       setEditPlan(null)
       load()
@@ -123,7 +132,19 @@ export default function EmiManagementPage() {
   ]
 
   return (
-    <FinancePageShell icon={CalendarClock} title="EMI Management">
+    <FinancePageShell
+      icon={CalendarClock}
+      title="EMI Management"
+      actions={
+        <FinanceExportToolbar
+          rows={filtered}
+          filenameBase="emi-plans"
+          columnDefs={EMI_EXPORT_COLUMNS}
+          canExport={canExport}
+          variant="banner"
+        />
+      }
+    >
       <input
         type="search"
         placeholder="Search student or course…"
@@ -151,12 +172,8 @@ export default function EmiManagementPage() {
       <EmiEditModal
         open={!!editPlan}
         plan={editPlan}
-        installments={installments}
-        onChangeInstallment={(idx, field, val) => {
-          setInstallments((prev) => prev.map((row, i) => (i === idx ? { ...row, [field]: val } : row)))
-        }}
         onClose={() => setEditPlan(null)}
-        onSave={handleSave}
+        onSubmit={handleSave}
         saving={saving}
       />
     </FinancePageShell>

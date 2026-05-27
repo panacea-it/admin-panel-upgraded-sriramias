@@ -7,7 +7,6 @@ import {
   TicketPercent,
   Settings,
   BookOpen,
-  BookMarked,
   GraduationCap,
   FolderOpen,
   Gift,
@@ -63,6 +62,7 @@ export const ACADEMICS_CATEGORIES_SUBMENU = {
     { label: 'Subject', path: '/academics/categories/subject', icon: GraduationCap },
     { label: 'Topic', path: '/academics/categories/topic', icon: Layers },
     { label: 'Teachers', path: '/academics/categories/teachers', icon: Users },
+    { label: 'City', path: '/academics/categories/city', icon: LayoutGrid },
     { label: 'Class Rooms', path: '/academics/categories/class-rooms', icon: LayoutGrid },
   ],
 }
@@ -78,7 +78,6 @@ export const SIDEBAR_GROUPS = [
       { label: 'Faculty Subjects', path: '/academics/subjects', icon: Layers3 },
       ACADEMICS_LIVE_CLASSES_SUBMENU,
       ACADEMICS_CONTENT_LIBRARY_SUBMENU,
-      { label: 'Books', path: '/marketing/books', icon: BookMarked },
       { label: 'Free Resources', path: '/free-resources', icon: Gift },
       { label: 'Tests', path: '/tests', icon: ClipboardList },
       { label: 'Current Affairs', path: '/current-affairs', icon: Newspaper },

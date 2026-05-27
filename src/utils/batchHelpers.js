@@ -1,5 +1,6 @@
 import { INITIAL_BATCHES } from '../data/batchManagementData'
 import { formatBatchSubjectDropdownLabel } from './facultySubjectBatch'
+import { DEFAULT_BATCH_CAPACITY } from './batchOperations'
 
 export function nextBatchId(rows = []) {
   const max = rows.reduce((m, row) => {
@@ -62,6 +63,9 @@ export function enrichBatchRow(row, index = 0) {
     bannerFileName: row.bannerFileName || fd.bannerFileName || '',
     createdAt: row.createdAt || fd.createdAt,
     modifiedAt: row.modifiedAt || fd.modifiedAt,
+    capacity: row.capacity ?? fd.capacity ?? DEFAULT_BATCH_CAPACITY,
+    mergedInto: row.mergedInto ?? fd.mergedInto ?? null,
+    mergedIntoName: row.mergedIntoName ?? fd.mergedIntoName ?? null,
   }
 }
 
@@ -102,6 +106,9 @@ export function mapBatchRowToTableFormat(row, students = [], totalStudentsOverri
     startDate: row.batchStartFrom || row.commencement || fd.batchStartFrom || '',
     endDate: row.batchEndTo || fd.batchEndTo || '',
     status: row.status || 'Active',
+    capacity: row.capacity ?? fd.capacity ?? DEFAULT_BATCH_CAPACITY,
+    mergedInto: row.mergedInto ?? fd.mergedInto ?? null,
+    mergedIntoName: row.mergedIntoName ?? fd.mergedIntoName ?? null,
     students,
     totalStudents,
     apiRow: row,

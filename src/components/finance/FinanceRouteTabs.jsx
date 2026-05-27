@@ -4,7 +4,10 @@ import { FINANCE_NAV_ITEMS } from '../../constants/financeNav'
 
 export default function FinanceRouteTabs() {
   return (
-    <nav className="flex flex-wrap gap-2 sm:gap-2.5" aria-label="Finance sections">
+    <nav
+      className="-mx-1 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:gap-2.5"
+      aria-label="Finance sections"
+    >
       {FINANCE_NAV_ITEMS.map((tab) => (
         <NavLink
           key={tab.path}

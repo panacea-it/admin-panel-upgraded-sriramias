@@ -1,4 +1,4 @@
-import { Layers, GraduationCap, BookOpen, Users, FolderTree, LayoutGrid, DoorOpen } from 'lucide-react'
+import { Layers, GraduationCap, BookOpen, Users, FolderTree, LayoutGrid, DoorOpen, MapPin } from 'lucide-react'
 
 /** Tab order: Programs first, then full academic hierarchy */
 export const CATEGORY_HUB_TABS = [
@@ -9,6 +9,7 @@ export const CATEGORY_HUB_TABS = [
   { id: 'subject', label: 'Subject', path: '/academics/categories/subject' },
   { id: 'topic', label: 'Topic', path: '/academics/categories/topic' },
   { id: 'teachers', label: 'Teachers', path: '/academics/categories/teachers' },
+  { id: 'city', label: 'City', path: '/academics/categories/city' },
   { id: 'class-rooms', label: 'Class Rooms', path: '/academics/categories/class-rooms' },
 ]
 
@@ -119,6 +120,19 @@ export const CATEGORY_HUB_SECTIONS = {
     formFields: ['subject', 'name', 'description', 'status'],
     dateColumns: { created: 'Added On', modified: 'Modified On' },
   },
+  city: {
+    id: 'city',
+    icon: MapPin,
+    bannerTitle: 'City',
+    bannerSubtitle: 'Manage cities and learning centers',
+    addLabel: 'Add City',
+    searchPlaceholder: 'Search city...',
+    primaryColumn: 'Place Name',
+    emptyTitle: 'No Cities Found',
+    emptyDescription: 'Add cities and places linked to your centres.',
+    emptyCta: 'Add City',
+    filters: ['status', 'centre'],
+  },
   'class-rooms': {
     id: 'class-rooms',
     icon: DoorOpen,
@@ -130,6 +144,6 @@ export const CATEGORY_HUB_SECTIONS = {
     emptyTitle: 'No Classrooms Found',
     emptyDescription: 'Add classrooms to assign to live sessions.',
     emptyCta: 'Add Classroom',
-    filters: ['status'],
+    filters: ['status', 'centre'],
   },
 }

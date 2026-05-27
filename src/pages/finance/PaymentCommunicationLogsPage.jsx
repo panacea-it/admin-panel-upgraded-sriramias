@@ -6,9 +6,12 @@ import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import { fetchCommunicationLogs, sendPaymentReminder } from '../../api/financeAPI'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import FinanceExportToolbar from '../../components/finance/FinanceExportToolbar'
+import { useFinancePermissions } from '../../hooks/useFinancePermissions'
 import { toast } from '../../utils/toast'
 
 export default function PaymentCommunicationLogsPage() {
+  const { canExport } = useFinancePermissions()
   const [logs, setLogs] = useState([])
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search)
@@ -58,7 +61,19 @@ export default function PaymentCommunicationLogsPage() {
   ]
 
   return (
-    <FinancePageShell icon={MessageSquare} title="Payment Communication Logs">
+    <FinancePageShell
+      icon={MessageSquare}
+      title="Payment Communication Logs"
+      actions={
+        <FinanceExportToolbar
+          rows={filtered}
+          filenameBase="communication-logs"
+          title="Communication Logs"
+          canExport={canExport}
+          variant="banner"
+        />
+      }
+    >
       <form onSubmit={handleSendReminder} className="rounded-xl bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
         <h3 className="mb-3 text-sm font-bold text-[#246392]">Send payment reminder</h3>
         <div className="grid gap-3 sm:grid-cols-4">

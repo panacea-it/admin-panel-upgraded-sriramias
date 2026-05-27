@@ -1,6 +1,7 @@
 import {
   formatDurationFromForm,
   nextLiveClassId,
+  nextPdfId,
   nextRecordingId,
   nextSubjectRowId,
 } from '../../utils/academicsSubjectsStorage'
@@ -15,12 +16,12 @@ import { createDefaultRecurrenceRule } from '../../utils/recurrenceEngine'
 import {
   createEmptyTestSeriesBlock,
   normalizeTestSeriesBlock,
-  serializeTestSeriesForStorage,
   validateTestSeriesForm,
 } from '../../utils/batchTestSeriesForm'
 import { validateTestSeriesQuestions } from '../../utils/testSeriesQuestionSlots'
 import {
   isLiveClassCategory,
+  isPdfCategory,
   isRecordedClassCategory,
   isTestSeriesCategory,
   normalizeCategories,
@@ -32,10 +33,16 @@ export { shouldShowTestSeriesSection }
 
 export const EMPTY_SUBJECT_FORM = {
   subjectName: '',
+  subjectCode: '',
+  description: '',
   subject: '',
+  semester: '',
+  academicYear: '',
+  thumbnailFileName: '',
   topics: [],
-  categories: ['Live Class'],
+  categories: [],
   teacher: '',
+  batchId: '',
   batch: '',
   classTitle: '',
   center: '',
@@ -62,7 +69,14 @@ export const EMPTY_SUBJECT_FORM = {
   recordingDescription: '',
   recordingVisibility: 'Published',
   recordingDownloadable: false,
+  recordingTags: '',
+  pdfTitle: '',
+  pdfFileName: '',
+  pdfDescription: '',
+  pdfTags: '',
+  pdfVisibility: 'Published',
   testSeries: createEmptyTestSeriesBlock(),
+  contentType: 'live',
 }
 
 function parseTimeToFormParts(timeStr) {
@@ -89,12 +103,19 @@ export function subjectToForm(subject, liveClass = null) {
   const topics = normalizeTopics(subject?.topics ?? subject?.topic)
   const categories = categoriesFromSubject(subject, liveClass)
 
+  const pdf = subject?.pdfs?.[0]
+
   return {
     subjectName: subject?.subjectName || '',
-    subject: subject?.subjectName || subject?.subject || '',
+    subjectCode: subject?.subjectCode || '',
+    description: subject?.description || '',
+    subject: subject?.subject || subject?.subjectName || '',
+    academicYear: subject?.academicYear || '',
+    thumbnailFileName: subject?.thumbnailFileName || '',
     topics,
-    categories: categories.length ? categories : ['Live Class'],
+    categories: categories.length ? categories : [],
     teacher: subject?.teacher || '',
+    batchId: subject?.batchId || '',
     batch: subject?.batch || '',
     classTitle: liveClass?.classTitle || '',
     center: liveClass?.center || '',
@@ -128,9 +149,16 @@ export function subjectToForm(subject, liveClass = null) {
     recordingDescription: recording?.description || '',
     recordingVisibility: recording?.visibility || 'Published',
     recordingDownloadable: Boolean(recording?.downloadable),
+    recordingTags: recording?.tags || '',
+    pdfTitle: pdf?.title || '',
+    pdfFileName: pdf?.fileName || '',
+    pdfDescription: pdf?.description || '',
+    pdfTags: pdf?.tags || '',
+    pdfVisibility: pdf?.visibility || 'Published',
     testSeries: subject?.testSeries
       ? normalizeTestSeriesBlock(subject.testSeries)
       : createEmptyTestSeriesBlock(),
+    contentType: 'live',
   }
 }
 
@@ -139,7 +167,6 @@ export function buildSubjectFromForm(form, existing, subjectsList) {
   const now = new Date().toISOString()
   const topics = normalizeTopics(form.topics)
   const categories = normalizeCategories(form.categories)
-  const hasTestSeries = isTestSeriesCategory(categories)
 
   return {
     id,
@@ -149,16 +176,17 @@ export function buildSubjectFromForm(form, existing, subjectsList) {
     categories,
     category: categories[0] || '',
     teacher: form.teacher?.trim() || '',
+    subject: form.subject?.trim() || '',
+    batchId: form.batchId?.trim() || '',
     batch: form.batch?.trim() || '',
     status: form.status || 'Active',
     createdAt: existing?.createdAt || now,
     modifiedAt: now,
     liveClasses: existing?.liveClasses || [],
     recordings: existing?.recordings || [],
-    enableTestSeries: hasTestSeries,
-    testSeries: hasTestSeries
-      ? serializeTestSeriesForStorage(form.testSeries || createEmptyTestSeriesBlock())
-      : null,
+    pdfs: existing?.pdfs || [],
+    enableTestSeries: Boolean(existing?.enableTestSeries || existing?.testSeries),
+    testSeries: existing?.testSeries ?? null,
   }
 }
 
@@ -205,6 +233,7 @@ export function buildLiveClassFromForm(form, existingLiveClass, subject) {
     isRecurrenceOccurrence: Boolean(form.recurring),
     occurrenceIndex: existingLiveClass?.occurrenceIndex ?? null,
     occurrenceCount: existingLiveClass?.occurrenceCount ?? null,
+    batchId: form.batchId?.trim() || '',
     linkedLessonId: existingLiveClass?.linkedLessonId ?? null,
     calendarPayload: null,
   }
@@ -226,8 +255,26 @@ export function buildRecordingFromForm(form, existingRecording, subject) {
     visibility: form.recordingVisibility || 'Published',
     downloadable: Boolean(form.recordingDownloadable),
     status: form.recordingVisibility === 'Draft' ? 'Draft' : 'Active',
+    tags: form.recordingTags?.trim() || '',
+    batchId: form.batchId?.trim() || '',
     linkedLessonId: existingRecording?.linkedLessonId ?? null,
     createdAt: existingRecording?.createdAt || new Date().toISOString(),
+  }
+}
+
+export function buildPdfFromForm(form, existingPdf, subject) {
+  const list = subject?.pdfs || []
+  const id = existingPdf?.id || nextPdfId(list)
+  return {
+    id,
+    title: form.pdfTitle?.trim() || form.subjectName?.trim() || 'Untitled PDF',
+    fileName: form.pdfFileName || '',
+    description: form.pdfDescription?.trim() || '',
+    tags: form.pdfTags?.trim() || '',
+    visibility: form.pdfVisibility || 'Published',
+    batchId: form.batchId?.trim() || '',
+    status: form.pdfVisibility === 'Draft' ? 'Draft' : 'Active',
+    createdAt: existingPdf?.createdAt || new Date().toISOString(),
   }
 }
 
@@ -238,20 +285,39 @@ export function clampTimeField(value, max = 59) {
   return String(n).padStart(2, '0')
 }
 
-export function shouldShowLiveClassSection(values, { liveClassOnly = false } = {}) {
-  if (liveClassOnly) return true
+export function shouldShowLiveClassSection(
+  values,
+  { liveClassOnly = false, subjectOnly = false, contentType } = {},
+) {
+  if (subjectOnly) return false
+  if (liveClassOnly || contentType === 'live') return true
   return isLiveClassCategory(values.categories ?? values.category)
 }
 
-export function shouldShowRecordingSection(values, { liveClassOnly = false } = {}) {
-  if (liveClassOnly) return false
+export function shouldShowRecordingSection(
+  values,
+  { liveClassOnly = false, subjectOnly = false, contentType } = {},
+) {
+  if (subjectOnly || liveClassOnly) return false
+  if (contentType === 'recording') return true
   return isRecordedClassCategory(values.categories ?? values.category)
+}
+
+export function shouldShowPdfSection(
+  values,
+  { subjectOnly = false, contentType } = {},
+) {
+  if (subjectOnly) return false
+  if (contentType === 'pdf') return true
+  return isPdfCategory(values.categories ?? values.category)
 }
 
 export function validateSubjectForm(
   values,
   {
     liveClassOnly = false,
+    subjectOnly = false,
+    contentType = null,
     requireLiveClass = false,
     allSubjects = [],
     subjectId = '',
@@ -260,21 +326,30 @@ export function validateSubjectForm(
 ) {
   const errors = {}
   const categories = normalizeCategories(values.categories ?? values.category)
+  const activeContent = contentType || values.contentType
 
-  if (!liveClassOnly) {
+  if (!liveClassOnly && !activeContent) {
     if (!values.subjectName?.trim()) errors.subjectName = 'Subject name is required'
     if (!values.subject?.trim()) errors.subject = 'Subject is required'
     if (!values.teacher?.trim()) errors.teacher = 'Teacher is required'
     if (!categories.length) errors.categories = 'Select at least one category'
   }
 
+  if (subjectOnly && !liveClassOnly && !activeContent) {
+    return errors
+  }
+
   const needsLiveClass =
-    requireLiveClass ||
-    liveClassOnly ||
-    isLiveClassCategory(categories) ||
-    Boolean(values.classTitle?.trim() || values.center?.trim() || values.date?.trim())
+    !subjectOnly &&
+    (requireLiveClass ||
+      liveClassOnly ||
+      activeContent === 'live' ||
+      (isLiveClassCategory(categories) &&
+        !subjectOnly &&
+        Boolean(values.classTitle?.trim() || values.center?.trim() || values.date?.trim())))
 
   if (needsLiveClass) {
+    if (!values.batchId?.trim()) errors.batchId = 'Batch is required'
     if (!values.classTitle?.trim()) errors.classTitle = 'Class title is required'
     if (!values.center?.trim()) errors.center = 'Center is required'
     if (!values.classroomId?.trim()) errors.classRoom = 'Classroom is required'
@@ -311,14 +386,17 @@ export function validateSubjectForm(
   }
 
   const needsRecording =
-    isRecordedClassCategory(categories) ||
-    Boolean(
-      values.recordingLessonName?.trim() ||
-        values.recordingCenter?.trim() ||
-        values.recordingVideoFileName,
-    )
+    !subjectOnly &&
+    (activeContent === 'recording' ||
+      (isRecordedClassCategory(categories) &&
+        Boolean(
+          values.recordingLessonName?.trim() ||
+            values.recordingCenter?.trim() ||
+            values.recordingVideoFileName,
+        )))
 
   if (needsRecording && !liveClassOnly) {
+    if (!values.batchId?.trim()) errors.batchId = 'Batch is required'
     if (!values.recordingLessonName?.trim()) {
       errors.recordingLessonName = 'Lesson name is required'
     }
@@ -336,11 +414,34 @@ export function validateSubjectForm(
     }
   }
 
-  if (isTestSeriesCategory(categories) && !liveClassOnly) {
+  const needsTest = !subjectOnly && activeContent === 'test'
+
+  if (needsTest && !liveClassOnly) {
+    if (!values.batchId?.trim()) errors.batchId = 'Batch is required'
     const ts = normalizeTestSeriesBlock(values.testSeries || {})
     Object.assign(errors, validateTestSeriesForm(ts))
     Object.assign(errors, validateTestSeriesQuestions(ts))
   }
 
+  const needsPdf =
+    !subjectOnly &&
+    (activeContent === 'pdf' ||
+      (isPdfCategory(categories) &&
+        Boolean(values.pdfTitle?.trim() || values.pdfFileName)))
+
+  if (needsPdf && !liveClassOnly) {
+    if (!values.batchId?.trim()) errors.batchId = 'Batch is required'
+    if (!values.pdfTitle?.trim()) errors.pdfTitle = 'PDF title is required'
+    if (!values.pdfFileName?.trim()) errors.pdfFileName = 'Upload a PDF file'
+  }
+
   return errors
+}
+
+/** Validate only the active Add Option content tab. */
+export function validateContentForm(values, contentType, options = {}) {
+  return validateSubjectForm(
+    { ...values, contentType },
+    { ...options, contentType, subjectOnly: false },
+  )
 }

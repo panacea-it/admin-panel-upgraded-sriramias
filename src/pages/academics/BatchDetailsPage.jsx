@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, BookMarked } from 'lucide-react'
@@ -6,17 +6,20 @@ import CategoryBreadcrumb from '../../components/categories/CategoryBreadcrumb'
 import BatchDetailsInfoCard from '../../components/batch-management/BatchDetailsInfoCard'
 import BatchDetailsSkeleton from '../../components/batch-management/BatchDetailsSkeleton'
 import BatchStudentPanel from '../../components/batch-management/BatchStudentPanel'
+import BatchAuditHistoryPanel from '../../components/batch-management/BatchAuditHistoryPanel'
 import AddCourseModal from '../../components/courses/AddCourseModal'
 import PageBanner from '../../components/figma/PageBanner'
 import { useBatchManagementContext } from '../../contexts/BatchManagementContext'
 import { BATCHES_BASE } from '../../constants/batchNav'
 import { useEditModal } from '../../hooks/useEditModal'
 import { findBatchRow, useBatchesData } from '../../hooks/useBatchesData'
+import { useBatchAudit } from '../../hooks/useBatchAudit'
 import { mapCourseToApiPayload } from '../../utils/coursesApiMappers'
 import {
   mapBatchRowToTableFormat,
   nextBatchId,
 } from '../../utils/batchHelpers'
+import { BATCH_AUDIT_TYPES } from '../../utils/batchAuditStorage'
 import { createCourse, updateCourse } from '../../api/coursesAPI'
 import { toast } from '../../utils/toast'
 
@@ -31,15 +34,21 @@ export default function BatchDetailsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const modal = useEditModal()
+  const [auditRefresh, setAuditRefresh] = useState(0)
+
   const { sourceRows, loading, loadBatches, apiBatches, existingCourseIds } = useBatchesData()
   const {
     getStudents,
+    getStudentCount,
     resolveStudentKey,
     addStudent,
     updateStudent,
     deleteStudent,
     toggleStudentStatus,
+    moveStudentToBatch,
+    studentExistsInBatch,
   } = useBatchManagementContext()
+  const { logBatchActivity } = useBatchAudit()
 
   const apiRow = useMemo(
     () => findBatchRow(sourceRows, batchId),
@@ -61,11 +70,29 @@ export default function BatchDetailsPage() {
     return mapBatchRowToTableFormat(apiRow, students)
   }, [apiRow, students])
 
+  const allTableBatches = useMemo(
+    () =>
+      sourceRows.map((row) =>
+        mapBatchRowToTableFormat(row, [], getStudentCount(row)),
+      ),
+    [sourceRows, getStudentCount],
+  )
+
   const listState = location.state?.listState
 
   const backToList = useCallback(() => {
     navigate(BATCHES_BASE, { state: listState ? { listState } : undefined })
   }, [navigate, listState])
+
+  const getTargetStrength = useCallback(
+    (targetBatch) => {
+      const row = targetBatch.apiRow ?? apiBatches.find((b) => b.id === targetBatch.id)
+      if (!row) return targetBatch.totalStudents ?? 0
+      const key = resolveStudentKey(row)
+      return getStudents(key).length
+    },
+    [apiBatches, getStudents, resolveStudentKey],
+  )
 
   const handleSaveBatch = async (form, { isEdit, id }) => {
     const existing = isEdit ? apiBatches.find((b) => b.id === id) : null
@@ -119,6 +146,43 @@ export default function BatchDetailsPage() {
     toast.success(next === 'Active' ? 'Student enabled' : 'Student disabled')
   }
 
+  const handleMoveStudent = async (student, values) => {
+    const targetBatch = allTableBatches.find(
+      (b) => String(b.id) === String(values.targetBatchId),
+    )
+    if (!targetBatch) {
+      toast.error('Invalid target batch')
+      return
+    }
+    if (String(values.targetBatchId) === String(batch.id)) {
+      toast.error('Cannot move to the same batch')
+      return
+    }
+    const targetRow = targetBatch.apiRow ?? apiBatches.find((b) => b.id === targetBatch.id)
+    const targetKey = resolveStudentKey(targetRow)
+    if (studentExistsInBatch(targetKey, student.enrollmentId, null)) {
+      toast.error('Student already exists in the target batch')
+      return
+    }
+    const moved = moveStudentToBatch(studentKey, targetKey, student.id)
+    if (!moved) {
+      toast.error('Failed to move student')
+      return
+    }
+    logBatchActivity(batch.id, {
+      type: BATCH_AUDIT_TYPES.STUDENT_MOVED,
+      message: `${student.name} moved to ${targetBatch.displayName}. Reason: ${values.reason}`,
+      meta: values,
+    })
+    logBatchActivity(targetBatch.id, {
+      type: BATCH_AUDIT_TYPES.STUDENT_MOVED,
+      message: `${student.name} transferred from ${batch.displayName}`,
+      meta: values,
+    })
+    setAuditRefresh((k) => k + 1)
+    toast.success('Student moved successfully')
+  }
+
   if (!loading && !batch) {
     return <Navigate to={BATCHES_BASE} replace />
   }
@@ -155,10 +219,7 @@ export default function BatchDetailsPage() {
           </button>
         </div>
 
-        <BatchDetailsInfoCard
-          batch={batch}
-          onEdit={() => modal.openEdit(apiRow)}
-        />
+        <BatchDetailsInfoCard batch={batch} onEdit={() => modal.openEdit(apiRow)} />
 
         <BatchStudentPanel
           variant="page"
@@ -168,7 +229,12 @@ export default function BatchDetailsPage() {
           onUpdateStudent={handleUpdateStudent}
           onDeleteStudent={handleDeleteStudent}
           onToggleStudentStatus={handleToggleStudentStatus}
+          onMoveStudent={handleMoveStudent}
+          targetBatches={allTableBatches}
+          getTargetStrength={getTargetStrength}
         />
+
+        <BatchAuditHistoryPanel batchId={batch.id} refreshKey={auditRefresh} />
       </section>
 
       <AddCourseModal

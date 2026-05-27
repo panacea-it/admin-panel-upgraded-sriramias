@@ -1,5 +1,9 @@
 import { normalizeLinkedSubjects } from './batchHelpers'
 import { emptyWhyChooseFeature, normalizeWhyChooseFeatures } from './whyChooseFeatures'
+import {
+  FREE_RESOURCE_CATEGORY,
+  normalizeFreeResourceCategory,
+} from './freeResourceFormConstants'
 
 const makeSlots = (count, factory) => Array.from({ length: count }, (_, i) => factory(i))
 
@@ -101,36 +105,109 @@ export function courseFormToRow(form, existing) {
 export function createEmptyFreeResourceForm() {
   return {
     category: '',
+    status: 'Active',
+
+    // NCERT Books
     subject: '',
     className: '',
     bookName: '',
-    fileName: '',
-    status: 'Active',
+    bookFileName: '',
+
+    // Previous Year Question Papers
+    examCategory: '',
+    paperType: '',
+    year: '',
+    paperName: '',
+    questionPaperFileName: '',
+
+    // Free Mock Test
+    mockTestTitle: '',
+    topic: '',
+    duration: '',
+    totalMarks: '',
+    negativeMarking: '',
+    instructions: '',
+    numberOfQuestions: '',
+
+    // Study Material
+    mainsCategory: '',
+    studyMaterialName: '',
+    studyMaterialFileName: '',
+
+    // Free Mock Tests — question cards
+    questions: [],
   }
 }
 
 export function freeResourceRowToForm(row) {
-  if (row?.formData) return { ...createEmptyFreeResourceForm(), ...row.formData }
-  const parts = String(row?.name || '').split(' - ')
-  return {
-    ...createEmptyFreeResourceForm(),
-    category: row?.category || '',
-    bookName: row?.name || '',
-    subject: parts[0] || '',
-    className: parts[1] || '',
-    status: row?.status || 'Active',
+  if (row?.formData) {
+    const merged = { ...createEmptyFreeResourceForm(), ...row.formData }
+    merged.category = normalizeFreeResourceCategory(merged.category || row?.category)
+    return merged
+  }
+  const category = normalizeFreeResourceCategory(row?.category || '')
+  const base = { ...createEmptyFreeResourceForm(), category, status: row?.status || 'Active' }
+
+  switch (category) {
+    case FREE_RESOURCE_CATEGORY.NCERT:
+      return { ...base, bookName: String(row?.name || ''), subject: '', className: '' }
+    case FREE_RESOURCE_CATEGORY.PREVIOUS_YEAR:
+      return { ...base, paperName: String(row?.name || '') }
+    case FREE_RESOURCE_CATEGORY.MOCK_TEST:
+      return { ...base, mockTestTitle: String(row?.name || '') }
+    case FREE_RESOURCE_CATEGORY.STUDY_MATERIAL:
+      return { ...base, studyMaterialName: String(row?.name || '') }
+    default:
+      return base
   }
 }
 
 export function freeResourceFormToRow(form, existing) {
-  const displayName =
-    form.bookName?.trim() || `${form.subject} - ${form.className}`.trim() || existing?.name
+  function displayFromCategory() {
+    const category = normalizeFreeResourceCategory(form?.category)
+    if (category === FREE_RESOURCE_CATEGORY.NCERT) {
+      const subject = String(form.subject || '').trim()
+      const className = String(form.className || '').trim()
+      const bookName = String(form.bookName || '').trim()
+      return [subject, className].filter(Boolean).length
+        ? `${[subject, className].filter(Boolean).join(' - ')} - ${bookName || 'NCERT Book'}`.trim()
+        : bookName || existing?.name
+    }
+    if (category === FREE_RESOURCE_CATEGORY.PREVIOUS_YEAR) {
+      const examCategory = String(form.examCategory || '').trim()
+      const paperType = String(form.paperType || '').trim()
+      const year = String(form.year || '').trim()
+      const paperName = String(form.paperName || '').trim()
+      return (
+        [paperType || 'Question Paper', examCategory, year ? `(${year})` : '']
+          .filter(Boolean)
+          .join(' - ') +
+        (paperName ? ` ${paperName}` : '')
+      ).trim()
+    }
+    if (category === FREE_RESOURCE_CATEGORY.MOCK_TEST) {
+      const title = String(form.mockTestTitle || '').trim()
+      const count = Number(form.numberOfQuestions || 0)
+      if (title) return count > 0 ? `${title} (${count} Questions)` : title
+      return `Mock Test${count > 0 ? ` (${count} Questions)` : ''}`.trim()
+    }
+    if (category === FREE_RESOURCE_CATEGORY.STUDY_MATERIAL) {
+      const name = String(form.studyMaterialName || '').trim()
+      const mains = String(form.mainsCategory || '').trim()
+      if (name && mains) return `${mains} - ${name}`
+      return name || mains || existing?.name
+    }
+    return existing?.name || 'Untitled'
+  }
+
+  const displayName = displayFromCategory()
+  const category = normalizeFreeResourceCategory(form.category || existing?.category)
   return {
     id: existing?.id ?? Date.now(),
     name: displayName,
-    category: form.category || existing?.category,
+    category,
     status: form.status || existing?.status || 'Active',
-    formData: form,
+    formData: { ...form, category },
   }
 }
 

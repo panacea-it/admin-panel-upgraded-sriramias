@@ -9,25 +9,33 @@ import BatchSubjectDetailsSection from './BatchSubjectDetailsSection'
 import BatchFormCard from './batch-form/BatchFormCard'
 import BatchFormStickyFooter from './batch-form/BatchFormStickyFooter'
 import {
+  batchRowToDuplicateForm,
   batchRowToForm,
   createEmptyBatchForm,
   validateBatchFee,
 } from '../../utils/batchFormMappers'
 import { useModalForm } from '../../hooks/useModalForm'
-
 /** Batch create/edit only — course marketing content lives in Categories → Courses */
 export default function AddCourseModal({
   open,
   onClose,
   item,
+  duplicateSource = null,
   onSubmit,
   existingCourseIds = [],
 }) {
+  const isDuplicateMode = Boolean(duplicateSource)
+  const modalRecord = isDuplicateMode ? duplicateSource : item
+
+  const mapRowToForm = (row) =>
+    isDuplicateMode && row ? batchRowToDuplicateForm(row) : batchRowToForm(row)
+
   const { form, setForm, isEditMode, reset } = useModalForm(
     open,
-    item,
-    batchRowToForm,
+    modalRecord,
+    mapRowToForm,
     createEmptyBatchForm,
+    { forceCreateMode: isDuplicateMode },
   )
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -67,8 +75,17 @@ export default function AddCourseModal({
     }
     setSubmitting(true)
     try {
-      await onSubmit?.(form, { isEdit: isEditMode, id: item?.id })
-      toast.success(isEditMode ? 'Batch updated successfully' : 'Batch created successfully')
+      await onSubmit?.(form, {
+        isEdit: isEditMode,
+        id: item?.id,
+        isDuplicate: isDuplicateMode,
+        duplicateFromId: duplicateSource?.id,
+      })
+      if (isDuplicateMode) {
+        toast.success('Batch duplicated successfully')
+      } else {
+        toast.success(isEditMode ? 'Batch updated successfully' : 'Batch created successfully')
+      }
       handleClose()
     } catch (err) {
       toast.error(err.message || 'Failed to save batch')
@@ -77,7 +94,11 @@ export default function AddCourseModal({
     }
   }
 
-  const modalTitle = isEditMode ? 'Edit Batch' : 'Add Batch'
+  const modalTitle = isEditMode
+    ? 'Edit Batch'
+    : isDuplicateMode
+      ? 'Duplicate Batch'
+      : 'Add Batch'
 
   return (
     <Modal open={open} onClose={handleClose} size="full" title={modalTitle}>
@@ -102,7 +123,9 @@ export default function AddCourseModal({
                 setForm={setForm}
                 errors={errors}
                 setErrors={setErrors}
-                excludeCourseIds={isEditMode ? [] : existingCourseIds}
+                excludeCourseIds={
+                  isEditMode || isDuplicateMode ? [] : existingCourseIds
+                }
               />
             </BatchFormCard>
 

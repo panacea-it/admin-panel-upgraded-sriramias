@@ -1,4 +1,4 @@
-import { Eye, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { ArrowRightLeft, Eye, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
 function ActionBtn({ label, onClick, className, children }) {
@@ -22,6 +22,7 @@ export default function StudentTableActions({
   status,
   onView,
   onEdit,
+  onMove,
   onDelete,
   onToggleStatus,
 }) {
@@ -43,6 +44,15 @@ export default function StudentTableActions({
       >
         <Pencil className="h-4 w-4" strokeWidth={2.2} />
       </ActionBtn>
+      {onMove && (
+        <ActionBtn
+          label="Move student"
+          onClick={onMove}
+          className="text-[#246392] hover:bg-[#eef6fc]"
+        >
+          <ArrowRightLeft className="h-4 w-4" strokeWidth={2.2} />
+        </ActionBtn>
+      )}
       <ActionBtn
         label={isActive ? 'Disable' : 'Enable'}
         onClick={onToggleStatus}

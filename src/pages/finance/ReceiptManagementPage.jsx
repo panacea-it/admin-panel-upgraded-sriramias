@@ -1,29 +1,54 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Receipt, Eye, Send } from 'lucide-react'
-import FinancePageShell from '../../components/finance/FinancePageShell'
-import FinanceStatusBadge from '../../components/finance/FinanceStatusBadge'
-import ReceiptPreview from '../../components/finance/ReceiptPreview'
-import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
-import { fetchPaymentReports, resendReceipt, generateReceipt } from '../../api/financeAPI'
-import { formatINR } from '../../utils/financeFilters'
-import { formatCategoryDateTime } from '../../utils/formatDateTime'
+import { Receipt } from 'lucide-react'
+import PageBanner from '../../components/figma/PageBanner'
+import FinanceExportToolbar from '../../components/finance/FinanceExportToolbar'
+import ReceiptCenterTable from '../../components/finance/receipt-center/ReceiptCenterTable'
+import SendReceiptDialog from '../../components/finance/receipt-center/SendReceiptDialog'
+import {
+  fetchCompletedReceipts,
+  sendReceiptCommunication,
+} from '../../api/financeAPI'
+import { filterReceiptCenterRows } from '../../utils/receiptCompletion'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useFinancePermissions } from '../../hooks/useFinancePermissions'
+import { FINANCE_COURSES } from '../../data/financeMockData'
 import { toast } from '../../utils/toast'
 
+const RECEIPT_EXPORT_COLUMNS = [
+  { key: 'receiptNumber', label: 'Receipt #' },
+  { key: 'studentName', label: 'Student' },
+  { key: 'mobile', label: 'Mobile' },
+  { key: 'courseName', label: 'Course' },
+  { key: 'paymentTypeLabel', label: 'Payment Type' },
+  { key: 'amountPaid', label: 'Amount Paid' },
+  { key: 'receiptStatus', label: 'Receipt Status' },
+  { key: 'paymentDate', label: 'Payment Date' },
+]
+
+const PAYMENT_TYPE_OPTIONS = [
+  { value: 'all', label: 'All types' },
+  { value: 'Full Payment', label: 'Full Payment' },
+  { value: 'EMI Completed', label: 'EMI Completed' },
+]
+
 export default function ReceiptManagementPage() {
-  const { canReceipts } = useFinancePermissions()
+  const { canReceipts, canExport } = useFinancePermissions()
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebouncedValue(search)
-  const [preview, setPreview] = useState(null)
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const [courseId, setCourseId] = useState('all')
+  const [paymentType, setPaymentType] = useState('all')
+  const [centerName, setCenterName] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [sendRow, setSendRow] = useState(null)
+  const [sending, setSending] = useState(false)
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchPaymentReports()
-      setRows(data.filter((r) => r.amountPaid > 0 || r.receiptNumber))
+      setRows(await fetchCompletedReceipts())
     } catch {
-      toast.error('Failed to load receipts')
+      toast.error('Failed to load completed receipts')
     }
   }, [])
 
@@ -31,98 +56,151 @@ export default function ReceiptManagementPage() {
     load()
   }, [load])
 
-  const filtered = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(
-      (r) =>
-        (r.receiptNumber || '').toLowerCase().includes(q) ||
-        r.studentName.toLowerCase().includes(q) ||
-        r.id.toLowerCase().includes(q),
-    )
-  }, [rows, debouncedSearch])
+  const centerOptions = useMemo(() => {
+    const names = [...new Set(rows.map((r) => r.centerName).filter(Boolean))]
+    return names.sort()
+  }, [rows])
 
-  const handleResend = async (channel) => {
-    if (!preview) return
+  const filtered = useMemo(
+    () =>
+      filterReceiptCenterRows(rows, {
+        search: debouncedSearch,
+        courseId,
+        paymentType,
+        centerName,
+        dateFrom,
+        dateTo,
+      }),
+    [rows, debouncedSearch, courseId, paymentType, centerName, dateFrom, dateTo],
+  )
+
+  const handleSend = async (payload) => {
+    if (!sendRow) return
+    setSending(true)
     try {
-      await resendReceipt(preview.id, channel)
-      toast.success(`Receipt sent via ${channel}`)
+      const updated = await sendReceiptCommunication(sendRow.id, payload)
+      setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
+      toast.success(`Receipt sent via ${payload.channel}`)
+      setSendRow(null)
     } catch {
-      toast.error('Resend failed')
+      toast.error('Failed to send receipt')
+    } finally {
+      setSending(false)
     }
   }
-
-  const handleGenerate = async (row) => {
-    try {
-      await generateReceipt(row.id)
-      toast.success('Receipt generated')
-      load()
-    } catch {
-      toast.error('Generation failed')
-    }
-  }
-
-  const columns = [
-    { key: 'receiptNumber', label: 'Receipt #', render: (r) => r.receiptNumber || '—' },
-    { key: 'studentName', label: 'Student', render: (r) => <span className="font-medium">{r.studentName}</span> },
-    { key: 'courseName', label: 'Course' },
-    { key: 'amountPaid', label: 'Amount', render: (r) => formatINR(r.amountPaid) },
-    { key: 'paymentStatus', label: 'Status', render: (r) => <FinanceStatusBadge status={r.paymentStatus} /> },
-    { key: 'paymentDate', label: 'Date', render: (r) => formatCategoryDateTime(r.paymentDate) },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (row) => (
-        <div className="flex gap-1">
-          <button type="button" onClick={() => setPreview(row)} className="rounded p-1.5 text-[#246392] hover:bg-[#eef6fc]" title="Preview">
-            <Eye className="h-4 w-4" />
-          </button>
-          {canReceipts && !row.receiptNumber && (
-            <button type="button" onClick={() => handleGenerate(row)} className="rounded p-1.5 text-[#69df66] hover:bg-green-50" title="Generate">
-              <Receipt className="h-4 w-4" />
-            </button>
-          )}
-          {canReceipts && row.receiptNumber && (
-            <button
-              type="button"
-              onClick={async () => {
-                await resendReceipt(row.id, 'Email')
-                toast.success('Receipt resent')
-              }}
-              className="rounded p-1.5 text-[#246392] hover:bg-[#eef6fc]"
-              title="Resend"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      ),
-    },
-  ]
 
   return (
-    <FinancePageShell icon={Receipt} title="Receipt Management">
-      <input
-        type="search"
-        placeholder="Search receipt, student…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-md rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+    <div className="flex flex-col gap-4 p-4 sm:gap-5 sm:p-6">
+      <PageBanner icon={Receipt} title="Receipt Management" iconClassName="text-[#246392]">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white/25 px-3 py-1 text-sm font-bold text-white ring-1 ring-white/40">
+            {filtered.length} receipt{filtered.length !== 1 ? 's' : ''}
+          </span>
+          <FinanceExportToolbar
+            rows={filtered}
+            filenameBase="completed-receipts"
+            columnDefs={RECEIPT_EXPORT_COLUMNS}
+            canExport={canExport}
+            variant="banner"
+          />
+        </div>
+      </PageBanner>
+
+      <p className="-mt-2 text-sm text-[#686868] sm:px-1">
+        Manage completed payment receipts and communication — fully paid students and EMI-completed
+        enrollments only.
+      </p>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          <label className="block sm:col-span-2 lg:col-span-2">
+            <span className="text-xs font-semibold text-[#555]">Search</span>
+            <input
+              type="search"
+              placeholder="Receipt #, student, mobile, course…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-[#55ace7] focus:ring-2 focus:ring-[#55ace7]/20"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-[#555]">Course</span>
+            <select
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2 text-sm"
+            >
+              <option value="all">All courses</option>
+              {FINANCE_COURSES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-[#555]">Payment type</span>
+            <select
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value)}
+              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2 text-sm"
+            >
+              {PAYMENT_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-[#555]">Center</span>
+            <select
+              value={centerName}
+              onChange={(e) => setCenterName(e.target.value)}
+              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2 text-sm"
+            >
+              <option value="all">All centers</option>
+              {centerOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-[#555]">From</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2 text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-[#555]">To</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2 text-sm"
+            />
+          </label>
+        </div>
+      </div>
+
+      <ReceiptCenterTable
+        rows={filtered}
+        canSend={canReceipts}
+        onSendReceipt={setSendRow}
       />
 
-      <PaginatedFigmaTable
-        columns={columns}
-        data={filtered}
-        itemLabel="receipts"
-        resetDeps={[debouncedSearch]}
+      <SendReceiptDialog
+        open={!!sendRow}
+        row={sendRow}
+        onClose={() => setSendRow(null)}
+        onSend={handleSend}
+        sending={sending}
       />
-
-      <ReceiptPreview
-        open={!!preview}
-        payment={preview}
-        onClose={() => setPreview(null)}
-        onResend={handleResend}
-      />
-    </FinancePageShell>
+    </div>
   )
 }

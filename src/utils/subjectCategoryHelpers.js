@@ -1,6 +1,24 @@
 const LIVE_CATEGORY = 'Live Class'
-const RECORDED_CATEGORY = 'Recorded Class'
-const TEST_SERIES_CATEGORY = 'Test Series'
+const RECORDED_CATEGORY = 'Recording'
+const TEST_SERIES_CATEGORY = 'Test'
+const PDF_CATEGORY = 'PDF'
+
+const LEGACY_CATEGORY_ALIASES = {
+  'Recorded Class': RECORDED_CATEGORY,
+  'Test Series': TEST_SERIES_CATEGORY,
+}
+
+export function canonicalCategory(value) {
+  const trimmed = String(value || '').trim()
+  return LEGACY_CATEGORY_ALIASES[trimmed] || trimmed
+}
+
+export const CONTENT_CATEGORY_KEYS = {
+  live: LIVE_CATEGORY,
+  recording: RECORDED_CATEGORY,
+  test: TEST_SERIES_CATEGORY,
+  pdf: PDF_CATEGORY,
+}
 
 export function normalizeTopics(value) {
   if (Array.isArray(value)) {
@@ -11,11 +29,13 @@ export function normalizeTopics(value) {
 }
 
 export function normalizeCategories(value) {
+  let list = []
   if (Array.isArray(value)) {
-    return value.map((c) => String(c).trim()).filter(Boolean)
+    list = value.map((c) => String(c).trim()).filter(Boolean)
+  } else if (typeof value === 'string' && value.trim()) {
+    list = [value.trim()]
   }
-  if (typeof value === 'string' && value.trim()) return [value.trim()]
-  return []
+  return [...new Set(list.map(canonicalCategory).filter(Boolean))]
 }
 
 export function isLiveClassCategory(category) {
@@ -23,15 +43,46 @@ export function isLiveClassCategory(category) {
 }
 
 export function isRecordedClassCategory(category) {
-  return normalizeCategories(category).includes(RECORDED_CATEGORY)
+  const cats = normalizeCategories(category)
+  return cats.includes(RECORDED_CATEGORY) || cats.includes('Recorded Class')
 }
 
 export function isTestSeriesCategory(category) {
-  return normalizeCategories(category).includes(TEST_SERIES_CATEGORY)
+  const cats = normalizeCategories(category)
+  return cats.includes(TEST_SERIES_CATEGORY) || cats.includes('Test Series')
 }
 
-export function shouldShowTestSeriesSection(values, { liveClassOnly = false } = {}) {
-  if (liveClassOnly) return false
+export function isPdfCategory(category) {
+  return normalizeCategories(category).includes(PDF_CATEGORY)
+}
+
+/** Content types available in Add Option, derived from subject categories. */
+export function getSubjectContentTypes(categories) {
+  const cats = normalizeCategories(categories)
+  const types = []
+  if (cats.includes(LIVE_CATEGORY)) types.push('live')
+  if (cats.includes(RECORDED_CATEGORY)) types.push('recording')
+  if (cats.includes(TEST_SERIES_CATEGORY)) types.push('test')
+  if (cats.includes(PDF_CATEGORY)) types.push('pdf')
+  return types
+}
+
+export function contentTypeLabel(type) {
+  const map = {
+    live: 'Live Class',
+    recording: 'Recording',
+    test: 'Test',
+    pdf: 'PDF',
+  }
+  return map[type] || type
+}
+
+export function shouldShowTestSeriesSection(
+  values,
+  { liveClassOnly = false, subjectOnly = false, contentType } = {},
+) {
+  if (subjectOnly || liveClassOnly) return false
+  if (contentType === 'test') return true
   return isTestSeriesCategory(values.categories ?? values.category)
 }
 
@@ -39,8 +90,9 @@ export function deriveClassTypeLabel(categories) {
   const cats = normalizeCategories(categories)
   const parts = []
   if (cats.includes(LIVE_CATEGORY)) parts.push('Live')
-  if (cats.includes(RECORDED_CATEGORY)) parts.push('Recording')
-  if (cats.includes(TEST_SERIES_CATEGORY)) parts.push('Test Series')
+  if (isRecordedClassCategory(cats)) parts.push('Recording')
+  if (isTestSeriesCategory(cats)) parts.push('Test')
+  if (cats.includes(PDF_CATEGORY)) parts.push('PDF')
   if (parts.length) return parts.join(' + ')
   return cats.length ? cats.join(', ') : '—'
 }
@@ -67,5 +119,13 @@ export function deriveRecordingStatus(subject) {
   const rec = subject?.recordings || []
   if (!rec.length) return 'None'
   const published = rec.some((r) => r.status === 'Published' || r.status === 'Active')
+  return published ? 'Published' : 'Draft'
+}
+
+export function derivePdfStatus(subject) {
+  if (!isPdfCategory(subject?.categories ?? subject?.category)) return '—'
+  const pdfs = subject?.pdfs || []
+  if (!pdfs.length) return 'None'
+  const published = pdfs.some((p) => p.visibility === 'Published' || p.status === 'Active')
   return published ? 'Published' : 'Draft'
 }

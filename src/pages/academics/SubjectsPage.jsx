@@ -5,27 +5,32 @@ import SubjectHeader from '../../components/subjects/SubjectHeader'
 import SubjectFilters from '../../components/subjects/SubjectFilters'
 import SubjectTable from '../../components/subjects/SubjectTable'
 import SubjectModal from '../../components/subjects/SubjectModal'
+import SubjectAddContentModal from '../../components/subjects/SubjectAddContentModal'
 import SubjectEmptyState from '../../components/subjects/SubjectEmptyState'
 import ConfirmDeleteDialog from '../../components/subjects/ConfirmDeleteDialog'
 import {
+  buildPdfFromForm,
   buildRecordingFromForm,
   buildSubjectFromForm,
 } from '../../components/subjects/subjectFormUtils'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAcademicsSubjects } from '../../hooks/useAcademicsSubjects'
+import { useBatchesData } from '../../hooks/useBatchesData'
+import { buildActiveBatchOptions, formatBatchSelectLabel } from '../../utils/batchSelectHelpers'
+import { buildLiveClassesFromRecurrence } from '../../utils/academicsSubjectsRecurrence'
 import {
-  buildLiveClassesFromRecurrence,
+  contentTypeLabel,
   isLiveClassCategory,
+  isPdfCategory,
   isRecordedClassCategory,
-} from '../../utils/academicsSubjectsRecurrence'
-import {
+  isTestSeriesCategory,
   normalizeCategories,
-  normalizeTopics,
 } from '../../utils/subjectCategoryHelpers'
 import {
   syncSubjectLiveClassesToModule,
   syncSubjectRecordingsToModule,
 } from '../../utils/subjectModuleSync'
+import { serializeTestSeriesForStorage } from '../../utils/batchTestSeriesForm'
 import { toast } from '../../utils/toast'
 import { cn } from '../../utils/cn'
 import { facultySubjectLabels } from '../../data/facultySubjectLabels'
@@ -37,22 +42,23 @@ export default function SubjectsPage() {
     subjects,
     upsertSubject,
     deleteSubject,
-    upsertLiveClass,
-    upsertLiveClassesBatch,
   } = useAcademicsSubjects()
+  const { sourceRows: batchRows } = useBatchesData()
+  const batchOptions = useMemo(() => buildActiveBatchOptions(batchRows), [batchRows])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('add')
-  const [modalContext, setModalContext] = useState('subject')
   const [activeSubject, setActiveSubject] = useState(null)
+  const [addContentOpen, setAddContentOpen] = useState(false)
+  const [addContentSubject, setAddContentSubject] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     return subjects.filter((row) => {
-      const topics = normalizeTopics(row.topics ?? row.topic)
+      const topics = row.topics ?? (row.topic ? [row.topic] : [])
       const matchSearch =
         !q ||
         row.subjectName?.toLowerCase().includes(q) ||
@@ -67,96 +73,117 @@ export default function SubjectsPage() {
   const openCreate = () => {
     setActiveSubject(null)
     setModalMode('add')
-    setModalContext('subject')
     setModalOpen(true)
   }
 
-  const openRowAdd = (row) => {
-    setActiveSubject(row)
-    setModalMode('add')
-    setModalContext('liveClass')
-    setModalOpen(true)
+  const openAddContent = (row) => {
+    setAddContentSubject(row)
+    setAddContentOpen(true)
   }
 
   const openEdit = (row) => {
     setActiveSubject(row)
     setModalMode('edit')
-    setModalContext('subject')
     setModalOpen(true)
   }
 
-  const handleModalSubmit = async (form) => {
-    const actorName = user?.name || user?.email || 'Admin'
-    const categories = normalizeCategories(form.categories ?? form.category)
-
-    if (modalContext === 'liveClass' && activeSubject) {
-      const rows = buildLiveClassesFromRecurrence(form, activeSubject, null, actorName)
-      let syncedRows = rows
-      try {
-        syncedRows = await syncSubjectLiveClassesToModule(rows, activeSubject, { actor: actorName })
-      } catch {
-        toast.error('Live class saved locally but sync to Schedule/Live Classes failed')
-      }
-      if (syncedRows.length > 1) {
-        upsertLiveClassesBatch(activeSubject.id, syncedRows)
-        toast.success(`${syncedRows.length} live classes scheduled`)
-      } else {
-        upsertLiveClass(activeSubject.id, syncedRows[0])
-        toast.success('Live class added')
-      }
-      return
-    }
-
+  const handleSubjectModalSubmit = async (form) => {
     const existing = modalMode === 'edit' ? activeSubject : null
     const subjectRow = buildSubjectFromForm(form, existing, subjects)
+    const batchOpt = form.batchId
+      ? {
+          batchId: form.batchId,
+          batch:
+            formatBatchSelectLabel(
+              batchOptions.find((b) => String(b.id) === String(form.batchId)),
+            ) || form.batchId,
+        }
+      : {}
+    upsertSubject({ ...subjectRow, ...batchOpt })
+    toast.success(modalMode === 'edit' ? facultySubjectLabels.updated : facultySubjectLabels.created)
+  }
 
-    if (isLiveClassCategory(categories) && form.classTitle?.trim()) {
-      const rows = buildLiveClassesFromRecurrence(form, subjectRow, null, actorName)
-      const existingLive = existing?.liveClasses || []
-      subjectRow.liveClasses = [...existingLive, ...rows]
-    }
+  const handleAddContentSubmit = async (form, contentType) => {
+    const actorName = user?.name || user?.email || 'Admin'
+    const subject = subjects.find((s) => s.id === addContentSubject?.id) || addContentSubject
+    if (!subject) return
 
-    if (isRecordedClassCategory(categories)) {
-      const recording = buildRecordingFromForm(form, existing?.recordings?.[0], subjectRow)
-      const existingRec = existing?.recordings || []
-      const recIdx = existingRec.findIndex((r) => r.id === recording.id)
-      subjectRow.recordings =
-        recIdx >= 0
-          ? existingRec.map((r, i) => (i === recIdx ? recording : r))
-          : [...existingRec, recording]
-    }
-
-    upsertSubject(subjectRow)
+    const categories = normalizeCategories(subject.categories)
+    let updated = { ...subject }
+    const batchMeta = form.batchId ? { batchId: form.batchId } : {}
 
     try {
-      let needsResave = false
-      if (isLiveClassCategory(categories) && subjectRow.liveClasses?.length) {
-        const rowsToSync = subjectRow.liveClasses.filter((lc) => !lc.linkedLessonId)
+      if (contentType === 'live' && isLiveClassCategory(categories)) {
+        const rows = buildLiveClassesFromRecurrence(form, updated, null, actorName)
+        let syncedRows = rows
+        try {
+          syncedRows = await syncSubjectLiveClassesToModule(rows, updated, { actor: actorName })
+        } catch {
+          toast.error('Live class saved locally but sync to Schedule/Live Classes failed')
+        }
+        const existingLive = updated.liveClasses || []
+        updated = {
+          ...updated,
+          ...batchMeta,
+          liveClasses: [...existingLive, ...syncedRows.map((r) => ({ ...r, ...batchMeta }))],
+        }
+        if (syncedRows.length > 1) {
+          toast.success(`${syncedRows.length} live classes scheduled`)
+        } else {
+          toast.success('Live class added')
+        }
+      } else if (contentType === 'recording' && isRecordedClassCategory(categories)) {
+        const recording = buildRecordingFromForm(form, null, updated)
+        const existingRec = updated.recordings || []
+        let recordings = [...existingRec, { ...recording, ...batchMeta }]
+        try {
+          recordings = await syncSubjectRecordingsToModule(recordings, updated, { actor: actorName })
+        } catch {
+          toast.error('Recording saved locally; module sync failed')
+        }
+        updated = { ...updated, ...batchMeta, recordings }
+        toast.success('Recording added')
+      } else if (contentType === 'test' && isTestSeriesCategory(categories)) {
+        updated = {
+          ...updated,
+          ...batchMeta,
+          enableTestSeries: true,
+          testSeries: serializeTestSeriesForStorage(form.testSeries),
+        }
+        toast.success('Test series saved')
+      } else if (contentType === 'pdf' && isPdfCategory(categories)) {
+        const pdf = buildPdfFromForm(form, null, updated)
+        const existingPdfs = updated.pdfs || []
+        updated = {
+          ...updated,
+          ...batchMeta,
+          pdfs: [...existingPdfs, { ...pdf, ...batchMeta }],
+        }
+        toast.success('PDF added')
+      } else {
+        toast.error(`Cannot add ${contentTypeLabel(contentType)} for this subject`)
+        return
+      }
+
+      upsertSubject(updated)
+
+      if (contentType === 'live' && updated.liveClasses?.length) {
+        const rowsToSync = updated.liveClasses.filter((lc) => !lc.linkedLessonId)
         if (rowsToSync.length) {
-          const synced = await syncSubjectLiveClassesToModule(rowsToSync, subjectRow, {
-            actor: actorName,
-          })
-          const syncedById = new Map(synced.map((r) => [r.id, r]))
-          subjectRow.liveClasses = subjectRow.liveClasses.map(
-            (lc) => syncedById.get(lc.id) || lc,
-          )
-          needsResave = true
+          try {
+            const synced = await syncSubjectLiveClassesToModule(rowsToSync, updated, { actor: actorName })
+            const syncedById = new Map(synced.map((r) => [r.id, r]))
+            updated.liveClasses = updated.liveClasses.map((lc) => syncedById.get(lc.id) || lc)
+            upsertSubject(updated)
+          } catch {
+            /* already toasted */
+          }
         }
       }
-      if (isRecordedClassCategory(categories) && subjectRow.recordings?.length) {
-        subjectRow.recordings = await syncSubjectRecordingsToModule(
-          subjectRow.recordings,
-          subjectRow,
-          { actor: actorName },
-        )
-        needsResave = true
-      }
-      if (needsResave) upsertSubject(subjectRow)
     } catch (err) {
-      toast.error(err?.message || 'Subject saved; failed to sync to Live Classes modules')
+      toast.error(err?.message || 'Failed to save content')
+      throw err
     }
-
-    toast.success(modalMode === 'edit' ? facultySubjectLabels.updated : facultySubjectLabels.created)
   }
 
   const handleDeleteConfirm = async () => {
@@ -203,7 +230,7 @@ export default function SubjectsPage() {
               data={filtered}
               search={search}
               statusFilter={statusFilter}
-              onAddRow={openRowAdd}
+              onAddRow={openAddContent}
               onViewList={(row) => navigate(`/academics/subjects/${row.id}`)}
               onEdit={openEdit}
               onDelete={(row) => setDeleteTarget(row)}
@@ -216,10 +243,21 @@ export default function SubjectsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         mode={modalMode}
-        context={modalContext}
+        context="subject"
         subject={activeSubject}
         subjects={subjects}
-        onSubmit={handleModalSubmit}
+        onSubmit={handleSubjectModalSubmit}
+      />
+
+      <SubjectAddContentModal
+        open={addContentOpen}
+        onClose={() => {
+          setAddContentOpen(false)
+          setAddContentSubject(null)
+        }}
+        subject={addContentSubject}
+        subjects={subjects}
+        onSubmit={handleAddContentSubmit}
       />
 
       <ConfirmDeleteDialog
@@ -227,7 +265,7 @@ export default function SubjectsPage() {
         title={`Delete ${facultySubjectLabels.singular.toLowerCase()}?`}
         message={
           deleteTarget
-            ? `Remove "${deleteTarget.subjectName}" and all linked live classes? This cannot be undone.`
+            ? `Remove "${deleteTarget.subjectName}" and all linked content? This cannot be undone.`
             : ''
         }
         onConfirm={handleDeleteConfirm}

@@ -1,4 +1,4 @@
-/** Format ISO date as "10:30 AM , 16 May 2026" */
+/** Format ISO date as "10:37 PM, 18 May 2026" */
 export function formatCategoryDateTime(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
@@ -13,5 +13,5 @@ export function formatCategoryDateTime(iso) {
     month: 'short',
     year: 'numeric',
   })
-  return `${time} , ${date}`
+  return `${time}, ${date}`
 }

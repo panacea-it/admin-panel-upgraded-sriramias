@@ -1,6 +1,28 @@
+import { enrichFinanceRecord } from './financeRecordModel'
+
 export function filterPaymentReports(rows, filters = {}) {
+  if (!Array.isArray(rows)) return []
   return rows.filter((row) => {
-    if (filters.paymentStatus && filters.paymentStatus !== 'all' && row.paymentStatus !== filters.paymentStatus) {
+    if (!row) return false
+    const r = enrichFinanceRecord(row)
+    if (filters.paymentStatus && filters.paymentStatus !== 'all') {
+      const status = r.paymentStatus
+      if (filters.paymentStatus === 'Partial' && status !== 'Partially Paid' && status !== 'Partial') return false
+      if (filters.paymentStatus !== 'Partial' && status !== filters.paymentStatus) return false
+    }
+    if (filters.verificationStatus && filters.verificationStatus !== 'all' && r.verificationStatus !== filters.verificationStatus) {
+      return false
+    }
+    if (filters.emiStatus && filters.emiStatus !== 'all' && r.emiStatus !== filters.emiStatus) {
+      return false
+    }
+    if (filters.centerName && filters.centerName !== 'all' && r.centerName !== filters.centerName) {
+      return false
+    }
+    if (filters.batchId && filters.batchId !== 'all' && r.batchId !== filters.batchId) {
+      return false
+    }
+    if (filters.state && filters.state !== 'all' && r.state !== filters.state) {
       return false
     }
     if (filters.paymentType && filters.paymentType !== 'all' && row.paymentType !== filters.paymentType) {
@@ -15,7 +37,7 @@ export function filterPaymentReports(rows, filters = {}) {
     if (filters.courseId && filters.courseId !== 'all' && row.courseId !== filters.courseId) {
       return false
     }
-    if (filters.branch && filters.branch !== 'all' && row.branch !== filters.branch) {
+    if (filters.branch && filters.branch !== 'all' && r.branch !== filters.branch) {
       return false
     }
     if (filters.studentId?.trim() && !row.studentId.toLowerCase().includes(filters.studentId.trim().toLowerCase())) {

@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Users } from 'lucide-react'
 import { usePagination } from '../../hooks/usePagination'
 import TablePagination from '../figma/TablePagination'
-import CategoryStatusBadge from '../categories/CategoryStatusBadge'
+import BatchStatusSelector from './BatchStatusSelector'
 import BatchTableActions from './BatchTableActions'
 import { formatBatchDate } from '../../data/batchManagementData'
 import { batchDetailsPath } from '../../constants/batchNav'
@@ -21,6 +21,14 @@ export default function BatchManagementTable({
   onPageChange,
   onPageSizeChange,
   resetDeps = [],
+  selectedIds = [],
+  onToggleSelect,
+  onToggleSelectAll,
+  onStatusChange,
+  onDuplicate,
+  onChangeStatusAction,
+  onDelete,
+  onMerge,
 }) {
   const isControlled =
     controlledPage != null &&
@@ -42,6 +50,11 @@ export default function BatchManagementTable({
   const endIndex = Math.min(startIndex + pageSize, totalItems)
   const paginatedItems = batches.slice(startIndex, endIndex)
 
+  const pageIds = paginatedItems.map((b) => String(b.id))
+  const allPageSelected =
+    pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id))
+  const somePageSelected = pageIds.some((id) => selectedIds.includes(id))
+
   const handlePageChange = (next) => {
     if (isControlled) onPageChange(next)
     else internalPagination.setPage(next)
@@ -53,12 +66,24 @@ export default function BatchManagementTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] border-collapse text-left">
-          <thead className="sticky top-0 z-10">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-100/80 dark:bg-slate-900 dark:ring-slate-700">
+      <div className="max-h-[min(70vh,720px)] overflow-auto overscroll-contain">
+        <table className="w-full min-w-[1080px] border-collapse text-left">
+          <thead className="sticky top-0 z-20 shadow-[0_2px_0_rgba(15,23,42,0.06)]">
             <tr className="bg-gradient-to-r from-[#55ace7] to-[#246392] text-sm font-semibold text-white sm:text-base">
-              <th className="px-4 py-3.5 sm:pl-6">Batch ID</th>
+              <th className="w-12 px-3 py-3.5 sm:pl-4">
+                <input
+                  type="checkbox"
+                  checked={allPageSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = somePageSelected && !allPageSelected
+                  }}
+                  onChange={() => onToggleSelectAll?.(pageIds, !allPageSelected)}
+                  aria-label="Select all batches on this page"
+                  className="h-4 w-4 rounded border-white/40 bg-white/20 text-[#246392] focus:ring-white/50"
+                />
+              </th>
+              <th className="px-4 py-3.5">Batch ID</th>
               <th className="px-4 py-3.5 sm:px-5">Batch Name</th>
               <th className="px-4 py-3.5">Course Name</th>
               <th className="px-4 py-3.5">Trainer Name</th>
@@ -72,7 +97,7 @@ export default function BatchManagementTable({
           <tbody>
             {paginatedItems.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-12 text-center text-sm font-medium text-slate-500">
+                <td colSpan={10} className="py-12 text-center text-sm font-medium text-slate-500">
                   No batches found.
                 </td>
               </tr>
@@ -82,8 +107,16 @@ export default function BatchManagementTable({
                   key={batch.id}
                   batch={batch}
                   listState={listState}
+                  selected={selectedIds.includes(String(batch.id))}
+                  onToggleSelect={onToggleSelect}
                   onEditBatch={onEditBatch}
                   onQuickViewBatch={onQuickViewBatch}
+                  onStatusChange={onStatusChange}
+                  onDuplicate={onDuplicate}
+                  onChangeStatusAction={onChangeStatusAction}
+                  onArchive={onArchive}
+                  onDelete={onDelete}
+                  onMerge={onMerge}
                 />
               ))
             )}
@@ -107,14 +140,40 @@ export default function BatchManagementTable({
   )
 }
 
-function BatchTableRow({ batch, listState, onEditBatch, onQuickViewBatch }) {
+function BatchTableRow({
+  batch,
+  listState,
+  selected,
+  onToggleSelect,
+  onEditBatch,
+  onQuickViewBatch,
+  onStatusChange,
+  onDuplicate,
+  onChangeStatusAction,
+  onDelete,
+  onMerge,
+}) {
   const navigate = useNavigate()
   const detailsPath = batchDetailsPath(batch.id)
   const linkState = listState ? { listState } : undefined
 
   return (
-    <tr className="border-b border-slate-100 transition-colors duration-150 hover:bg-[#f8fbff]">
-      <td className="px-4 py-4 sm:pl-6">
+    <tr
+      className={cn(
+        'border-b border-slate-100 transition-colors duration-150 hover:bg-[#f8fbff] dark:hover:bg-slate-800/50',
+        selected && 'bg-[#eef6fc]/80',
+      )}
+    >
+      <td className="px-3 py-4 sm:pl-4">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggleSelect?.(String(batch.id))}
+          aria-label={`Select ${batch.displayName}`}
+          className="h-4 w-4 rounded border-slate-300 text-[#246392] focus:ring-[#55ace7]"
+        />
+      </td>
+      <td className="px-4 py-4">
         <Link
           to={detailsPath}
           state={linkState}
@@ -124,33 +183,49 @@ function BatchTableRow({ batch, listState, onEditBatch, onQuickViewBatch }) {
         </Link>
       </td>
       <td className="px-4 py-4 sm:px-5">
-        <Link to={detailsPath} state={linkState} className={linkClassName}>
-          {batch.displayName}
-        </Link>
+        <div>
+          <Link to={detailsPath} state={linkState} className={linkClassName}>
+            {batch.displayName}
+          </Link>
+          {batch.mergedIntoName && (
+            <p className="mt-0.5 text-xs font-medium text-slate-500">
+              Merged Into: {batch.mergedIntoName}
+            </p>
+          )}
+        </div>
       </td>
-      <td className="px-4 py-4 text-sm font-medium text-[#444]">{batch.courseName}</td>
-      <td className="px-4 py-4 text-sm text-[#444]">{batch.trainerName}</td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444]">
+      <td className="px-4 py-4 text-sm font-medium text-[#444] dark:text-slate-300">
+        {batch.courseName}
+      </td>
+      <td className="px-4 py-4 text-sm text-[#444] dark:text-slate-300">{batch.trainerName}</td>
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444] dark:text-slate-300">
         {formatBatchDate(batch.startDate)}
       </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444]">
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#444] dark:text-slate-300">
         {formatBatchDate(batch.endDate)}
       </td>
       <td className="px-4 py-4">
-        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-bold text-[#333]">
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-bold text-[#333] dark:bg-slate-700 dark:text-slate-200">
           <Users className="h-3.5 w-3.5 text-[#246392]" />
           {batch.totalStudents}
         </span>
       </td>
       <td className="px-4 py-4">
-        <CategoryStatusBadge status={batch.status} />
+        <BatchStatusSelector
+          status={batch.status}
+          onStatusChange={(next) => onStatusChange?.(batch, next)}
+        />
       </td>
       <td className="px-4 py-4 text-right sm:pr-6">
         <BatchTableActions
           batch={batch}
           onViewDetails={() => navigate(detailsPath, { state: linkState })}
-          onEdit={() => onEditBatch?.(batch)}
           onQuickView={() => onQuickViewBatch?.(batch)}
+          onEdit={() => onEditBatch?.(batch)}
+          onDuplicate={() => onDuplicate?.(batch)}
+          onChangeStatus={() => onChangeStatusAction?.(batch)}
+          onDelete={() => onDelete?.(batch)}
+          onMerge={() => onMerge?.(batch)}
         />
       </td>
     </tr>

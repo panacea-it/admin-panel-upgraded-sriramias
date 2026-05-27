@@ -56,6 +56,19 @@ export function createEmptyBatchForm() {
   }
 }
 
+/** Pre-fill Add Batch form when duplicating — new ID on save, name suffixed with (Copy). */
+export function batchRowToDuplicateForm(row) {
+  const base = batchRowToForm(row)
+  const trimmed = (base.batchName || '').trim()
+  const batchName =
+    trimmed && !/\(copy\)$/i.test(trimmed) ? `${trimmed} (Copy)` : trimmed || 'Batch (Copy)'
+  return {
+    ...base,
+    batchId: '',
+    batchName,
+  }
+}
+
 export function batchRowToForm(row) {
   if (!row) return createEmptyBatchForm()
   const fd = row.formData || {}

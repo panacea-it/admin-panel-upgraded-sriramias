@@ -5,7 +5,6 @@ import {
   Search,
   Star,
   Check,
-  GitCompare,
   Building2,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
@@ -21,11 +20,8 @@ export default function CenterSelectorDropdown({ open, onToggle, onClose }) {
     favorites,
     recentIds,
     canSelectCenters,
-    compareMode,
-    setCompareMode,
     selectAll,
     selectSingle,
-    toggleMulti,
     toggleFavorite,
     headerLabel,
   } = useFinanceCenterFilter()
@@ -94,16 +90,6 @@ export default function CenterSelectorDropdown({ open, onToggle, onClose }) {
                 >
                   All Centers
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setCompareMode(!compareMode)}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                    compareMode ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600',
-                  )}
-                >
-                  <GitCompare className="h-3 w-3" /> Compare
-                </button>
               </div>
             )}
           </div>
@@ -125,12 +111,8 @@ export default function CenterSelectorDropdown({ open, onToggle, onClose }) {
                       type="button"
                       onClick={() => {
                         if (!canSelectCenters) return
-                        if (compareMode) {
-                          toggleMulti(center.centerId)
-                        } else {
-                          selectSingle(center.centerId)
-                          onClose?.()
-                        }
+                        selectSingle(center.centerId)
+                        onClose?.()
                       }}
                       className="flex min-w-0 flex-1 items-start gap-2 text-left"
                     >

@@ -642,3 +642,14 @@ html.dark .app-toast-close {
 [data-sonner-toast][data-front='true'] {
   opacity: 1;
 }
+
+@keyframes fadeInRow {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

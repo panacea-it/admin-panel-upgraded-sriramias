@@ -1,143 +1,185 @@
-import { useEffect, useState } from 'react'
+import { useRef } from 'react'
+import { useForm } from 'react-hook-form'
 import { DoorOpen } from 'lucide-react'
 import Modal from '../ui/Modal'
 import FormModalSubmitBar from '../common/FormModalSubmitBar'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
+import ClassroomLocationSelector from '../academics/ClassroomLocationSelector'
+import { CourseFormField, CourseInput, CourseSelect } from '../courses/CourseFormField'
+import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
+import { findCityById } from '../../utils/citiesStorage'
+import { useCenters } from '../../contexts/CentersContext'
+import { toast } from '../../utils/toast'
 import { cn } from '../../utils/cn'
 
 const EMPTY = {
+  centerId: '',
+  cityPlaceId: '',
   name: '',
   code: '',
   capacity: '',
-  description: '',
   status: 'Active',
 }
 
+function classroomToForm(classroom) {
+  if (!classroom) return { ...EMPTY }
+  return {
+    centerId: classroom.centerId || '',
+    cityPlaceId: classroom.cityPlaceId || '',
+    name: classroom.name || '',
+    code: classroom.code || '',
+    capacity: classroom.capacity ?? '',
+    status: classroom.status || 'Active',
+  }
+}
+
+const fieldClass = cn(
+  'h-11 w-full rounded-xl bg-[#d1e9f6] px-4 text-sm outline-none',
+  'focus:ring-2 focus:ring-[#55ace7]/40',
+)
+
 export default function ClassroomFormModal({ open, onClose, classroom, onSave, saving }) {
-  const [form, setForm] = useState(EMPTY)
-  const [errors, setErrors] = useState({})
+  const isEdit = Boolean(classroom)
+  const { activeCenters } = useCenters()
+  const classroomRef = useRef(classroom)
+  classroomRef.current = classroom
+  const editKey = getModalEditKey(classroom)
 
-  useEffect(() => {
-    if (!open) return
-    if (classroom) {
-      setForm({
-        name: classroom.name || '',
-        code: classroom.code || '',
-        capacity: classroom.capacity ?? '',
-        description: classroom.description || '',
-        status: classroom.status || 'Active',
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm({ defaultValues: EMPTY })
+
+  const centerId = watch('centerId')
+  const cityPlaceId = watch('cityPlaceId')
+  const name = watch('name')
+
+  useInitOnModalOpen(open, editKey, () => {
+    reset(classroomToForm(classroomRef.current))
+    clearErrors()
+  })
+
+  const onSubmit = async (values) => {
+    const centre = activeCenters.find((c) => String(c.centerId) === String(values.centerId))
+    const city = values.cityPlaceId ? findCityById(values.cityPlaceId) : null
+    if (!centre) {
+      setError('centerId', { message: 'Centre is required' })
+      return
+    }
+    if (!city) {
+      setError('cityPlaceId', { message: 'City / place is required' })
+      return
+    }
+    try {
+      await onSave({
+        ...values,
+        centerName: centre.centerName,
+        placeName: city.placeName,
+        description: classroomRef.current?.description || '',
+        color: classroomRef.current?.color,
       })
-    } else {
-      setForm(EMPTY)
+    } catch (e) {
+      if (e.validation) {
+        Object.entries(e.validation).forEach(([key, message]) => {
+          setError(key, { message })
+        })
+      }
     }
-    setErrors({})
-  }, [open, classroom])
-
-  const update = (key) => (e) => {
-    const val = e.target.value
-    setForm((f) => ({ ...f, [key]: val }))
-    setErrors((prev) => ({ ...prev, [key]: undefined }))
   }
 
-  const validate = () => {
-    const next = {}
-    if (!form.name.trim()) next.name = 'Classroom name is required'
-    if (!form.code.trim()) next.code = 'Classroom code is required'
-    if (form.capacity !== '' && Number(form.capacity) < 1) {
-      next.capacity = 'Capacity must be at least 1'
-    }
-    setErrors(next)
-    return Object.keys(next).length === 0
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!validate()) return
-    await onSave(form)
-  }
+  if (!open) return null
 
   return (
     <Modal open={open} onClose={onClose} size="md">
-      <form onSubmit={handleSubmit} className="flex flex-col">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex max-h-[min(90vh,820px)] flex-col overflow-hidden rounded-2xl bg-[#f0f4f8]"
+      >
         <ModalPanelHeader
           icon={DoorOpen}
-          title={classroom ? 'Edit Classroom' : 'Add Classroom'}
+          title={isEdit ? 'Edit Classroom' : 'Add Classroom'}
           subtitle="Manage room details and capacity"
           onBack={onClose}
         />
-        <div className="space-y-4 px-5 py-4 sm:px-6">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#333]">
-              Classroom Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={form.name}
-              onChange={update('name')}
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
+          <ClassroomLocationSelector
+            centerId={centerId}
+            cityPlaceId={cityPlaceId}
+            classroomName={name}
+            onCenterChange={(id) => {
+              setValue('centerId', id, { shouldDirty: true })
+              setValue('cityPlaceId', '', { shouldDirty: true })
+              clearErrors(['centerId', 'cityPlaceId'])
+            }}
+            onCityChange={(id) => {
+              setValue('cityPlaceId', id, { shouldDirty: true })
+              clearErrors('cityPlaceId')
+            }}
+            errors={{
+              centerId: errors.centerId?.message,
+              cityPlaceId: errors.cityPlaceId?.message,
+            }}
+          />
+
+          <CourseFormField label="Classroom Name" required>
+            <CourseInput
+              {...register('name', { required: 'Classroom name is required' })}
               placeholder="e.g. Class Room 1"
-              className={cn(
-                'h-11 w-full rounded-xl bg-[#d1e9f6] px-4 text-sm outline-none focus:ring-2 focus:ring-[#55ace7]/40',
-                errors.name && 'ring-2 ring-red-400',
-              )}
+              className={fieldClass}
             />
-            {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#333]">
-              Classroom Code / Room Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={form.code}
-              onChange={update('code')}
+            {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+          </CourseFormField>
+
+          <CourseFormField label="Classroom Code / Room Number" required>
+            <CourseInput
+              {...register('code', { required: 'Classroom code is required' })}
               placeholder="e.g. CR-01"
-              className={cn(
-                'h-11 w-full rounded-xl bg-[#d1e9f6] px-4 text-sm uppercase outline-none focus:ring-2 focus:ring-[#55ace7]/40',
-                errors.code && 'ring-2 ring-red-400',
-              )}
+              className={cn(fieldClass, 'uppercase')}
             />
-            {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code}</p>}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#333]">Capacity (optional)</label>
-            <input
+            {errors.code && <p className="text-xs text-red-500">{errors.code.message}</p>}
+          </CourseFormField>
+
+          <CourseFormField label="Capacity (optional)">
+            <CourseInput
               type="number"
               min={1}
-              value={form.capacity}
-              onChange={update('capacity')}
+              {...register('capacity')}
               placeholder="e.g. 40"
-              className={cn(
-                'h-11 w-full rounded-xl bg-[#d1e9f6] px-4 text-sm outline-none focus:ring-2 focus:ring-[#55ace7]/40',
-                errors.capacity && 'ring-2 ring-red-400',
-              )}
+              className={fieldClass}
             />
-            {errors.capacity && <p className="mt-1 text-xs text-red-500">{errors.capacity}</p>}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#333]">Description (optional)</label>
-            <textarea
-              value={form.description}
-              onChange={update('description')}
-              rows={3}
-              placeholder="Notes about equipment, floor, etc."
-              className="w-full rounded-xl bg-[#d1e9f6] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#55ace7]/40"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#333]">Status</label>
-            <select
-              value={form.status}
-              onChange={update('status')}
-              className="h-11 w-full rounded-xl bg-[#d1e9f6] px-4 text-sm outline-none focus:ring-2 focus:ring-[#55ace7]/40"
-            >
+            {errors.capacity && (
+              <p className="text-xs text-red-500">{errors.capacity.message}</p>
+            )}
+          </CourseFormField>
+
+          <CourseFormField label="Status">
+            <CourseSelect {...register('status')}>
               <option value="Active">Active</option>
               <option value="In Active">In Active</option>
-            </select>
-          </div>
+            </CourseSelect>
+          </CourseFormField>
         </div>
-        <FormModalSubmitBar
-          onCancel={onClose}
-          submitLabel={classroom ? 'Update' : 'Save'}
-          loading={saving}
-        />
+
+        <div className="sticky bottom-0 border-t border-slate-200/80 bg-[#f0f4f8] px-5 pb-5 pt-4 sm:px-6">
+          <FormModalSubmitBar
+            isEditMode={isEdit}
+            onReset={() => {
+              reset(classroomToForm(classroomRef.current))
+              clearErrors()
+              toast.message('Form reset')
+            }}
+            createLabel={saving ? 'Saving…' : 'Save'}
+            updateLabel={saving ? 'Saving…' : 'Update'}
+            resetLabel="Reset"
+          />
+        </div>
       </form>
     </Modal>
   )

@@ -1,4 +1,5 @@
 import { CLASSROOMS_SEED } from '../data/classroomsSeed'
+import { findCityById } from './citiesStorage'
 
 const STORAGE_KEY = 'sriram_classrooms_v1'
 
@@ -7,8 +8,13 @@ function nowIso() {
 }
 
 function normalize(row) {
+  const city = row.cityPlaceId ? findCityById(row.cityPlaceId) : null
   return {
     id: row.id,
+    centerId: String(row.centerId || city?.centerId || ''),
+    centerName: String(row.centerName || city?.centerName || '').trim(),
+    cityPlaceId: String(row.cityPlaceId || ''),
+    placeName: String(row.placeName || city?.placeName || '').trim(),
     name: String(row.name || '').trim(),
     code: String(row.code || '').trim().toUpperCase(),
     capacity: row.capacity != null && row.capacity !== '' ? Number(row.capacity) : null,
@@ -53,12 +59,23 @@ export function findClassroomById(id) {
   return loadClassrooms().find((c) => c.id === id) || null
 }
 
-export function validateClassroomUnique(list, { name, code, excludeId }) {
-  const n = name?.trim().toLowerCase()
-  const c = code?.trim().toLowerCase()
+export function validateClassroomUnique(list, payload, { excludeId } = {}) {
   const errors = {}
-  if (!n) errors.name = 'Classroom name is required'
-  if (!c) errors.code = 'Classroom code is required'
+  if (!payload.centerId) errors.centerId = 'Centre is required'
+  if (!payload.cityPlaceId) errors.cityPlaceId = 'City / place is required'
+  if (!payload.name?.trim()) errors.name = 'Classroom name is required'
+  if (!payload.code?.trim()) errors.code = 'Classroom code is required'
+
+  if (
+    payload.capacity !== '' &&
+    payload.capacity != null &&
+    (Number.isNaN(Number(payload.capacity)) || Number(payload.capacity) < 1)
+  ) {
+    errors.capacity = 'Capacity must be a positive number'
+  }
+
+  const n = payload.name?.trim().toLowerCase()
+  const c = payload.code?.trim().toLowerCase()
   list.forEach((row) => {
     if (excludeId && row.id === excludeId) return
     if (n && row.name.toLowerCase() === n) errors.name = 'Classroom name already exists'

@@ -17,6 +17,9 @@ export function BatchManagementProvider({ children }) {
     updateStudent,
     deleteStudent,
     toggleStudentStatus,
+    copyStudentsToBatch,
+    moveStudentToBatch,
+    studentExistsInBatch,
   } = useBatchStudents()
 
   const getStudentCount = useCallback(
@@ -36,6 +39,9 @@ export function BatchManagementProvider({ children }) {
       updateStudent,
       deleteStudent,
       toggleStudentStatus,
+      copyStudentsToBatch,
+      moveStudentToBatch,
+      studentExistsInBatch,
     }),
     [
       getStudents,
@@ -44,6 +50,9 @@ export function BatchManagementProvider({ children }) {
       updateStudent,
       deleteStudent,
       toggleStudentStatus,
+      copyStudentsToBatch,
+      moveStudentToBatch,
+      studentExistsInBatch,
     ],
   )
 

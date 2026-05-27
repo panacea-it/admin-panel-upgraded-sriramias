@@ -1,116 +1,24 @@
 import { useRef, useState } from 'react'
 import { useInitOnModalOpen } from '../../hooks/modalFormSync'
-import { useForm, Controller } from 'react-hook-form'
-import { BookOpen, Calendar, ChevronDown, Film } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { BookOpen } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import SubjectModalShell from './SubjectModalShell'
-import TimeDurationFields from './TimeDurationFields'
-import RecurringScheduleSection from '../live-classes/RecurringScheduleSection'
-import {
-  CATEGORY_OPTIONS,
-  CENTER_DROPDOWN_OPTIONS,
-  SUBJECT_DROPDOWN_OPTIONS,
-  TEACHER_DROPDOWN_OPTIONS,
-  TOPIC_DROPDOWN_OPTIONS,
-} from '../../data/academicsSubjectsSeed'
-import SubjectChipMultiSelect from './SubjectChipMultiSelect'
-import ClassroomSelectField from '../classrooms/ClassroomSelectField'
-import {
-  CourseFormField,
-  CourseSelect,
-} from '../courses/CourseFormField'
-import { RECURRENCE_EDIT_SCOPES } from '../../constants/recurrence'
+import SubjectCourseDetailsSection from './SubjectCourseDetailsSection'
+import SubjectContentFields from './SubjectContentFields'
+import { FormFooter } from './subjectFormUi'
 import { useAuth } from '../../contexts/AuthContext'
+import { useBatchesData } from '../../hooks/useBatchesData'
 import {
   createRecurrenceFromSubjectForm,
   flattenSubjectsLiveClassesForConflicts,
-  formAnchorTime,
   getExcludeLessonIds,
 } from '../../utils/academicsSubjectsRecurrence'
-import SubjectTestSeriesSection from './SubjectTestSeriesSection'
-import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
-import { validateUploadFile } from '../../utils/uploadValidation'
 import {
   EMPTY_SUBJECT_FORM,
-  clampTimeField,
-  shouldShowLiveClassSection,
-  shouldShowRecordingSection,
-  shouldShowTestSeriesSection,
   subjectToForm,
   validateSubjectForm,
 } from './subjectFormUtils'
-import { cn } from '../../utils/cn'
-
-function SectionTitle({ children }) {
-  return (
-    <div className="rounded-xl bg-white px-4 py-3 text-center shadow-[0_4px_14px_rgba(15,23,42,0.08)]">
-      <h3 className="text-base font-bold text-[#246392] sm:text-lg">{children}</h3>
-    </div>
-  )
-}
-
-function FieldLabel({ children, required }) {
-  return (
-    <label className="mb-1.5 block text-sm font-medium text-[#333]">
-      {children}
-      {required && <span className="text-red-500"> *</span>}
-    </label>
-  )
-}
-
-function FormInput({ register, name, error, ...props }) {
-  return (
-    <input
-      {...register(name)}
-      className={cn(
-        'h-11 w-full rounded-xl bg-[#d1e9f6] px-4 text-sm text-[#222] outline-none placeholder:text-[#7a8a9a] focus:ring-2 focus:ring-[#55ace7]/40',
-        error && 'ring-2 ring-red-400',
-      )}
-      {...props}
-    />
-  )
-}
-
-function FormSelect({ register, name, error, options, placeholder }) {
-  return (
-    <div className="relative">
-      <select
-        {...register(name)}
-        className={cn(
-          'h-11 w-full appearance-none rounded-xl bg-[#d1e9f6] px-4 pr-10 text-sm text-[#222] outline-none focus:ring-2 focus:ring-[#55ace7]/40',
-          error && 'ring-2 ring-red-400',
-        )}
-      >
-        <option value="">{placeholder}</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#687180]" />
-    </div>
-  )
-}
-
-function RecurringToggle({ checked, onChange, label }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-3">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 rounded-full transition ${checked ? 'bg-[#55ace7]' : 'bg-[#d1d5db]'}`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${checked ? 'translate-x-5' : ''}`}
-        />
-      </button>
-      <span className="text-sm font-medium text-[#222]">{label}</span>
-    </label>
-  )
-}
 
 export default function SubjectModal({
   open,
@@ -124,11 +32,13 @@ export default function SubjectModal({
 }) {
   const { user } = useAuth()
   const actorName = user?.name || user?.email || 'Admin'
+  const { sourceRows: batches, loading: batchesLoading } = useBatchesData()
   const [saving, setSaving] = useState(false)
   const [recordingUploadError, setRecordingUploadError] = useState(null)
   const [testSeriesErrors, setTestSeriesErrors] = useState({})
   const isEdit = mode === 'edit'
   const liveClassOnly = context === 'liveClass'
+  const subjectOnly = context === 'subject'
 
   const [recurring, setRecurring] = useState(false)
   const [recurrence, setRecurrence] = useState(null)
@@ -166,37 +76,11 @@ export default function SubjectModal({
     syncRecurrenceState(seeded)
     clearErrors()
     setTestSeriesErrors({})
+    setRecordingUploadError(null)
   })
 
-  const watchedCategories = watch('categories')
   const watchedDate = watch('date')
-  const watchedTeacher = watch('teacher')
-  const watchedTimeHrs = watch('timeHrs')
-  const watchedTimeMin = watch('timeMin')
-  const watchedTimeSec = watch('timeSec')
-  const watchedDurHrs = watch('durationHrs')
-  const watchedDurMin = watch('durationMin')
-  const watchedDurSec = watch('durationSec')
-
-  const showLiveClass = shouldShowLiveClassSection(
-    { categories: liveClassOnly ? ['Live Class'] : watchedCategories },
-    { liveClassOnly },
-  )
-  const showRecording = shouldShowRecordingSection(
-    { categories: watchedCategories },
-    { liveClassOnly },
-  )
-  const showTestSeries = shouldShowTestSeriesSection(
-    { categories: watchedCategories },
-    { liveClassOnly },
-  )
-
   const isRecurringEdit = isEdit && Boolean(liveClass?.recurrenceSeriesId)
-  const anchorTime = formAnchorTime({
-    timeHrs: watchedTimeHrs,
-    timeMin: watchedTimeMin,
-    timeSec: watchedTimeSec,
-  })
 
   const handleRecurringToggle = (enabled) => {
     setRecurring(enabled)
@@ -204,20 +88,10 @@ export default function SubjectModal({
       setRecurrence((prev) =>
         prev?.enabled
           ? prev
-          : createRecurrenceFromSubjectForm({
-              date: watchedDate,
-              timezone,
-            }),
+          : createRecurrenceFromSubjectForm({ date: watchedDate, timezone }),
       )
     } else {
       setRecurrence(null)
-    }
-  }
-
-  const handleRecurrenceChange = (nextRule) => {
-    setRecurrence(nextRule)
-    if (nextRule?.startDate && !watchedDate) {
-      setValue('date', nextRule.startDate)
     }
   }
 
@@ -233,6 +107,7 @@ export default function SubjectModal({
 
     const validationErrors = validateSubjectForm(payload, {
       liveClassOnly,
+      subjectOnly,
       requireLiveClass: liveClassOnly,
       allSubjects: subjects,
       subjectId: subject?.id || '',
@@ -242,18 +117,12 @@ export default function SubjectModal({
     if (Object.keys(validationErrors).length) {
       const tsErr = {}
       Object.entries(validationErrors).forEach(([key, message]) => {
-        if (key.startsWith('testSeries_')) {
-          tsErr[key] = message
-        } else if (key === 'recurrence') {
-          toast.error(message)
-        } else {
-          setError(key, { type: 'manual', message })
-        }
+        if (key.startsWith('testSeries_')) tsErr[key] = message
+        else if (key === 'recurrence') toast.error(message)
+        else setError(key, { type: 'manual', message })
       })
       setTestSeriesErrors(tsErr)
-      if (Object.keys(tsErr).length) {
-        toast.error('Please complete the Test Series section')
-      }
+      if (Object.keys(tsErr).length) toast.error('Please complete the Test Series section')
       return
     }
     setTestSeriesErrors({})
@@ -267,431 +136,93 @@ export default function SubjectModal({
     }
   }
 
-  const lessonsForConflicts = flattenSubjectsLiveClassesForConflicts(subjects)
-  const excludeLessonIds = getExcludeLessonIds(subject, liveClass, subjects)
+  const title = liveClassOnly
+    ? isEdit
+      ? 'Edit Live Class'
+      : 'Add Live Class'
+    : isEdit
+      ? 'Edit Subject'
+      : 'Create Subject'
 
   return (
     <SubjectModalShell open={open} onClose={onClose}>
       <form
         onSubmit={handleSubmit(onFormSubmit)}
-        className="max-h-[min(90vh,880px)] overflow-y-auto rounded-2xl bg-[#f4f6f8] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
+        className="flex max-h-[min(90vh,880px)] flex-col overflow-hidden rounded-2xl bg-[#f4f6f8] shadow-[0_24px_60px_rgba(15,23,42,0.2)]"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-[#55ace7] via-[#3d7eb5] to-[#246392] px-5 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
-              <BookOpen className="h-5 w-5 text-[#246392]" strokeWidth={2.2} />
+        <div className="shrink-0 rounded-t-2xl bg-gradient-to-r from-[#55ace7] via-[#3d7eb5] to-[#246392] px-5 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
+                <BookOpen className="h-5 w-5 text-[#246392]" strokeWidth={2.2} />
+              </div>
+              <h2 className="text-lg font-bold text-white sm:text-xl">{title}</h2>
             </div>
-            <h2 className="text-lg font-bold text-white sm:text-xl">
-              {liveClassOnly
-                ? isEdit
-                  ? 'Edit Live Class'
-                  : 'Add Live Class'
-                : isEdit
-                  ? 'Edit Subject'
-                  : 'Subject Creation'}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm font-semibold text-white underline-offset-2 transition hover:underline"
-          >
-            Go Back
-          </button>
-        </div>
-
-        <div className="space-y-5 p-4 sm:p-6">
-          {!liveClassOnly && (
-            <section className="space-y-4">
-              <SectionTitle>Course Details</SectionTitle>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <FieldLabel required>Subject Name</FieldLabel>
-                  <FormInput
-                    register={register}
-                    name="subjectName"
-                    error={errors.subjectName}
-                    placeholder="Enter subject name"
-                  />
-                  {errors.subjectName && (
-                    <p className="mt-1 text-xs text-red-500">{errors.subjectName.message}</p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel required>Subject</FieldLabel>
-                  <FormSelect
-                    register={register}
-                    name="subject"
-                    error={errors.subject}
-                    options={SUBJECT_DROPDOWN_OPTIONS}
-                    placeholder="Choose Subject"
-                  />
-                  {errors.subject && (
-                    <p className="mt-1 text-xs text-red-500">{errors.subject.message}</p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel>Topic</FieldLabel>
-                  <Controller
-                    control={control}
-                    name="topics"
-                    render={({ field }) => (
-                      <SubjectChipMultiSelect
-                        options={TOPIC_DROPDOWN_OPTIONS}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Choose Topic"
-                      />
-                    )}
-                  />
-                </div>
-                <div>
-                  <FieldLabel required>Teacher</FieldLabel>
-                  <FormSelect
-                    register={register}
-                    name="teacher"
-                    error={errors.teacher}
-                    options={TEACHER_DROPDOWN_OPTIONS}
-                    placeholder="Choose Teacher"
-                  />
-                  {errors.teacher && (
-                    <p className="mt-1 text-xs text-red-500">{errors.teacher.message}</p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel required>Category</FieldLabel>
-                  <Controller
-                    control={control}
-                    name="categories"
-                    render={({ field }) => (
-                      <SubjectChipMultiSelect
-                        options={CATEGORY_OPTIONS.map((o) => o.value)}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Choose Category"
-                        error={errors.categories?.message}
-                      />
-                    )}
-                  />
-                  {errors.categories && (
-                    <p className="mt-1 text-xs text-red-500">{errors.categories.message}</p>
-                  )}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {showLiveClass && (
-            <section className="space-y-4">
-              <SectionTitle>Live Class Details</SectionTitle>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <FieldLabel required>Class Title</FieldLabel>
-                  <FormInput
-                    register={register}
-                    name="classTitle"
-                    error={errors.classTitle}
-                    placeholder="Class title"
-                  />
-                  {errors.classTitle && (
-                    <p className="mt-1 text-xs text-red-500">{errors.classTitle.message}</p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel required>Center</FieldLabel>
-                  <FormSelect
-                    register={register}
-                    name="center"
-                    error={errors.center}
-                    options={CENTER_DROPDOWN_OPTIONS}
-                    placeholder="Choose Center"
-                  />
-                  {errors.center && (
-                    <p className="mt-1 text-xs text-red-500">{errors.center.message}</p>
-                  )}
-                </div>
-                <Controller
-                  control={control}
-                  name="classroomId"
-                  render={({ field }) => (
-                    <ClassroomSelectField
-                      value={field.value}
-                      onChange={field.onChange}
-                      date={watchedDate}
-                      timeHrs={watchedTimeHrs}
-                      timeMin={watchedTimeMin}
-                      timeSec={watchedTimeSec}
-                      durationHrs={watchedDurHrs}
-                      durationMin={watchedDurMin}
-                      durationSec={watchedDurSec}
-                      excludeSourceIds={liveClass?.id ? [liveClass.id] : []}
-                      error={errors.classRoom?.message}
-                      required
-                      label="Select Classroom"
-                    />
-                  )}
-                />
-                <div>
-                  <FieldLabel required>Date</FieldLabel>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      {...register('date')}
-                      className={cn(
-                        'h-11 w-full rounded-xl bg-[#d1e9f6] px-4 pr-11 text-sm text-[#222] outline-none focus:ring-2 focus:ring-[#55ace7]/40',
-                        errors.date && 'ring-2 ring-red-400',
-                      )}
-                    />
-                    <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#df8284]" />
-                  </div>
-                  {errors.date && (
-                    <p className="mt-1 text-xs text-red-500">{errors.date.message}</p>
-                  )}
-                </div>
-                <Controller
-                  control={control}
-                  name="timeHrs"
-                  render={({ field }) => (
-                    <TimeDurationFields
-                      label="Time"
-                      required
-                      hrs={field.value}
-                      min={watch('timeMin')}
-                      sec={watch('timeSec')}
-                      onHrsChange={(e) => field.onChange(clampTimeField(e.target.value, 23))}
-                      onMinChange={(e) =>
-                        setValue('timeMin', clampTimeField(e.target.value))
-                      }
-                      onSecChange={(e) =>
-                        setValue('timeSec', clampTimeField(e.target.value))
-                      }
-                      error={errors.time?.message}
-                    />
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="durationHrs"
-                  render={({ field }) => (
-                    <TimeDurationFields
-                      label="Duration"
-                      hrs={field.value}
-                      min={watch('durationMin')}
-                      sec={watch('durationSec')}
-                      onHrsChange={(e) => field.onChange(clampTimeField(e.target.value, 23))}
-                      onMinChange={(e) =>
-                        setValue('durationMin', clampTimeField(e.target.value))
-                      }
-                      onSecChange={(e) =>
-                        setValue('durationSec', clampTimeField(e.target.value))
-                      }
-                    />
-                  )}
-                />
-                <CourseFormField label="Timezone">
-                  <CourseSelect
-                    value={timezone}
-                    onChange={(e) => {
-                      const tz = e.target.value
-                      setTimezone(tz)
-                      if (recurrence) {
-                        setRecurrence({ ...recurrence, timezone: tz })
-                      }
-                    }}
-                  >
-                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                    <option value="UTC">UTC</option>
-                    <option value="America/New_York">America/New_York (EST/EDT)</option>
-                    <option value="Europe/London">Europe/London (GMT/BST)</option>
-                  </CourseSelect>
-                </CourseFormField>
-              </div>
-
-              <RecurringToggle
-                checked={recurring}
-                onChange={handleRecurringToggle}
-                label="Recurring session"
-              />
-
-              {isRecurringEdit && (
-                <div className="rounded-xl border border-[#cfe8f8] bg-[#f8fbff] px-4 py-3">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#246392]">
-                    Apply changes to
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {RECURRENCE_EDIT_SCOPES.map((opt) => (
-                      <label
-                        key={opt.value}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium"
-                      >
-                        <input
-                          type="radio"
-                          name="recurrenceEditScope"
-                          value={opt.value}
-                          checked={recurrenceEditScope === opt.value}
-                          onChange={() => setRecurrenceEditScope(opt.value)}
-                          className="accent-[#246392]"
-                        />
-                        {opt.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <RecurringScheduleSection
-                enabled={recurring}
-                recurrence={recurrence}
-                onRecurrenceChange={handleRecurrenceChange}
-                anchorDate={watchedDate}
-                anchorTime={anchorTime}
-                lessons={lessonsForConflicts}
-                excludeLessonIds={excludeLessonIds}
-                teacher={watchedTeacher || subject?.teacher || ''}
-                subjectId={subject?.id || ''}
-                actorName={actorName}
-              />
-              {errors.recurrence && (
-                <p className="text-xs font-medium text-red-600">{errors.recurrence.message}</p>
-              )}
-            </section>
-          )}
-
-          {showRecording && (
-            <section className="space-y-4">
-              <SectionTitle>Recording Class Details</SectionTitle>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <FieldLabel required>Lesson Name</FieldLabel>
-                  <FormInput
-                    register={register}
-                    name="recordingLessonName"
-                    error={errors.recordingLessonName}
-                    placeholder="Lesson name"
-                  />
-                  {errors.recordingLessonName && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {errors.recordingLessonName.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel required>Center</FieldLabel>
-                  <FormSelect
-                    register={register}
-                    name="recordingCenter"
-                    error={errors.recordingCenter}
-                    options={CENTER_DROPDOWN_OPTIONS}
-                    placeholder="Choose Center"
-                  />
-                  {errors.recordingCenter && (
-                    <p className="mt-1 text-xs text-red-500">{errors.recordingCenter.message}</p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel required>Topic</FieldLabel>
-                  <FormSelect
-                    register={register}
-                    name="recordingTopic"
-                    error={errors.recordingTopic}
-                    options={TOPIC_DROPDOWN_OPTIONS}
-                    placeholder="Choose Topic"
-                  />
-                  {errors.recordingTopic && (
-                    <p className="mt-1 text-xs text-red-500">{errors.recordingTopic.message}</p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel required>Teacher</FieldLabel>
-                  <FormInput
-                    register={register}
-                    name="recordingTeacher"
-                    error={errors.recordingTeacher}
-                    placeholder="Teacher name"
-                  />
-                  {errors.recordingTeacher && (
-                    <p className="mt-1 text-xs text-red-500">{errors.recordingTeacher.message}</p>
-                  )}
-                </div>
-                <div className="sm:col-span-2">
-                  <FieldLabel>Upload Recording</FieldLabel>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="video/mp4,video/quicktime,video/x-matroska,video/avi,.mp4,.mov,.mkv,.avi"
-                      className="sr-only"
-                      id="subject-recording-upload"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const result = await validateUploadFile(file, 'VIDEO_RECORDING', {
-                          checkDimensions: false,
-                        })
-                        if (!result.valid) {
-                          setRecordingUploadError(result.message)
-                          e.target.value = ''
-                          return
-                        }
-                        setRecordingUploadError(null)
-                        setValue('recordingVideoFileName', file.name, { shouldValidate: true })
-                        clearErrors('recordingVideoFileName')
-                      }}
-                    />
-                    <label
-                      htmlFor="subject-recording-upload"
-                      className={cn(
-                        'flex h-11 cursor-pointer items-center justify-between rounded-xl bg-[#d1e9f6] px-4 text-sm text-[#7a8a9a]',
-                        errors.recordingVideoFileName && 'ring-2 ring-red-400',
-                      )}
-                    >
-                      <span className="truncate">
-                        {watch('recordingVideoFileName') || 'Choose video file'}
-                      </span>
-                      <Film className="h-5 w-5 shrink-0 text-[#55ace7]" />
-                    </label>
-                  </div>
-                  <UploadFieldHint profile="VIDEO_RECORDING" />
-                  <UploadValidationMessage message={recordingUploadError} />
-                  {errors.recordingVideoFileName && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {errors.recordingVideoFileName.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {showTestSeries && (
-            <SubjectTestSeriesSection
-              watch={watch}
-              setValue={setValue}
-              errors={testSeriesErrors}
-            />
-          )}
-
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-center">
             <button
               type="button"
-              onClick={() => {
-                const seeded = subjectToForm(subject, liveClass)
-                reset(seeded)
-                syncRecurrenceState(seeded)
-              }}
-              disabled={saving}
-              className="h-11 min-w-[140px] rounded-xl bg-gradient-to-r from-[#7eb8e8] to-[#55ace7] px-8 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(85,172,231,0.35)] transition hover:opacity-90 disabled:opacity-60"
+              onClick={onClose}
+              className="text-sm font-semibold text-white underline-offset-2 transition hover:underline"
             >
-              Reset
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="h-11 min-w-[140px] rounded-xl bg-gradient-to-r from-[#1a3a5c] to-[#03045e] px-8 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(3,4,94,0.35)] transition hover:opacity-90 disabled:opacity-60"
-            >
-              {saving ? 'Saving…' : 'Save'}
+              Go Back
             </button>
           </div>
         </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="space-y-5">
+            {subjectOnly && (
+              <SubjectCourseDetailsSection
+                register={register}
+                control={control}
+                errors={errors}
+              />
+            )}
+
+            {liveClassOnly && (
+              <SubjectContentFields
+                contentType="live"
+                register={register}
+                control={control}
+                errors={errors}
+                watch={watch}
+                setValue={setValue}
+                clearErrors={clearErrors}
+                subject={subject}
+                liveClass={liveClass}
+                subjects={subjects}
+                batches={batches}
+                batchesLoading={batchesLoading}
+                recurring={recurring}
+                onRecurringToggle={handleRecurringToggle}
+                recurrence={recurrence}
+                onRecurrenceChange={setRecurrence}
+                recurrenceEditScope={recurrenceEditScope}
+                onRecurrenceEditScopeChange={setRecurrenceEditScope}
+                timezone={timezone}
+                onTimezoneChange={(tz) => {
+                  setTimezone(tz)
+                  if (recurrence) setRecurrence({ ...recurrence, timezone: tz })
+                }}
+                isRecurringEdit={isRecurringEdit}
+                lessonsForConflicts={flattenSubjectsLiveClassesForConflicts(subjects)}
+                excludeLessonIds={getExcludeLessonIds(subject, liveClass, subjects)}
+                actorName={actorName}
+                recordingUploadError={recordingUploadError}
+                onRecordingUploadError={setRecordingUploadError}
+                testSeriesErrors={testSeriesErrors}
+              />
+            )}
+          </div>
+        </div>
+
+        <FormFooter
+          saving={saving}
+          onReset={() => {
+            const seeded = subjectToForm(subject, liveClass)
+            reset(seeded)
+            syncRecurrenceState(seeded)
+          }}
+        />
       </form>
     </SubjectModalShell>
   )

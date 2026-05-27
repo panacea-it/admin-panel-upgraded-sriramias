@@ -8,6 +8,7 @@ export default function PaginatedFigmaTable({
   columns,
   data,
   emptyMessage = 'No records found.',
+  emptyState,
   className,
   rowClassName,
   itemLabel = 'records',
@@ -16,6 +17,12 @@ export default function PaginatedFigmaTable({
   tableRef: externalRef,
   density = 'default',
   tableClassName,
+  zebraStriping = false,
+  loading = false,
+  skeletonRowCount = 6,
+  stickyHeader = false,
+  stickyLastColumn = false,
+  animateRows = false,
 }) {
   const internalRef = useRef(null)
   const tableRef = externalRef ?? internalRef
@@ -39,11 +46,18 @@ export default function PaginatedFigmaTable({
         columns={columns}
         data={pagination.paginatedItems}
         emptyMessage={emptyMessage}
+        emptyState={emptyState}
         rowClassName={rowClassName}
         density={density}
         className={cn('rounded-none shadow-none', tableClassName)}
+        zebraStriping={zebraStriping}
+        loading={loading}
+        skeletonRowCount={skeletonRowCount}
+        stickyHeader={stickyHeader}
+        stickyLastColumn={stickyLastColumn}
+        animateRows={animateRows}
       />
-      {data.length > 0 && (
+      {!loading && data.length > 0 && (
         <TablePagination
           page={pagination.page}
           pageSize={pagination.pageSize}

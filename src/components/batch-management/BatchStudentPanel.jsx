@@ -16,6 +16,7 @@ import StudentViewModal from './StudentViewModal'
 import StudentTableActions from './StudentTableActions'
 import CategoryStatusBadge from '../categories/CategoryStatusBadge'
 import ConfirmDeleteDialog from '../subjects/ConfirmDeleteDialog'
+import MoveStudentModal from './MoveStudentModal'
 import { PAYMENT_STATUSES, STUDENT_STATUSES } from '../../data/batchManagementData'
 import { cn } from '../../utils/cn'
 
@@ -27,6 +28,9 @@ export default function BatchStudentPanel({
   onUpdateStudent,
   onDeleteStudent,
   onToggleStudentStatus,
+  onMoveStudent,
+  targetBatches = [],
+  getTargetStrength,
 }) {
   const students = studentsProp ?? batch.students ?? []
   const isPage = variant === 'page'
@@ -39,6 +43,7 @@ export default function BatchStudentPanel({
   const [editingStudent, setEditingStudent] = useState(null)
   const [viewStudent, setViewStudent] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [moveTarget, setMoveTarget] = useState(null)
   const [saving, setSaving] = useState(false)
 
   const filteredStudents = useMemo(() => {
@@ -287,6 +292,9 @@ export default function BatchStudentPanel({
                           status={student.status ?? 'Active'}
                           onView={() => setViewStudent(student)}
                           onEdit={() => openEdit(student)}
+                          onMove={
+                            onMoveStudent ? () => setMoveTarget(student) : undefined
+                          }
                           onDelete={() => setDeleteTarget(student)}
                           onToggleStatus={() =>
                             onToggleStudentStatus(batch.id, student.id)
@@ -347,6 +355,25 @@ export default function BatchStudentPanel({
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         loading={saving}
+      />
+
+      <MoveStudentModal
+        open={Boolean(moveTarget)}
+        onClose={() => setMoveTarget(null)}
+        student={moveTarget}
+        currentBatch={batch}
+        targetBatches={targetBatches}
+        getTargetStrength={getTargetStrength}
+        saving={saving}
+        onSubmit={async (values) => {
+          setSaving(true)
+          try {
+            await onMoveStudent?.(moveTarget, values)
+            setMoveTarget(null)
+          } finally {
+            setSaving(false)
+          }
+        }}
       />
     </>
   )

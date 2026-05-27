@@ -5,6 +5,7 @@ import {
   validateClassroomUnique,
   findClassroomById,
 } from '../utils/classroomsStorage'
+import { findCityById } from '../utils/citiesStorage'
 import {
   findClassroomConflict,
   getOccupiedClassroomIds,
@@ -29,9 +30,15 @@ export async function fetchClassrooms({ status, signal } = {}) {
 
 export async function saveClassroom(payload, { isEdit, id } = {}) {
   const list = loadClassrooms()
-  const errors = validateClassroomUnique(list, {
-    name: payload.name,
-    code: payload.code,
+  const city = payload.cityPlaceId ? findCityById(payload.cityPlaceId) : null
+  const enriched = {
+    ...payload,
+    centerId: payload.centerId || city?.centerId,
+    centerName: payload.centerName || city?.centerName || '',
+    placeName: payload.placeName || city?.placeName || '',
+  }
+
+  const errors = validateClassroomUnique(list, enriched, {
     excludeId: isEdit ? id : null,
   })
   if (Object.keys(errors).length) {
@@ -43,12 +50,19 @@ export async function saveClassroom(payload, { isEdit, id } = {}) {
   await delay()
   const now = new Date().toISOString()
   const normalized = {
-    name: payload.name?.trim(),
-    code: payload.code?.trim().toUpperCase(),
-    capacity: payload.capacity != null && payload.capacity !== '' ? Number(payload.capacity) : null,
-    description: payload.description?.trim() || '',
-    status: payload.status === 'In Active' ? 'In Active' : 'Active',
-    color: payload.color || '#246392',
+    centerId: enriched.centerId,
+    centerName: enriched.centerName?.trim(),
+    cityPlaceId: enriched.cityPlaceId,
+    placeName: enriched.placeName?.trim(),
+    name: enriched.name?.trim(),
+    code: enriched.code?.trim().toUpperCase(),
+    capacity:
+      enriched.capacity != null && enriched.capacity !== ''
+        ? Number(enriched.capacity)
+        : null,
+    description: enriched.description?.trim() || '',
+    status: enriched.status === 'In Active' ? 'In Active' : 'Active',
+    color: enriched.color || '#246392',
     modifiedAt: now,
   }
 

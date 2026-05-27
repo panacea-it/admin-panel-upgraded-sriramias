@@ -1,5 +1,5 @@
 import { BookMarked, Pencil } from 'lucide-react'
-import CategoryStatusBadge from '../categories/CategoryStatusBadge'
+import BatchStatusBadge from './BatchStatusBadge'
 import { formatBatchDate } from '../../data/batchManagementData'
 
 function InfoItem({ label, children }) {
@@ -25,7 +25,7 @@ export default function BatchDetailsInfoCard({ batch, onEdit }) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <CategoryStatusBadge status={batch.status} />
+          <BatchStatusBadge status={batch.status} />
           {onEdit && (
             <button
               type="button"
@@ -46,8 +46,13 @@ export default function BatchDetailsInfoCard({ batch, onEdit }) {
         <InfoItem label="End Date">{formatBatchDate(batch.endDate)}</InfoItem>
         <InfoItem label="Total Students">{batch.totalStudents}</InfoItem>
         <InfoItem label="Batch Status">
-          <CategoryStatusBadge status={batch.status} />
+          <BatchStatusBadge status={batch.status} />
         </InfoItem>
+        {batch.mergedIntoName && (
+          <InfoItem label="Merge Reference">
+            <span className="text-[#246392]">Merged Into: {batch.mergedIntoName}</span>
+          </InfoItem>
+        )}
       </dl>
     </div>
   )

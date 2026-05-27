@@ -23,7 +23,7 @@ function FilterSelect({ label, value, onChange, options }) {
   )
 }
 
-const STATUS_OPTIONS = [
+const DEFAULT_STATUS_OPTIONS = [
   { value: 'all', label: 'Status' },
   { value: 'Active', label: 'Active' },
   { value: 'In Active', label: 'In Active' },
@@ -35,6 +35,10 @@ export default function CategoryFilterBar({
   searchPlaceholder = 'Search Category',
   status,
   onStatusChange,
+  statusOptions = DEFAULT_STATUS_OPTIONS,
+  centerFilter,
+  onCenterFilterChange,
+  centerOptions,
   categoryFilter,
   onCategoryFilterChange,
   categoryOptions,
@@ -71,12 +75,20 @@ export default function CategoryFilterBar({
             options={subjectOptions}
           />
         )}
+        {centerOptions && onCenterFilterChange && (
+          <FilterSelect
+            label="Center"
+            value={centerFilter}
+            onChange={onCenterFilterChange}
+            options={centerOptions}
+          />
+        )}
         {onStatusChange && (
           <FilterSelect
             label="Status"
             value={status}
             onChange={onStatusChange}
-            options={STATUS_OPTIONS}
+            options={statusOptions}
           />
         )}
       </div>
