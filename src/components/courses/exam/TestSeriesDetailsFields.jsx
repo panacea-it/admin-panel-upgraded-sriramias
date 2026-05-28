@@ -30,6 +30,8 @@ export default function TestSeriesDetailsFields({
   errors = {},
   testTypes = ACADEMIC_TEST_TYPES,
   disabled = false,
+  showTestType = true,
+  showMarksPerCorrectAnswer = false,
 }) {
   const flat = getTestSeriesFlat(normalizeTestSeriesBlock(testSeries))
 
@@ -52,23 +54,29 @@ export default function TestSeriesDetailsFields({
         {fieldErr(errors, 'testSeries_testName')}
       </div>
 
-      <div>
-        <FieldLabel required>Test Type</FieldLabel>
-        <select
-          disabled={disabled}
-          value={flat.testType}
-          onChange={(e) => updateFlat({ testType: e.target.value })}
-          className={cn(examInputClass, 'appearance-none', errors.testSeries_testType && 'ring-2 ring-red-400')}
-        >
-          <option value="">Select type</option>
-          {testTypes.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        {fieldErr(errors, 'testSeries_testType')}
-      </div>
+      {showTestType ? (
+        <div>
+          <FieldLabel required>Test Type</FieldLabel>
+          <select
+            disabled={disabled}
+            value={flat.testType}
+            onChange={(e) => updateFlat({ testType: e.target.value })}
+            className={cn(
+              examInputClass,
+              'appearance-none',
+              errors.testSeries_testType && 'ring-2 ring-red-400',
+            )}
+          >
+            <option value="">Select type</option>
+            {testTypes.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          {fieldErr(errors, 'testSeries_testType')}
+        </div>
+      ) : null}
 
       <div>
         <FieldLabel required>Duration</FieldLabel>
@@ -108,6 +116,26 @@ export default function TestSeriesDetailsFields({
         />
         {fieldErr(errors, 'testSeries_totalMarks')}
       </div>
+
+      {showMarksPerCorrectAnswer ? (
+        <div>
+          <FieldLabel required>Marks Per Correct Answer</FieldLabel>
+          <input
+            disabled={disabled}
+            inputMode="decimal"
+            value={flat.marksPerCorrectAnswer}
+            onChange={(e) =>
+              updateFlat({ marksPerCorrectAnswer: e.target.value.replace(/[^\d.]/g, '') })
+            }
+            placeholder="e.g. 2 or 2.5"
+            className={cn(
+              examInputClass,
+              errors.testSeries_marksPerCorrectAnswer && 'ring-2 ring-red-400',
+            )}
+          />
+          {fieldErr(errors, 'testSeries_marksPerCorrectAnswer')}
+        </div>
+      ) : null}
 
       <div className="sm:col-span-2 lg:col-span-3">
         <FieldLabel>Negative Marking</FieldLabel>

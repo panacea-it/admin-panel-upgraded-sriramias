@@ -35,12 +35,14 @@ import {
   LayoutGrid,
   TrendingUp,
   Layers3,
+  FileQuestion,
 } from 'lucide-react'
 import { ACADEMICS_LIVE_CLASSES_SUBMENU } from './liveClassesNav'
 import { ACADEMICS_CONTENT_LIBRARY_SUBMENU } from './contentLibraryNav'
 import { FINANCE_NAV_ITEMS } from './financeNav'
 import { SALES_ANALYTICS_NAV_ITEMS } from './salesAnalyticsNav'
 import { BOOKSTORE_NAV_ITEMS } from './bookstoreNav'
+import { TEST_MANAGEMENT_NAV_ITEMS } from './testManagementNav'
 
 /** Top-level dashboard link (no children) */
 export const SIDEBAR_DASHBOARD = {
@@ -83,6 +85,12 @@ export const SIDEBAR_GROUPS = [
       { label: 'Current Affairs', path: '/current-affairs', icon: Newspaper },
       ACADEMICS_CATEGORIES_SUBMENU,
     ],
+  },
+  {
+    id: 'test-management',
+    label: 'Test Management',
+    icon: FileQuestion,
+    children: TEST_MANAGEMENT_NAV_ITEMS.map(({ label, path, icon }) => ({ label, path, icon })),
   },
   {
     id: 'admin-management',

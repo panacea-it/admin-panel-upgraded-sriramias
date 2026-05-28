@@ -52,6 +52,8 @@ export default function SubjectTestSeriesSection({ watch, setValue, errors = {} 
             testSeries={testSeries}
             onTestSeriesChange={updateTestSeries}
             errors={errors}
+            showTestType={false}
+            showMarksPerCorrectAnswer
           />
         </div>
 

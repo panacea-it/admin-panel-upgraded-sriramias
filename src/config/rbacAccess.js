@@ -31,6 +31,7 @@ const ROLE_ROUTE_PREFIXES = {
     '/academics/content-library',
     '/free-resources',
     '/tests',
+    '/test-management/*',
     '/academics/categories',
     '/academics/live-classes',
     '/live-classes',
@@ -71,6 +72,7 @@ const ROLE_ROUTE_PREFIXES = {
     '/academics/content-library',
     '/free-resources',
     '/tests',
+    '/test-management/*',
     '/marketing/books',
     ...SETTINGS_PATHS,
   ],
@@ -105,7 +107,7 @@ const ROLE_NAV_SCOPE = {
   },
   [ROLES.OPERATION_ADMIN]: {
     dashboard: true,
-    groups: ['academics', 'users', 'finance', 'bookstore', 'operations'],
+    groups: ['academics', 'test-management', 'users', 'finance', 'bookstore', 'operations'],
     paths: null,
   },
   [ROLES.CONTENT_ADMIN]: {
@@ -120,7 +122,7 @@ const ROLE_NAV_SCOPE = {
   },
   [ROLES.TEACHER_ADMIN]: {
     dashboard: true,
-    groups: ['academics'],
+    groups: ['academics', 'test-management'],
     paths: null,
   },
   [ROLES.COUNSELING_ADMIN]: {

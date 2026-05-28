@@ -1,6 +1,7 @@
 const LIVE_CATEGORY = 'Live Class'
 const RECORDED_CATEGORY = 'Recording'
 const TEST_SERIES_CATEGORY = 'Test'
+const MAINS_ANSWER_WRITING_CATEGORY = 'Mains Answer Writing'
 const PDF_CATEGORY = 'PDF'
 
 const LEGACY_CATEGORY_ALIASES = {
@@ -17,6 +18,7 @@ export const CONTENT_CATEGORY_KEYS = {
   live: LIVE_CATEGORY,
   recording: RECORDED_CATEGORY,
   test: TEST_SERIES_CATEGORY,
+  mainsAnswerWriting: MAINS_ANSWER_WRITING_CATEGORY,
   pdf: PDF_CATEGORY,
 }
 
@@ -52,6 +54,10 @@ export function isTestSeriesCategory(category) {
   return cats.includes(TEST_SERIES_CATEGORY) || cats.includes('Test Series')
 }
 
+export function isMainsAnswerWritingCategory(category) {
+  return normalizeCategories(category).includes(MAINS_ANSWER_WRITING_CATEGORY)
+}
+
 export function isPdfCategory(category) {
   return normalizeCategories(category).includes(PDF_CATEGORY)
 }
@@ -63,6 +69,7 @@ export function getSubjectContentTypes(categories) {
   if (cats.includes(LIVE_CATEGORY)) types.push('live')
   if (cats.includes(RECORDED_CATEGORY)) types.push('recording')
   if (cats.includes(TEST_SERIES_CATEGORY)) types.push('test')
+  if (cats.includes(MAINS_ANSWER_WRITING_CATEGORY)) types.push('mainsAnswerWriting')
   if (cats.includes(PDF_CATEGORY)) types.push('pdf')
   return types
 }
@@ -71,7 +78,8 @@ export function contentTypeLabel(type) {
   const map = {
     live: 'Live Class',
     recording: 'Recording',
-    test: 'Test',
+    test: 'Prelims Test',
+    mainsAnswerWriting: 'Mains Answer Writing',
     pdf: 'PDF',
   }
   return map[type] || type
@@ -91,7 +99,8 @@ export function deriveClassTypeLabel(categories) {
   const parts = []
   if (cats.includes(LIVE_CATEGORY)) parts.push('Live')
   if (isRecordedClassCategory(cats)) parts.push('Recording')
-  if (isTestSeriesCategory(cats)) parts.push('Test')
+  if (isTestSeriesCategory(cats)) parts.push('Prelims Test')
+  if (cats.includes(MAINS_ANSWER_WRITING_CATEGORY)) parts.push('Mains Answer Writing')
   if (cats.includes(PDF_CATEGORY)) parts.push('PDF')
   if (parts.length) return parts.join(' + ')
   return cats.length ? cats.join(', ') : '—'

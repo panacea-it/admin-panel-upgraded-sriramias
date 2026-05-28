@@ -24,12 +24,22 @@ export default function SubjectChipMultiSelect({
   const selected = useMemo(() => normalizeList(value), [value])
   const coords = usePortalMenuPosition(triggerRef, open, 8)
 
+  const normalizedOptions = useMemo(() => normalizeOptions(options), [options])
+  const labelByValue = useMemo(() => {
+    const map = new Map()
+    normalizedOptions.forEach((o) => map.set(o.value, o.label))
+    return map
+  }, [normalizedOptions])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const pool = options.filter((opt) => !selected.includes(opt))
+    const pool = normalizedOptions.filter((opt) => !selected.includes(opt.value))
     if (!q) return pool
-    return pool.filter((opt) => opt.toLowerCase().includes(q))
-  }, [options, search, selected])
+    return pool.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q),
+    )
+  }, [normalizedOptions, search, selected])
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -45,10 +55,10 @@ export default function SubjectChipMultiSelect({
     return () => document.removeEventListener('mousedown', onDoc)
   }, [])
 
-  const toggle = (opt) => {
+  const toggle = (optValue) => {
     const set = new Set(selected)
-    if (set.has(opt)) set.delete(opt)
-    else set.add(opt)
+    if (set.has(optValue)) set.delete(optValue)
+    else set.add(optValue)
     onChange([...set])
   }
 
@@ -79,10 +89,10 @@ export default function SubjectChipMultiSelect({
                 key={item}
                 className="inline-flex max-w-full items-center gap-1 rounded-lg bg-white/90 px-2 py-0.5 text-xs font-semibold text-[#246392] shadow-sm"
               >
-                <span className="truncate">{item}</span>
+                <span className="truncate">{labelByValue.get(item) || item}</span>
                 <button
                   type="button"
-                  aria-label={`Remove ${item}`}
+                  aria-label={`Remove ${labelByValue.get(item) || item}`}
                   onClick={(e) => remove(item, e)}
                   className="rounded p-0.5 hover:bg-[#e8f4fc]"
                 >
@@ -132,13 +142,13 @@ export default function SubjectChipMultiSelect({
                 </li>
               ) : (
                 filtered.map((opt) => (
-                  <li key={opt}>
+                  <li key={opt.value}>
                     <button
                       type="button"
-                      onClick={() => toggle(opt)}
+                      onClick={() => toggle(opt.value)}
                       className="w-full px-4 py-2.5 text-left text-sm transition hover:bg-[#f0f7fc]"
                     >
-                      {opt}
+                      {opt.label}
                     </button>
                   </li>
                 ))
@@ -150,6 +160,19 @@ export default function SubjectChipMultiSelect({
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   )
+}
+
+function normalizeOptions(options) {
+  if (!Array.isArray(options)) return []
+  return options
+    .map((opt) => {
+      if (typeof opt === 'string') return { value: opt, label: opt }
+      const value = String(opt?.value ?? '').trim()
+      const label = String(opt?.label ?? opt?.value ?? '').trim()
+      if (!value) return null
+      return { value, label: label || value }
+    })
+    .filter(Boolean)
 }
 
 function normalizeList(value) {

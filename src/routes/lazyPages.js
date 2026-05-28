@@ -49,3 +49,4 @@ export const FinanceLayout = lazyRoute(
 )
 export const SalesAnalyticsLayout = lazyRoute(() => import('../layouts/SalesAnalyticsLayout'))
 export const BookstoreLayout = lazyRoute(() => import('../layouts/BookstoreLayout'))
+export const TestManagementLayout = lazyRoute(() => import('../layouts/TestManagementLayout'), 'Test Management layout')

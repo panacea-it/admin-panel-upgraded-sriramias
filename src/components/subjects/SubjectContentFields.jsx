@@ -4,6 +4,7 @@ import { Calendar, FileText, Film } from 'lucide-react'
 import TimeDurationFields from './TimeDurationFields'
 import BatchSearchSelect from './BatchSearchSelect'
 import SubjectTestSeriesSection from './SubjectTestSeriesSection'
+import SubjectMainsAnswerWritingSection from './SubjectMainsAnswerWritingSection'
 import ClassroomSelectField from '../classrooms/ClassroomSelectField'
 import RecurringScheduleSection from '../live-classes/RecurringScheduleSection'
 import { CourseFormField, CourseSelect } from '../courses/CourseFormField'
@@ -11,6 +12,7 @@ import { RECURRENCE_EDIT_SCOPES } from '../../constants/recurrence'
 import { CENTER_DROPDOWN_OPTIONS, TOPIC_DROPDOWN_OPTIONS } from '../../data/academicsSubjectsSeed'
 import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
 import { validateUploadFile } from '../../utils/uploadValidation'
+import { patchTestSeriesBlock } from '../../utils/batchTestSeriesForm'
 import {
   clampTimeField,
   shouldShowLiveClassSection,
@@ -57,6 +59,7 @@ export default function SubjectContentFields({
   const showRecording = shouldShowRecordingSection(values, { contentType })
   const showTest = shouldShowTestSeriesSection(values, { contentType })
   const showPdf = shouldShowPdfSection(values, { contentType })
+  const showMainsAnswerWriting = contentType === 'mainsAnswerWriting'
 
   const watchedDate = watch('date')
   const watchedTeacher = watch('teacher')
@@ -291,6 +294,20 @@ export default function SubjectContentFields({
         <div className="space-y-4">
           <div className="max-w-md">{batchBlock}</div>
           <SubjectTestSeriesSection watch={watch} setValue={setValue} errors={testSeriesErrors} />
+        </div>
+      )}
+
+      {showMainsAnswerWriting && (
+        <div className="space-y-4">
+          <SubjectMainsAnswerWritingSection
+            testSeries={watch('testSeries')}
+            onTestSeriesChange={(patch) => {
+              const prev = watch('testSeries') || {}
+              const next = patchTestSeriesBlock(prev, patch)
+              setValue('testSeries', next, { shouldDirty: true })
+            }}
+            errors={testSeriesErrors}
+          />
         </div>
       )}
 

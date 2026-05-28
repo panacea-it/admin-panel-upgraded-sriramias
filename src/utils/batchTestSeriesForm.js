@@ -53,12 +53,16 @@ export function createEmptyTestSeriesDetails() {
   return {
     testName: '',
     testType: '',
+    mode: 'prelims',
     durationMinutes: '60',
     durationCustom: '',
     totalMarks: '',
+    marksPerCorrectAnswer: '',
     negativeMarkingEnabled: false,
     negativeMarkPerQuestion: '',
     instructions: '',
+    manualQuestions: '',
+    pdfFileName: '',
   }
 }
 
@@ -91,14 +95,19 @@ export function flattenTestSeriesBlock(raw = {}) {
   return {
     testName: details.testName ?? raw.testName ?? '',
     testType: details.testType ?? raw.testType ?? '',
+    mode: details.mode ?? raw.mode ?? 'prelims',
     durationMinutes: details.durationMinutes ?? raw.durationMinutes ?? '60',
     durationCustom: details.durationCustom ?? raw.durationCustom ?? '',
     totalMarks: details.totalMarks ?? raw.totalMarks ?? '',
+    marksPerCorrectAnswer:
+      details.marksPerCorrectAnswer ?? raw.marksPerCorrectAnswer ?? '',
     negativeMarkingEnabled:
       details.negativeMarkingEnabled ?? raw.negativeMarkingEnabled ?? false,
     negativeMarkPerQuestion:
       details.negativeMarkPerQuestion ?? raw.negativeMarkPerQuestion ?? '',
     instructions: details.instructions ?? raw.instructions ?? '',
+    manualQuestions: details.manualQuestions ?? raw.manualQuestions ?? '',
+    pdfFileName: details.pdfFileName ?? raw.pdfFileName ?? '',
     scheduleDate: schedule.date ?? raw.scheduleDate ?? '',
     scheduleTime: schedule.time ?? raw.scheduleTime ?? '',
     resultDate: resultSettings.resultDate ?? raw.resultDate ?? '',
@@ -133,16 +142,26 @@ export function normalizeTestSeriesBlock(raw = {}) {
     details: {
       testName: String(flat.testName || '').trim(),
       testType: String(flat.testType || '').trim(),
+      mode:
+        String(flat.mode || '').trim() === 'mainsAnswerWriting'
+          ? 'mainsAnswerWriting'
+          : 'prelims',
       durationMinutes: String(flat.durationMinutes || '60'),
       durationCustom: String(flat.durationCustom || '').trim(),
       totalMarks:
         flat.totalMarks === '' || flat.totalMarks == null ? '' : String(flat.totalMarks),
+      marksPerCorrectAnswer:
+        flat.marksPerCorrectAnswer === '' || flat.marksPerCorrectAnswer == null
+          ? ''
+          : String(flat.marksPerCorrectAnswer),
       negativeMarkingEnabled: Boolean(flat.negativeMarkingEnabled),
       negativeMarkPerQuestion:
         flat.negativeMarkPerQuestion === '' || flat.negativeMarkPerQuestion == null
           ? ''
           : String(flat.negativeMarkPerQuestion),
       instructions: String(flat.instructions || '').trim(),
+      manualQuestions: String(flat.manualQuestions || ''),
+      pdfFileName: String(flat.pdfFileName || '').trim(),
     },
     schedule: {
       date: String(flat.scheduleDate || '').trim(),
@@ -190,12 +209,16 @@ export function patchTestSeriesBlock(prev = {}, patch = {}) {
     details: {
       testName: flat.testName,
       testType: flat.testType,
+      mode: flat.mode,
       durationMinutes: flat.durationMinutes,
       durationCustom: flat.durationCustom,
       totalMarks: flat.totalMarks,
+      marksPerCorrectAnswer: flat.marksPerCorrectAnswer,
       negativeMarkingEnabled: flat.negativeMarkingEnabled,
       negativeMarkPerQuestion: flat.negativeMarkPerQuestion,
       instructions: flat.instructions,
+      manualQuestions: flat.manualQuestions,
+      pdfFileName: flat.pdfFileName,
     },
     schedule: { date: flat.scheduleDate, time: flat.scheduleTime },
     resultSettings: {
@@ -220,6 +243,17 @@ export function resolveTestSeriesDurationMinutes(block = {}) {
 
 /** Validate test series block (subject or batch). */
 export function validateTestSeriesForm(testSeriesRaw = {}, { errorPrefix = 'testSeries_' } = {}) {
+  // NOTE: This validator is used by multiple modules. Keep defaults as legacy-safe,
+  // and allow callers to relax requirements when UI intentionally hides fields.
+  const options =
+    arguments.length >= 2 && typeof arguments[1] === 'object'
+      ? arguments[1]
+      : { errorPrefix }
+  const {
+    requireTestType = true,
+    requireScheduleTime = true,
+    requireMarksPerCorrectAnswer = false,
+  } = options
   const errors = {}
   const ts = normalizeTestSeriesBlock(testSeriesRaw)
   const d = ts.details
@@ -228,7 +262,7 @@ export function validateTestSeriesForm(testSeriesRaw = {}, { errorPrefix = 'test
 
   const p = errorPrefix
   if (!d.testName) errors[`${p}testName`] = 'Test name is required'
-  if (!d.testType) errors[`${p}testType`] = 'Test type is required'
+  if (requireTestType && !d.testType) errors[`${p}testType`] = 'Test type is required'
 
   const duration = resolveTestSeriesDurationMinutes(ts)
   if (!duration) errors[`${p}duration`] = 'Duration is required'
@@ -236,6 +270,13 @@ export function validateTestSeriesForm(testSeriesRaw = {}, { errorPrefix = 'test
   const marks = parseFloat(String(d.totalMarks))
   if (!Number.isFinite(marks) || marks <= 0) {
     errors[`${p}totalMarks`] = 'Enter valid total marks'
+  }
+
+  if (requireMarksPerCorrectAnswer) {
+    const per = parseFloat(String(d.marksPerCorrectAnswer))
+    if (!Number.isFinite(per) || per <= 0) {
+      errors[`${p}marksPerCorrectAnswer`] = 'Enter valid marks per correct answer'
+    }
   }
 
   if (d.negativeMarkingEnabled) {
@@ -246,8 +287,8 @@ export function validateTestSeriesForm(testSeriesRaw = {}, { errorPrefix = 'test
   }
 
   if (!s.date) errors[`${p}scheduleDate`] = 'Schedule date is required'
-  if (!s.time) errors[`${p}scheduleTime`] = 'Schedule time is required'
-  else if (s.date) {
+  if (requireScheduleTime && !s.time) errors[`${p}scheduleTime`] = 'Schedule time is required'
+  else if (requireScheduleTime && s.date) {
     const scheduled = new Date(`${s.date}T${s.time}`)
     if (!Number.isNaN(scheduled.getTime()) && scheduled < new Date()) {
       errors[`${p}scheduleDate`] = 'Schedule must be in the future'
@@ -276,12 +317,16 @@ export function serializeTestSeriesForStorage(testSeriesRaw = {}) {
     // legacy flat fields for older consumers
     testName: ts.details.testName,
     testType: ts.details.testType,
+    mode: ts.details.mode,
     durationMinutes: ts.details.durationMinutes,
     durationCustom: ts.details.durationCustom,
     totalMarks: ts.details.totalMarks,
+    marksPerCorrectAnswer: ts.details.marksPerCorrectAnswer,
     negativeMarkingEnabled: ts.details.negativeMarkingEnabled,
     negativeMarkPerQuestion: ts.details.negativeMarkPerQuestion,
     instructions: ts.details.instructions,
+    manualQuestions: ts.details.manualQuestions,
+    pdfFileName: ts.details.pdfFileName,
     scheduleDate: ts.schedule.date,
     scheduleTime: ts.schedule.time,
     resultDate: ts.resultSettings.resultDate,

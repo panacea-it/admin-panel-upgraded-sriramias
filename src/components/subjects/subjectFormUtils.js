@@ -16,6 +16,7 @@ import { createDefaultRecurrenceRule } from '../../utils/recurrenceEngine'
 import {
   createEmptyTestSeriesBlock,
   normalizeTestSeriesBlock,
+  resolveTestSeriesDurationMinutes,
   validateTestSeriesForm,
 } from '../../utils/batchTestSeriesForm'
 import { validateTestSeriesQuestions } from '../../utils/testSeriesQuestionSlots'
@@ -416,12 +417,54 @@ export function validateSubjectForm(
   }
 
   const needsTest = !subjectOnly && activeContent === 'test'
+  const needsMainsAnswerWriting =
+    !subjectOnly && activeContent === 'mainsAnswerWriting'
 
   if (needsTest && !liveClassOnly) {
     if (!values.batchId?.trim()) errors.batchId = 'Batch is required'
     const ts = normalizeTestSeriesBlock(values.testSeries || {})
-    Object.assign(errors, validateTestSeriesForm(ts))
+    Object.assign(
+      errors,
+      validateTestSeriesForm(ts, {
+        errorPrefix: 'testSeries_',
+        requireTestType: false,
+        requireScheduleTime: true,
+        requireMarksPerCorrectAnswer: true,
+      }),
+    )
     Object.assign(errors, validateTestSeriesQuestions(ts))
+  }
+
+  if (needsMainsAnswerWriting && !liveClassOnly) {
+    const ts = normalizeTestSeriesBlock(values.testSeries || {})
+    const d = ts.details
+    const s = ts.schedule
+    const r = ts.resultSettings
+
+    if (!d.testName) errors.testSeries_testName = 'Test name is required'
+
+    const duration = resolveTestSeriesDurationMinutes(ts)
+    if (!duration) errors.testSeries_duration = 'Duration is required'
+
+    const marks = parseFloat(String(d.totalMarks))
+    if (!Number.isFinite(marks) || marks <= 0) {
+      errors.testSeries_totalMarks = 'Enter valid total marks'
+    }
+
+    if (!s.date) errors.testSeries_scheduleDate = 'Schedule date is required'
+
+    if (!r.resultDate) errors.testSeries_resultDate = 'Result date is required'
+    else if (s.date && r.resultDate < s.date) {
+      errors.testSeries_resultDate = 'Result date cannot be before schedule date'
+    }
+
+    if (!String(d.manualQuestions || '').trim()) {
+      errors.testSeries_manualQuestions = 'Please write at least one question'
+    }
+
+    if (!String(d.pdfFileName || '').trim()) {
+      errors.testSeries_pdfFileName = 'Upload a PDF file'
+    }
   }
 
   const needsPdf =

@@ -43,6 +43,7 @@ import {
   HelpDeskPage,
   PushNotificationsPage,
   ModuleListPage,
+  TestManagementLayout,
 } from './lazyPages'
 
 function LegacyBatchDetailRedirect() {
@@ -165,4 +166,6 @@ export const MODULE_ROUTE_ELEMENTS = [
   { path: 'sales-analytics/*', element: <SalesAnalyticsLayout /> },
   { path: 'admin/bookstore', element: <Navigate to="/admin/bookstore/dashboard" replace /> },
   { path: 'admin/bookstore/*', element: <BookstoreLayout /> },
+  { path: 'test-management', element: <Navigate to="/test-management/question-management" replace /> },
+  { path: 'test-management/*', element: <TestManagementLayout /> },
 ]

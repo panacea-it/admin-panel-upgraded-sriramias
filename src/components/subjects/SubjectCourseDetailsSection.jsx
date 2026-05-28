@@ -10,8 +10,6 @@ import { FieldLabel, FormInput, FormSelect, SectionTitle } from './subjectFormUi
 
 /** Course Details — matches original Faculty Subjects layout (5 fields, 2 rows). */
 export default function SubjectCourseDetailsSection({ register, control, errors }) {
-  const categoryOptions = CATEGORY_OPTIONS.map((o) => o.value)
-
   return (
     <section className="space-y-4">
       <SectionTitle>Course Details</SectionTitle>
@@ -76,7 +74,7 @@ export default function SubjectCourseDetailsSection({ register, control, errors 
             name="categories"
             render={({ field }) => (
               <SubjectChipMultiSelect
-                options={categoryOptions}
+                options={CATEGORY_OPTIONS}
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="Choose Category"

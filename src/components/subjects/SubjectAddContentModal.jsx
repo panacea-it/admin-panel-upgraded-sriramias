@@ -114,7 +114,7 @@ export default function SubjectAddContentModal({
         else setError(key, { type: 'manual', message })
       })
       setTestSeriesErrors(tsErr)
-      if (Object.keys(tsErr).length) toast.error('Please complete the Test section')
+      if (Object.keys(tsErr).length) toast.error('Please complete the Prelims Test section')
       else toast.error('Please fix the highlighted fields')
       return
     }

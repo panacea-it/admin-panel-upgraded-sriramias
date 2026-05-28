@@ -123,7 +123,10 @@ export const CLASSROOM_DROPDOWN_OPTIONS = [
 export const CATEGORY_OPTIONS = [
   { value: 'Live Class', label: 'Live Class' },
   { value: 'Recording', label: 'Recording' },
-  { value: 'Test', label: 'Test' },
+  // Keep stored value as "Test" for backward compatibility,
+  // but display label as "Prelims Test" in UI.
+  { value: 'Test', label: 'Prelims Test' },
+  { value: 'Mains Answer Writing', label: 'Mains Answer Writing' },
   { value: 'PDF', label: 'PDF' },
 ]
 

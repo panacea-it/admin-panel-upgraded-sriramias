@@ -21,6 +21,7 @@ import { buildLiveClassesFromRecurrence } from '../../utils/academicsSubjectsRec
 import {
   contentTypeLabel,
   isLiveClassCategory,
+  isMainsAnswerWritingCategory,
   isPdfCategory,
   isRecordedClassCategory,
   isTestSeriesCategory,
@@ -149,9 +150,32 @@ export default function SubjectsPage() {
           ...updated,
           ...batchMeta,
           enableTestSeries: true,
-          testSeries: serializeTestSeriesForStorage(form.testSeries),
+          testSeries: serializeTestSeriesForStorage({
+            ...form.testSeries,
+            details: {
+              ...(form.testSeries?.details || {}),
+              mode: 'prelims',
+            },
+          }),
         }
-        toast.success('Test series saved')
+        toast.success('Prelims Test saved')
+      } else if (
+        contentType === 'mainsAnswerWriting' &&
+        isMainsAnswerWritingCategory(categories)
+      ) {
+        updated = {
+          ...updated,
+          ...batchMeta,
+          enableTestSeries: true,
+          testSeries: serializeTestSeriesForStorage({
+            ...form.testSeries,
+            details: {
+              ...(form.testSeries?.details || {}),
+              mode: 'mainsAnswerWriting',
+            },
+          }),
+        }
+        toast.success('Mains Answer Writing saved')
       } else if (contentType === 'pdf' && isPdfCategory(categories)) {
         const pdf = buildPdfFromForm(form, null, updated)
         const existingPdfs = updated.pdfs || []
