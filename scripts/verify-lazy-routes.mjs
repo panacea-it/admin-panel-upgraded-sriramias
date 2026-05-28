@@ -14,6 +14,7 @@ const sources = [
   'src/layouts/BatchManagementLayout.jsx',
   'src/layouts/LiveClassesLayout.jsx',
   'src/layouts/ContentLibraryLayout.jsx',
+  'src/layouts/TestManagementLayout.jsx',
 ]
 
 function resolveImport(fromDir, spec) {

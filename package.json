@@ -10,6 +10,7 @@
     "dev": "vite",
     "dev:api": "npm run dev --prefix backend",
     "build": "vite build",
+    "build:verify": "npm run verify:lazy-routes && npm run build",
     "vercel-build": "npm run build",
     "lint": "eslint .",
     "preview": "vite preview",

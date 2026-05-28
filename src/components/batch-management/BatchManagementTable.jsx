@@ -153,7 +153,7 @@ function BatchTableRow({
   onMerge,
 }) {
   const navigate = useNavigate()
-  const detailsPath = batchDetailsPath(batch.id)
+  const detailsPath = batchDetailsPath(batch)
   const linkState = listState ? { listState } : undefined
 
   return (

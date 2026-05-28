@@ -48,10 +48,11 @@ export function findBatchRow(rows, batchIdParam) {
   if (!batchIdParam) return null
   const decoded = decodeURIComponent(String(batchIdParam))
   return (
-    rows.find(
-      (r) =>
-        String(r.id) === decoded ||
-        String(r.batchId) === decoded,
-    ) ?? null
+    rows.find((r) => {
+      const id = String(r.id ?? '')
+      const batchId = String(r.batchId ?? '')
+      const courseId = String(r.courseId ?? '')
+      return id === decoded || batchId === decoded || courseId === decoded
+    }) ?? null
   )
 }

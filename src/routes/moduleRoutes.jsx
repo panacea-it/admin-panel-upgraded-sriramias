@@ -49,12 +49,16 @@ import {
 
 function LegacyBatchDetailRedirect() {
   const { batchId } = useParams()
-  return (
-    <Navigate
-      to={`/academics/batch/${encodeURIComponent(String(batchId ?? ''))}`}
-      replace
-    />
-  )
+  const id = encodeURIComponent(String(batchId ?? ''))
+  if (!id) return <Navigate to="/academics/batch" replace />
+  return <Navigate to={`/academics/batch/${id}`} replace />
+}
+
+function LegacyCoursesDetailRedirect() {
+  const { batchId, courseId } = useParams()
+  const id = encodeURIComponent(String(batchId ?? courseId ?? ''))
+  if (!id) return <Navigate to="/academics/batch" replace />
+  return <Navigate to={`/academics/batch/${id}`} replace />
 }
 
 function module(icon, title, addLabel, searchPlaceholder) {
@@ -72,6 +76,7 @@ export const MODULE_ROUTE_ELEMENTS = [
   { path: 'academics/batch/*', element: <BatchManagementLayout /> },
   { path: 'academics/batches', element: <Navigate to="/academics/batch" replace /> },
   { path: 'academics/batches/:batchId', element: <LegacyBatchDetailRedirect /> },
+  { path: 'courses/:batchId', element: <LegacyCoursesDetailRedirect /> },
   { path: 'academics/subjects', element: <SubjectsPage /> },
   { path: 'academics/subjects/:subjectId/content', element: <SubjectContentManagementPage /> },
   { path: 'academics/subjects/:id', element: <SubjectViewListPage /> },

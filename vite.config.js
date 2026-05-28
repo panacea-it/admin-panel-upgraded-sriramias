@@ -14,10 +14,17 @@ export default defineConfig(({ mode }) => {
     'https://new-sriramias.onrender.com'
 
   return {
+    base: '/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+    },
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      sourcemap: false,
+      chunkSizeWarningLimit: 700,
     },
     plugins: [react(), tailwindcss()],
     server: {

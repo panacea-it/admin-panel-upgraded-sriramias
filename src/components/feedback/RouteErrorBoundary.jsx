@@ -2,6 +2,7 @@ import { Component } from 'react'
 import { Link } from 'react-router-dom'
 import ErrorState from './ErrorState'
 import Button from '../ui/Button'
+import { isChunkLoadError } from '../../utils/chunkLoadError'
 
 export default class RouteErrorBoundary extends Component {
   constructor(props) {
@@ -20,6 +21,11 @@ export default class RouteErrorBoundary extends Component {
   }
 
   handleRetry = () => {
+    const { error } = this.state
+    if (isChunkLoadError(error)) {
+      window.location.reload()
+      return
+    }
     this.setState({ error: null })
   }
 

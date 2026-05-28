@@ -1,35 +1,65 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import RouteErrorBoundary from '../components/feedback/RouteErrorBoundary'
 import NestedRouteRedirect from '../components/feedback/NestedRouteRedirect'
+import { TEST_MANAGEMENT_ROUTES } from '../constants/testManagementNav'
+import { lazyRoute } from '../routes/lazyRoute'
 
-const TestManagementDashboardPage = lazy(
+const TestManagementDashboardPage = lazyRoute(
   () => import('../pages/test-management/TestManagementDashboardPage'),
+  'Test Management dashboard',
 )
-const CbtManagementPage = lazy(() => import('../pages/test-management/CbtManagementPage'))
-const CbtFacultyDetailPage = lazy(() => import('../pages/test-management/CbtFacultyDetailPage'))
-const CbtStudentResultsPage = lazy(() => import('../pages/test-management/CbtStudentResultsPage'))
-const MainsManagementPage = lazy(() => import('../pages/test-management/MainsManagementPage'))
-const MainsFacultyDetailPage = lazy(() => import('../pages/test-management/MainsFacultyDetailPage'))
-const MainsTopicDetailPage = lazy(() => import('../pages/test-management/MainsTopicDetailPage'))
-const MainsEvaluationResultsPage = lazy(
+const CbtManagementPage = lazyRoute(
+  () => import('../pages/test-management/CbtManagementPage'),
+  'CBT Management',
+)
+const CbtFacultyDetailPage = lazyRoute(
+  () => import('../pages/test-management/CbtFacultyDetailPage'),
+  'CBT faculty detail',
+)
+const CbtStudentResultsPage = lazyRoute(
+  () => import('../pages/test-management/CbtStudentResultsPage'),
+  'CBT student results',
+)
+const MainsManagementPage = lazyRoute(
+  () => import('../pages/test-management/MainsManagementPage'),
+  'Mains Management',
+)
+const MainsFacultyDetailPage = lazyRoute(
+  () => import('../pages/test-management/MainsFacultyDetailPage'),
+  'Mains faculty detail',
+)
+const MainsTopicDetailPage = lazyRoute(
+  () => import('../pages/test-management/MainsTopicDetailPage'),
+  'Mains topic detail',
+)
+const MainsEvaluationResultsPage = lazyRoute(
   () => import('../pages/test-management/MainsEvaluationResultsPage'),
+  'Mains evaluation results',
 )
-const CbtTopicDetailPage = lazy(() => import('../pages/test-management/CbtTopicDetailPage'))
-const QuestionManagementPage = lazy(
+const CbtTopicDetailPage = lazyRoute(
+  () => import('../pages/test-management/CbtTopicDetailPage'),
+  'CBT topic detail',
+)
+const QuestionManagementPage = lazyRoute(
   () => import('../pages/test-management/QuestionManagementPage'),
+  'Question bank',
 )
-const EvaluationOversightPage = lazy(
+const EvaluationOversightPage = lazyRoute(
   () => import('../pages/test-management/EvaluationOversightPage'),
+  'Evaluation oversight',
 )
-const EvaluationWorkspacePage = lazy(
+const EvaluationWorkspacePage = lazyRoute(
   () => import('../pages/test-management/EvaluationWorkspacePage'),
+  'Evaluation workspace',
 )
-const EvaluatorAssignmentPage = lazy(
+const EvaluatorAssignmentPage = lazyRoute(
   () => import('../pages/test-management/EvaluatorAssignmentPage'),
+  'Evaluator assignment',
 )
-const TestManagementAnalyticsPage = lazy(
+const TestManagementAnalyticsPage = lazyRoute(
   () => import('../pages/test-management/TestManagementAnalyticsPage'),
+  'Test Management analytics',
 )
 
 function PageFallback() {
@@ -70,14 +100,29 @@ export default function TestManagementLayout() {
               <Route path="evaluations/assign" element={<EvaluatorAssignmentPage />} />
               <Route path="evaluations/workspace/:paperId" element={<EvaluationWorkspacePage />} />
               <Route path="analytics" element={<TestManagementAnalyticsPage />} />
-              {/* Legacy routes → new structure */}
-              <Route path="question-management" element={<Navigate to="../question-bank" replace />} />
-              <Route path="test-configuration" element={<Navigate to="../cbt" replace />} />
-              <Route path="test-integration" element={<Navigate to="../cbt" replace />} />
-              <Route path="results-analytics" element={<Navigate to="../analytics" replace />} />
-              <Route path="results-analytics-engine" element={<Navigate to="../analytics" replace />} />
-              <Route path="evaluation-management" element={<Navigate to="../evaluations" replace />} />
-              <Route path="evaluation-management/*" element={<Navigate to="../evaluations" replace />} />
+              {/* Legacy routes → new structure (absolute paths for production deep links) */}
+              <Route
+                path="question-management"
+                element={<Navigate to={TEST_MANAGEMENT_ROUTES.questionBank} replace />}
+              />
+              <Route path="test-configuration" element={<Navigate to={TEST_MANAGEMENT_ROUTES.cbt} replace />} />
+              <Route path="test-integration" element={<Navigate to={TEST_MANAGEMENT_ROUTES.cbt} replace />} />
+              <Route
+                path="results-analytics"
+                element={<Navigate to={TEST_MANAGEMENT_ROUTES.analytics} replace />}
+              />
+              <Route
+                path="results-analytics-engine"
+                element={<Navigate to={TEST_MANAGEMENT_ROUTES.analytics} replace />}
+              />
+              <Route
+                path="evaluation-management"
+                element={<Navigate to={TEST_MANAGEMENT_ROUTES.evaluations} replace />}
+              />
+              <Route
+                path="evaluation-management/*"
+                element={<Navigate to={TEST_MANAGEMENT_ROUTES.evaluations} replace />}
+              />
               <Route path="*" element={<NestedRouteRedirect defaultSegment="dashboard" />} />
             </Routes>
           </Suspense>
