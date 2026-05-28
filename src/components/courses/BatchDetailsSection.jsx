@@ -6,6 +6,7 @@ import {
 import { batchFormGrid } from './batch-form/BatchFormCard'
 import BannerImageUpload from './BannerImageUpload'
 import CourseCatalogSelect from './CourseCatalogSelect'
+import BatchMentorSelect from './BatchMentorSelect'
 import { cn } from '../../utils/cn'
 
 export default function BatchDetailsSection({
@@ -37,7 +38,7 @@ export default function BatchDetailsSection({
 
   return (
     <div className={cn(batchFormGrid)}>
-      <CourseFormField label="Batch Name" required className="sm:col-span-2 lg:col-span-3">
+      <CourseFormField label="Batch Name" required className="sm:col-span-1 lg:col-span-1">
         <CourseInput
           value={form.batchName}
           onChange={(e) => {
@@ -48,6 +49,14 @@ export default function BatchDetailsSection({
         />
         {fieldError('batchName')}
       </CourseFormField>
+
+      <BatchMentorSelect
+        form={form}
+        setForm={setForm}
+        error={errors.mentorEmail}
+        onClearError={() => clearError('mentorEmail')}
+        className="sm:col-span-1 lg:col-span-1"
+      />
 
       <CourseFormField label="Course" required className="sm:col-span-2">
         <CourseCatalogSelect

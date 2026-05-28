@@ -1,6 +1,7 @@
 import { INITIAL_BATCHES } from '../data/batchManagementData'
 import { formatBatchSubjectDropdownLabel } from './facultySubjectBatch'
 import { DEFAULT_BATCH_CAPACITY } from './batchOperations'
+import { resolveMentorDisplayName } from './mentorEmployees'
 
 export function nextBatchId(rows = []) {
   const max = rows.reduce((m, row) => {
@@ -102,7 +103,7 @@ export function mapBatchRowToTableFormat(row, students = [], totalStudentsOverri
     courseName,
     batchLabel,
     displayName: `${courseName} - ${batchLabel}`,
-    trainerName: fd.trainerName || row.trainerName || '—',
+    trainerName: resolveMentorDisplayName(row),
     startDate: row.batchStartFrom || row.commencement || fd.batchStartFrom || '',
     endDate: row.batchEndTo || fd.batchEndTo || '',
     status: row.status || 'Active',

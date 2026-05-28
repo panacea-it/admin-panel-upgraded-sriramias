@@ -8,18 +8,24 @@ import CreateAdminModal from '../../components/admin-management/CreateAdminModal
 import EditButton from '../../components/common/EditButton'
 import { StatusBadge } from '../../components/academics/AcademicsUi'
 import { useAdminRoles } from '../../contexts/AdminRolesContext'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import {
   deleteEmployeeByEmail,
   listEmployees,
+  saveEmployeeAccount,
 } from '../../utils/employeeAuthStorage'
+import { EMPLOYEES_UPDATED_EVENT } from '../../utils/mentorEmployees'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
+import { cn } from '../../utils/cn'
 
 function mapEmployeesToRows(employees, roles) {
   const roleLabels = Object.fromEntries(roles.map((r) => [r.id, r.label]))
   return employees.map((emp) => ({
     id: emp.email,
-    accessTitle: roleLabels[emp.role] || emp.role || '—',
-    accessCode: emp.employeeId || emp.id || '—',
+    employeeName: emp.name || emp.fullName || '—',
+    employeeId: emp.employeeId || emp.id || '—',
+    roleId: emp.role || '',
+    roleTitle: roleLabels[emp.role] || emp.role || '—',
     status: emp.status === 'inactive' ? 'In Active' : 'Active',
     createdAt: emp.createdAt,
     _raw: emp,
@@ -32,7 +38,9 @@ export default function AdminManagementPage() {
   const [editingRecord, setEditingRecord] = useState(null)
   const [entries, setEntries] = useState([])
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const debouncedSearch = useDebouncedValue(search)
 
   const refreshEntries = useCallback(() => {
     setEntries(mapEmployeesToRows(listEmployees(), roles))
@@ -42,22 +50,37 @@ export default function AdminManagementPage() {
     refreshEntries()
   }, [refreshEntries])
 
+  useEffect(() => {
+    const onEmployeesUpdated = () => refreshEntries()
+    window.addEventListener(EMPLOYEES_UPDATED_EVENT, onEmployeesUpdated)
+    return () => window.removeEventListener(EMPLOYEES_UPDATED_EVENT, onEmployeesUpdated)
+  }, [refreshEntries])
+
+  const roleFilterOptions = useMemo(() => {
+    const titles = new Set(entries.map((row) => row.roleTitle).filter((t) => t && t !== '—'))
+    const sorted = [...titles].sort((a, b) => a.localeCompare(b))
+    return [
+      { value: 'all', label: 'All Roles' },
+      ...sorted.map((title) => ({ value: title, label: title })),
+    ]
+  }, [entries])
+
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return entries
-      .filter((row) => {
-        const matchSearch =
-          !q ||
-          row.accessTitle.toLowerCase().includes(q) ||
-          row.accessCode.toLowerCase().includes(q)
-        const matchStatus = statusFilter === 'all' || row.status === statusFilter
-        return matchSearch && matchStatus
-      })
-      .map((row, index) => ({ ...row, serialNumber: index + 1 }))
-  }, [entries, search, statusFilter])
+    const q = debouncedSearch.trim().toLowerCase()
+    return entries.filter((row) => {
+      const matchSearch =
+        !q ||
+        row.employeeName.toLowerCase().includes(q) ||
+        row.employeeId.toLowerCase().includes(q)
+      const matchRole = roleFilter === 'all' || row.roleTitle === roleFilter
+      const matchStatus = statusFilter === 'all' || row.status === statusFilter
+      return matchSearch && matchRole && matchStatus
+    })
+  }, [entries, debouncedSearch, roleFilter, statusFilter])
 
   const handleResetFilters = () => {
     setSearch('')
+    setRoleFilter('all')
     setStatusFilter('all')
   }
 
@@ -83,7 +106,7 @@ export default function AdminManagementPage() {
   const handleDelete = (row) => {
     if (
       !window.confirm(
-        `Delete user access for "${row.accessTitle}" (${row.accessCode})?`,
+        `Delete user access for "${row.employeeName}" (${row.employeeId})?`,
       )
     ) {
       return
@@ -93,54 +116,79 @@ export default function AdminManagementPage() {
     toast.success('User access deleted')
   }
 
-  const columns = [
-    {
-      key: 'serialNumber',
-      label: '#',
-      headerClassName: 'w-14 pl-6 sm:pl-10',
-      cellClassName: 'pl-6 sm:pl-10 text-[#686868]',
-      render: (row) => row.serialNumber,
+  const handleStatusToggle = useCallback(
+    (row) => {
+      const emp = row._raw
+      const nextStatus = emp.status === 'inactive' ? 'active' : 'inactive'
+      saveEmployeeAccount({
+        ...emp,
+        status: nextStatus,
+      })
+      refreshEntries()
+      toast.success(
+        nextStatus === 'active' ? 'Employee marked active' : 'Employee marked inactive',
+      )
     },
-    {
-      key: 'accessTitle',
-      label: 'Access Title',
-      headerClassName: 'pl-4',
-      cellClassName: 'pl-4 font-medium',
-    },
-    {
-      key: 'accessCode',
-      label: 'Access Code',
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => <StatusBadge status={row.status} />,
-    },
-    {
-      key: 'createdAt',
-      label: 'Created Date',
-      render: (row) => (
-        <span className="text-[#686868]">{formatCategoryDateTime(row.createdAt)}</span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (row) => (
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <EditButton onClick={() => openEdit(row)} />
+    [refreshEntries],
+  )
+
+  const columns = useMemo(
+    () => [
+      {
+        key: 'employeeName',
+        label: 'Employee Name',
+        headerClassName: 'pl-6 sm:pl-10',
+        cellClassName: 'pl-6 sm:pl-10 font-medium',
+      },
+      {
+        key: 'employeeId',
+        label: 'Employee Number / Employee ID',
+      },
+      {
+        key: 'roleTitle',
+        label: 'Role Title',
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        render: (row) => (
           <button
             type="button"
-            onClick={() => handleDelete(row)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#c96565] transition hover:text-[#b94b4b] sm:text-base"
+            onClick={() => handleStatusToggle(row)}
+            className={cn('rounded-md transition hover:opacity-90')}
+            title="Click to change status"
           >
-            <Trash2 className="h-4 w-4" strokeWidth={2.1} />
-            Delete
+            <StatusBadge status={row.status} />
           </button>
-        </div>
-      ),
-    },
-  ]
+        ),
+      },
+      {
+        key: 'createdAt',
+        label: 'Created Date',
+        render: (row) => (
+          <span className="text-[#686868]">{formatCategoryDateTime(row.createdAt)}</span>
+        ),
+      },
+      {
+        key: 'actions',
+        label: 'Actions',
+        render: (row) => (
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <EditButton onClick={() => openEdit(row)} />
+            <button
+              type="button"
+              onClick={() => handleDelete(row)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-[#c96565] transition hover:text-[#b94b4b] sm:text-base"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={2.1} />
+              Delete
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [handleStatusToggle],
+  )
 
   return (
     <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-10 pt-6 sm:px-5 lg:px-6">
@@ -168,7 +216,11 @@ export default function AdminManagementPage() {
             <CourseFilterToolbar
               search={search}
               onSearchChange={(e) => setSearch(e.target.value)}
-              searchPlaceholder="Search user access"
+              searchPlaceholder="Search by employee name or employee ID"
+              category={roleFilter}
+              onCategoryChange={(e) => setRoleFilter(e.target.value)}
+              categoryOptions={roleFilterOptions}
+              categoryAriaLabel="Role Title"
               status={statusFilter}
               onStatusChange={(e) => setStatusFilter(e.target.value)}
             />
@@ -185,9 +237,9 @@ export default function AdminManagementPage() {
         <PaginatedFigmaTable
           columns={columns}
           data={filtered}
-          emptyMessage="No user access records match your filters."
-          itemLabel="user access records"
-          resetDeps={[search, statusFilter]}
+          emptyMessage="No employees found"
+          itemLabel="employees"
+          resetDeps={[debouncedSearch, roleFilter, statusFilter]}
           rowClassName="hover:bg-slate-50/90"
         />
       </section>

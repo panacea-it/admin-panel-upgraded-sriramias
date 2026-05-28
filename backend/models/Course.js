@@ -21,6 +21,12 @@ const courseSchema = new mongoose.Schema(
     batchEndTo: { type: String, default: '' },
     bannerUrl: { type: String, default: '' },
     bannerFileName: { type: String, default: '' },
+    mentorEmail: { type: String, trim: true, default: '' },
+    mentorEmployeeId: { type: String, trim: true, default: '' },
+    mentorName: { type: String, trim: true, default: '' },
+    mentorRoleId: { type: String, trim: true, default: '' },
+    mentorRoleLabel: { type: String, trim: true, default: '' },
+    trainerName: { type: String, trim: true, default: '' },
     /** Legacy list fields — kept optional for older documents */
     category: { type: String, trim: true, default: 'Batch' },
     center: { type: String, trim: true, default: '—' },

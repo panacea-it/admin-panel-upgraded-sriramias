@@ -26,6 +26,7 @@ export default function PaginatedFigmaTable({
   stickyHeader = false,
   stickyLastColumn = false,
   animateRows = false,
+  onRowClick,
   /** { selectedIds, onToggle(id), onTogglePage(pageIds, select), getRowId? } */
   selection,
 }) {
@@ -103,6 +104,7 @@ export default function PaginatedFigmaTable({
         stickyHeader={stickyHeader}
         stickyLastColumn={stickyLastColumn}
         animateRows={animateRows}
+        onRowClick={onRowClick}
       />
       {!loading && data.length > 0 && (
         <TablePagination

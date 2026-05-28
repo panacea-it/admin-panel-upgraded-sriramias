@@ -29,8 +29,8 @@ export function SubjectRowActions({ onAdd, onViewList, onEdit, onDelete }) {
       <button
         type="button"
         onClick={onAdd}
-        title="Add live class, recording, test, or PDF"
-        aria-label="Add"
+        title="Manage subject content (folders, topics, videos, tests)"
+        aria-label="Add content"
         className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg bg-gradient-to-r from-[#1a3a5c] to-[#03045e] px-2.5 text-xs font-semibold text-white shadow-sm transition hover:scale-[1.02] active:scale-[0.98] sm:px-3"
       >
         <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />

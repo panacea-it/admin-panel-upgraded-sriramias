@@ -49,6 +49,7 @@ export default function AddCourseModal({
   const validateBatch = () => {
     const next = {}
     if (!form.batchName?.trim()) next.batchName = 'Batch name is required'
+    if (!form.mentorEmail?.trim()) next.mentorEmail = 'Mentor is required'
     if (!form.academicCourseId?.trim() && !form.courseId?.trim()) {
       next.courseId = 'Please select a course'
     }

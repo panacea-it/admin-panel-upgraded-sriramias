@@ -32,6 +32,7 @@ export default function CourseFilterToolbar({
   status,
   onStatusChange,
   categoryOptions,
+  categoryAriaLabel,
   statusOptions,
 }) {
   const statusFilterOptions = statusOptions ?? [
@@ -54,7 +55,7 @@ export default function CourseFilterToolbar({
       <div className="flex w-full flex-wrap gap-2 sm:w-auto">
         {categoryOptions && categoryOptions.length > 0 && (
           <FilterSelect
-            label="Category"
+            label={categoryAriaLabel || 'Category'}
             value={category}
             onChange={onCategoryChange}
             options={categoryOptions}

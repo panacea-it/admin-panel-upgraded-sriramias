@@ -30,6 +30,7 @@ import {
   BatchManagementLayout,
   SubjectsPage,
   SubjectViewListPage,
+  SubjectContentManagementPage,
   LiveClassesLayout,
   FinanceLayout,
   SalesAnalyticsLayout,
@@ -72,6 +73,7 @@ export const MODULE_ROUTE_ELEMENTS = [
   { path: 'academics/batches', element: <Navigate to="/academics/batch" replace /> },
   { path: 'academics/batches/:batchId', element: <LegacyBatchDetailRedirect /> },
   { path: 'academics/subjects', element: <SubjectsPage /> },
+  { path: 'academics/subjects/:subjectId/content', element: <SubjectContentManagementPage /> },
   { path: 'academics/subjects/:id', element: <SubjectViewListPage /> },
   { path: 'courses', element: <Navigate to="/academics/batch" replace /> },
   { path: 'live-classes', element: <Navigate to="/academics/live-classes/schedule" replace /> },
@@ -166,6 +168,6 @@ export const MODULE_ROUTE_ELEMENTS = [
   { path: 'sales-analytics/*', element: <SalesAnalyticsLayout /> },
   { path: 'admin/bookstore', element: <Navigate to="/admin/bookstore/dashboard" replace /> },
   { path: 'admin/bookstore/*', element: <BookstoreLayout /> },
-  { path: 'test-management', element: <Navigate to="/test-management/question-management" replace /> },
+  { path: 'test-management', element: <Navigate to="/test-management/dashboard" replace /> },
   { path: 'test-management/*', element: <TestManagementLayout /> },
 ]

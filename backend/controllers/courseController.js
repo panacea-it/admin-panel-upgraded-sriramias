@@ -57,6 +57,19 @@ function pickBatchFields(body = {}) {
     batchEndTo: body.batchEndTo || '',
     bannerUrl: body.bannerUrl || body.bannerPreview || '',
     bannerFileName: body.bannerFileName?.trim() || '',
+    mentorEmail: body.mentorEmail?.trim() || body.formData?.mentorEmail?.trim() || '',
+    mentorEmployeeId:
+      body.mentorEmployeeId?.trim() || body.formData?.mentorEmployeeId?.trim() || '',
+    mentorName: body.mentorName?.trim() || body.formData?.mentorName?.trim() || '',
+    mentorRoleId: body.mentorRoleId?.trim() || body.formData?.mentorRoleId?.trim() || '',
+    mentorRoleLabel:
+      body.mentorRoleLabel?.trim() || body.formData?.mentorRoleLabel?.trim() || '',
+    trainerName:
+      body.trainerName?.trim() ||
+      body.formData?.trainerName?.trim() ||
+      body.mentorName?.trim() ||
+      body.formData?.mentorName?.trim() ||
+      '',
     status: body.status || 'Active',
     category: body.category?.trim() || 'Batch',
     center: body.center?.trim() || '—',

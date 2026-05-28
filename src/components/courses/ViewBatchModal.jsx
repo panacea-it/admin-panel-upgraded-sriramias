@@ -6,6 +6,7 @@ import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import { normalizeLinkedSubjects } from '../../utils/batchHelpers'
 import { enrichLinkedSubjectsWithFaculty } from '../../utils/facultySubjectBatch'
 import { formatLinkedSubjectDisplay } from '../../utils/batchHelpers'
+import { resolveMentorDisplayName } from '../../utils/mentorEmployees'
 import { loadAcademicsSubjects } from '../../utils/academicsSubjectsStorage'
 function DetailItem({ label, children }) {
   return (
@@ -118,6 +119,7 @@ export default function ViewBatchModal({ open, onClose, item }) {
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DetailItem label="Batch ID">{item.batchId || '—'}</DetailItem>
               <DetailItem label="Batch Name">{item.batchName || item.name}</DetailItem>
+              <DetailItem label="Mentor">{resolveMentorDisplayName(item)}</DetailItem>
               <DetailItem label="Linked Course">{catalogName || '—'}</DetailItem>
               <DetailItem label="Course ID">{item.courseId || '—'}</DetailItem>
               <DetailItem label="Date of Commencement">

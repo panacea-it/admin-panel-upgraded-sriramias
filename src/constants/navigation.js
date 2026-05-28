@@ -35,7 +35,6 @@ import {
   LayoutGrid,
   TrendingUp,
   Layers3,
-  FileQuestion,
 } from 'lucide-react'
 import { ACADEMICS_LIVE_CLASSES_SUBMENU } from './liveClassesNav'
 import { ACADEMICS_CONTENT_LIBRARY_SUBMENU } from './contentLibraryNav'
@@ -89,7 +88,7 @@ export const SIDEBAR_GROUPS = [
   {
     id: 'test-management',
     label: 'Test Management',
-    icon: FileQuestion,
+    icon: ClipboardList,
     children: TEST_MANAGEMENT_NAV_ITEMS.map(({ label, path, icon }) => ({ label, path, icon })),
   },
   {

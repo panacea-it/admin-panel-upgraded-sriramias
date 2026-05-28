@@ -194,7 +194,7 @@ export default function QuestionManagementPage() {
     <div className="space-y-5 sm:space-y-6">
       <PageBanner
         icon={FileQuestion}
-        title="Question Management"
+        title="Question Bank"
         className="from-[#55ace7] via-[#8b98bb] to-[#b8887a]"
       >
         <div className="flex flex-wrap gap-2">

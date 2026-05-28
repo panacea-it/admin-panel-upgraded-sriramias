@@ -74,6 +74,7 @@ export default function FigmaTable({
   stickyHeader = false,
   stickyLastColumn = false,
   animateRows = false,
+  onRowClick,
 }) {
   const d = DENSITY[density] ?? DENSITY.default
   const lastColKey = columns[columns.length - 1]?.key
@@ -138,9 +139,23 @@ export default function FigmaTable({
                     d.row,
                     zebraStriping && (idx % 2 === 0 ? 'bg-white' : 'bg-[#f4f8fc]'),
                     animateRows && 'animate-[fadeInRow_0.35s_ease-out_both]',
+                    onRowClick && 'cursor-pointer',
                     rowClassName,
                   )}
                   style={animateRows ? { animationDelay: `${Math.min(idx, 12) * 40}ms` } : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            onRowClick(row)
+                          }
+                        }
+                      : undefined
+                  }
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? 'button' : undefined}
                 >
                   {columns.map((col) => (
                     <td

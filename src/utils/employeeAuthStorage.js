@@ -1,6 +1,13 @@
 import { ROLES } from '../constants/roles'
+import { EMPLOYEES_UPDATED_EVENT } from './mentorEmployees'
 
 const STORAGE_KEY = 'sriram_admin_employees_v1'
+
+function notifyEmployeesUpdated() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(EMPLOYEES_UPDATED_EVENT))
+  }
+}
 
 function readAll() {
   try {
@@ -40,6 +47,7 @@ export function saveEmployeeAccount(employee) {
     createdAt: employee.createdAt || new Date().toISOString(),
   })
   writeAll(next)
+  notifyEmployeesUpdated()
   return employee
 }
 
@@ -80,4 +88,5 @@ export function listEmployees() {
 export function deleteEmployeeByEmail(email) {
   const normalized = email.trim().toLowerCase()
   writeAll(readAll().filter((row) => row.email.toLowerCase() !== normalized))
+  notifyEmployeesUpdated()
 }
