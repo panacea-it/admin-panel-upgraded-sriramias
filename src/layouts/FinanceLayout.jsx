@@ -11,15 +11,13 @@ import PaymentAttemptLogsPage from '../pages/finance/PaymentAttemptLogsPage'
 import OfflinePaymentApprovalPage from '../pages/finance/OfflinePaymentApprovalPage'
 import PaymentCommunicationLogsPage from '../pages/finance/PaymentCommunicationLogsPage'
 import GstInvoiceSettingsPage from '../pages/finance/GstInvoiceSettingsPage'
-import FinanceRouteTabs from '../components/finance/FinanceRouteTabs'
 import NestedRouteRedirect from '../components/feedback/NestedRouteRedirect'
 
 export default function FinanceLayout() {
   return (
     <FinanceOperationsProvider>
       <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-8 pt-6 sm:px-5 lg:px-6">
-        <section className="mx-auto max-w-screen-2xl space-y-5">
-          <FinanceRouteTabs />
+        <section className="mx-auto max-w-screen-2xl">
           <FinanceErrorBoundary>
             <Routes>
               <Route index element={<Navigate to="dashboard" replace />} />

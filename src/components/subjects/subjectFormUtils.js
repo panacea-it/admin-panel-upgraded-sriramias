@@ -20,6 +20,7 @@ import {
   validateTestSeriesForm,
 } from '../../utils/batchTestSeriesForm'
 import { validateTestSeriesQuestions } from '../../utils/testSeriesQuestionSlots'
+import { validatePrelimsTestSeriesExtras } from '../../utils/prelimsTestSeriesValidation'
 import {
   isLiveClassCategory,
   isPdfCategory,
@@ -31,6 +32,14 @@ import {
 } from '../../utils/subjectCategoryHelpers'
 
 export { shouldShowTestSeriesSection }
+
+function normalizeBatchIds(values = {}) {
+  if (Array.isArray(values.batchIds) && values.batchIds.length) {
+    return [...new Set(values.batchIds.map(String).filter(Boolean))]
+  }
+  if (values.batchId?.trim()) return [String(values.batchId).trim()]
+  return []
+}
 
 export const EMPTY_SUBJECT_FORM = {
   subjectName: '',
@@ -44,6 +53,7 @@ export const EMPTY_SUBJECT_FORM = {
   categories: [],
   teacher: '',
   batchId: '',
+  batchIds: [],
   batch: '',
   classTitle: '',
   center: '',
@@ -116,7 +126,12 @@ export function subjectToForm(subject, liveClass = null) {
     topics,
     categories: categories.length ? categories : [],
     teacher: subject?.teacher || '',
-    batchId: subject?.batchId || '',
+    batchId: subject?.batchId || subject?.batchIds?.[0] || '',
+    batchIds: Array.isArray(subject?.batchIds)
+      ? subject.batchIds.map(String).filter(Boolean)
+      : subject?.batchId
+        ? [String(subject.batchId)]
+        : [],
     batch: subject?.batch || '',
     classTitle: liveClass?.classTitle || '',
     center: liveClass?.center || '',
@@ -178,7 +193,8 @@ export function buildSubjectFromForm(form, existing, subjectsList) {
     category: categories[0] || '',
     teacher: form.teacher?.trim() || '',
     subject: form.subject?.trim() || '',
-    batchId: form.batchId?.trim() || '',
+    batchId: form.batchId?.trim() || form.batchIds?.[0] || '',
+    batchIds: normalizeBatchIds(form),
     batch: form.batch?.trim() || '',
     status: form.status || 'Active',
     createdAt: existing?.createdAt || now,
@@ -421,7 +437,8 @@ export function validateSubjectForm(
     !subjectOnly && activeContent === 'mainsAnswerWriting'
 
   if (needsTest && !liveClassOnly) {
-    if (!values.batchId?.trim()) errors.batchId = 'Batch is required'
+    const batchIds = normalizeBatchIds(values)
+    if (!batchIds.length) errors.batchIds = 'Select at least one batch'
     const ts = normalizeTestSeriesBlock(values.testSeries || {})
     Object.assign(
       errors,
@@ -432,7 +449,10 @@ export function validateSubjectForm(
         requireMarksPerCorrectAnswer: true,
       }),
     )
-    Object.assign(errors, validateTestSeriesQuestions(ts))
+    Object.assign(errors, validatePrelimsTestSeriesExtras(ts))
+    if (!ts.sectionWiseEnabled) {
+      Object.assign(errors, validateTestSeriesQuestions(ts))
+    }
   }
 
   if (needsMainsAnswerWriting && !liveClassOnly) {

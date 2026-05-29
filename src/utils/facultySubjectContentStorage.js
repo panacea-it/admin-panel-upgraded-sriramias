@@ -69,6 +69,8 @@ function normalizeItem(item) {
     lastUpdated: item.lastUpdated || new Date().toISOString(),
     data: item.data || null,
     testSeries: item.testSeries,
+    batchIds: Array.isArray(item.batchIds) ? item.batchIds : item.batchId ? [item.batchId] : [],
+    batchId: item.batchId || item.batchIds?.[0] || '',
   }
 }
 

@@ -7,6 +7,7 @@ import {
 } from '../../../utils/batchTestSeriesForm'
 import { ACADEMIC_TEST_TYPES, NEGATIVE_MARK_PRESETS } from '../../../data/testsData'
 import ExamToggleSwitch from './ExamToggleSwitch'
+import ExamFormSelect from './ExamFormSelect'
 import { examInputClass } from './examFormStyles'
 
 function FieldLabel({ children, required }) {
@@ -32,8 +33,14 @@ export default function TestSeriesDetailsFields({
   disabled = false,
   showTestType = true,
   showMarksPerCorrectAnswer = false,
+  instructionOptions = [],
+  instructionsLoading = false,
 }) {
   const flat = getTestSeriesFlat(normalizeTestSeriesBlock(testSeries))
+
+  const selectedInstruction = instructionOptions.find(
+    (row) => String(row.id) === String(flat.instructionId || ''),
+  )
 
   /** Pass flat field patches only — parent applies patchTestSeriesBlock. */
   const updateFlat = (patch) => {
@@ -228,6 +235,45 @@ export default function TestSeriesDetailsFields({
 
       <div className="sm:col-span-2 lg:col-span-3">
         <FieldLabel>Instructions</FieldLabel>
+        {instructionOptions.length > 0 || instructionsLoading ? (
+          <div className="mb-3 space-y-2">
+            <label className="text-xs font-medium text-[#555]">Use saved instruction template</label>
+            <ExamFormSelect
+              value={flat.instructionId || ''}
+              onChange={(id) => {
+                const inst = instructionOptions.find((row) => String(row.id) === String(id))
+                updateFlat({
+                  instructionId: id,
+                  ...(inst ? { instructions: inst.description } : {}),
+                })
+              }}
+              options={instructionOptions.map((inst) => ({
+                value: inst.id,
+                label: inst.label || inst.description,
+              }))}
+              placeholder="Select instruction template…"
+              loading={instructionsLoading}
+              disabled={disabled}
+              emptyMessage="Add instructions in Test Configuration → Exam Pattern."
+            />
+            {flat.instructionId && !selectedInstruction ? (
+              <p className="text-xs text-amber-700">
+                The linked instruction is no longer active. You can keep the text below or choose
+                another template.
+              </p>
+            ) : null}
+            {selectedInstruction ? (
+              <p className="rounded-lg bg-[#f8fbff] px-3 py-2 text-xs text-[#555]">
+                {selectedInstruction.description}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <p className="mb-3 text-xs text-[#686868]">
+            Add instruction templates in Test Configuration → Exam Pattern, or enter custom text
+            below.
+          </p>
+        )}
         <div className="mt-1 overflow-hidden rounded-xl border border-[#eef2fc] bg-white">
           <div className="hidden sm:block">
             <BlogRichEditor

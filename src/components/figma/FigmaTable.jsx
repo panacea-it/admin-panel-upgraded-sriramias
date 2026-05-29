@@ -75,6 +75,7 @@ export default function FigmaTable({
   stickyLastColumn = false,
   animateRows = false,
   onRowClick,
+  tableMinWidth = 720,
 }) {
   const d = DENSITY[density] ?? DENSITY.default
   const lastColKey = columns[columns.length - 1]?.key
@@ -96,7 +97,7 @@ export default function FigmaTable({
         className,
       )}
     >
-      <div className="min-w-[720px]">
+      <div style={{ minWidth: tableMinWidth }}>
         <table className="w-full border-collapse">
           <thead
             className={cn(

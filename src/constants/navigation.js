@@ -89,7 +89,9 @@ export const SIDEBAR_GROUPS = [
     id: 'test-management',
     label: 'Test Management',
     icon: ClipboardList,
-    children: TEST_MANAGEMENT_NAV_ITEMS.map(({ label, path, icon }) => ({ label, path, icon })),
+    children: TEST_MANAGEMENT_NAV_ITEMS.map((item) =>
+      item.children ? item : { label: item.label, path: item.path, icon: item.icon },
+    ),
   },
   {
     id: 'admin-management',
@@ -202,6 +204,9 @@ export const SIDEBAR_GROUPS = [
 export function isNavItemActive(item, pathname) {
   if (item.id === 'academics-live-classes') {
     return pathname.startsWith('/academics/live-classes')
+  }
+  if (item.id === 'test-management-configuration') {
+    return pathname.startsWith('/test-management/test-configuration')
   }
   if (item.path?.startsWith('/finance')) {
     return pathname === '/finance' || pathname.startsWith('/finance/')

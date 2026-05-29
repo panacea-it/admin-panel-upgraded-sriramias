@@ -9,6 +9,9 @@ import bookstoreRoutes from './routes/bookstoreRoutes.js'
 import contentLibraryRoutes from './routes/contentLibraryRoutes.js'
 import facultySubjectContentRoutes from './routes/facultySubjectContentRoutes.js'
 import evaluationOversightRoutes from './routes/evaluationOversightRoutes.js'
+import testLanguageRoutes from './routes/testLanguageRoutes.js'
+import testExamPatternRoutes from './routes/testExamPatternRoutes.js'
+import testSectionConfigRoutes from './routes/testSectionConfigRoutes.js'
 import { connectDB } from './config/db.js'
 import { errorHandler, notFound } from './middleware/errorHandler.js'
 
@@ -83,6 +86,9 @@ app.use('/api/bookstore', bookstoreRoutes)
 app.use('/api/content-library', contentLibraryRoutes)
 app.use('/api/faculty-subject-content', facultySubjectContentRoutes)
 app.use('/api/evaluation-oversight', evaluationOversightRoutes)
+app.use('/api/test-management/languages', testLanguageRoutes)
+app.use('/api/test-management/exam-patterns', testExamPatternRoutes)
+app.use('/api/test-management/section-configs', testSectionConfigRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

@@ -3,6 +3,7 @@ import { Controller } from 'react-hook-form'
 import { Calendar, FileText, Film } from 'lucide-react'
 import TimeDurationFields from './TimeDurationFields'
 import BatchSearchSelect from './BatchSearchSelect'
+import BatchMultiSearchSelect from './BatchMultiSearchSelect'
 import SubjectTestSeriesSection from './SubjectTestSeriesSection'
 import SubjectMainsAnswerWritingSection from './SubjectMainsAnswerWritingSection'
 import ClassroomSelectField from '../classrooms/ClassroomSelectField'
@@ -64,6 +65,7 @@ export default function SubjectContentFields({
   const watchedDate = watch('date')
   const watchedTeacher = watch('teacher')
   const batchId = watch('batchId')
+  const batchIds = watch('batchIds') || []
 
   const batchBlock = (
     <div className="max-w-md">
@@ -73,6 +75,22 @@ export default function SubjectContentFields({
         value={batchId}
         onChange={(id) => setValue('batchId', id, { shouldValidate: true })}
         error={errors.batchId?.message}
+        required
+      />
+    </div>
+  )
+
+  const prelimsBatchBlock = (
+    <div className="max-w-md">
+      <BatchMultiSearchSelect
+        batches={batches}
+        loading={batchesLoading}
+        value={batchIds}
+        onChange={(ids) => {
+          setValue('batchIds', ids, { shouldValidate: true, shouldDirty: true })
+          setValue('batchId', ids[0] || '', { shouldValidate: true, shouldDirty: true })
+        }}
+        error={errors.batchIds?.message || errors.batchId?.message}
         required
       />
     </div>
@@ -292,7 +310,7 @@ export default function SubjectContentFields({
 
       {showTest && (
         <div className="space-y-4">
-          <div className="max-w-md">{batchBlock}</div>
+          <div className="max-w-md">{prelimsBatchBlock}</div>
           <SubjectTestSeriesSection watch={watch} setValue={setValue} errors={testSeriesErrors} />
         </div>
       )}

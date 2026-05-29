@@ -115,7 +115,18 @@ export default function SubjectContentFormPanel({
       (contentType === 'test' || contentType === 'mainsAnswerWriting') &&
       item?.testSeries
     ) {
-      seeded = { ...seeded, testSeries: item.testSeries, contentType }
+      const itemBatchIds = Array.isArray(item.batchIds)
+        ? item.batchIds.map(String).filter(Boolean)
+        : item.batchId
+          ? [String(item.batchId)]
+          : []
+      seeded = {
+        ...seeded,
+        testSeries: item.testSeries,
+        batchIds: itemBatchIds.length ? itemBatchIds : seeded.batchIds,
+        batchId: itemBatchIds[0] || item.batchId || seeded.batchId,
+        contentType,
+      }
     } else if (contentType === 'live' && addingNew) {
       seeded = {
         ...seeded,
@@ -519,6 +530,18 @@ export function buildItemSavePayload({
       contentType === 'test' || contentType === 'mainsAnswerWriting'
         ? serializeTestSeriesForStorage(values.testSeries)
         : existingItem?.testSeries,
+    batchIds:
+      contentType === 'test'
+        ? Array.isArray(values.batchIds)
+          ? values.batchIds.map(String).filter(Boolean)
+          : values.batchId
+            ? [String(values.batchId)]
+            : []
+        : existingItem?.batchIds,
+    batchId:
+      contentType === 'test'
+        ? values.batchIds?.[0] || values.batchId || ''
+        : existingItem?.batchId,
   }
 
   return { item, subjectPatch }

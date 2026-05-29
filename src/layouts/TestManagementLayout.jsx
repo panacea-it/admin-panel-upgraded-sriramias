@@ -61,6 +61,26 @@ const TestManagementAnalyticsPage = lazyRoute(
   () => import('../pages/test-management/TestManagementAnalyticsPage'),
   'Test Management analytics',
 )
+const TestConfigurationLayout = lazyRoute(
+  () => import('../pages/test-management/TestConfigurationLayout'),
+  'Test Configuration layout',
+)
+const ExamPatternSectionPage = lazyRoute(
+  () => import('../pages/test-management/test-configuration/ExamPatternSectionPage'),
+  'Exam Pattern',
+)
+const SectionManagementSectionPage = lazyRoute(
+  () => import('../pages/test-management/test-configuration/SectionManagementSectionPage'),
+  'Section Management',
+)
+const MarkingRulesSectionPage = lazyRoute(
+  () => import('../pages/test-management/test-configuration/MarkingRulesSectionPage'),
+  'Marking Rules',
+)
+const LanguageSettingsSectionPage = lazyRoute(
+  () => import('../pages/test-management/test-configuration/LanguageSettingsSectionPage'),
+  'Language Settings',
+)
 
 function PageFallback() {
   return (
@@ -96,6 +116,13 @@ export default function TestManagementLayout() {
                 element={<MainsEvaluationResultsPage />}
               />
               <Route path="question-bank" element={<QuestionManagementPage />} />
+              <Route path="test-configuration" element={<TestConfigurationLayout />}>
+                <Route index element={<Navigate to="exam-pattern" replace />} />
+                <Route path="exam-pattern" element={<ExamPatternSectionPage />} />
+                <Route path="section-management" element={<SectionManagementSectionPage />} />
+                <Route path="marking-rules" element={<MarkingRulesSectionPage />} />
+                <Route path="language-settings" element={<LanguageSettingsSectionPage />} />
+              </Route>
               <Route path="evaluations" element={<EvaluationOversightPage />} />
               <Route path="evaluations/assign" element={<EvaluatorAssignmentPage />} />
               <Route path="evaluations/workspace/:paperId" element={<EvaluationWorkspacePage />} />
@@ -105,7 +132,6 @@ export default function TestManagementLayout() {
                 path="question-management"
                 element={<Navigate to={TEST_MANAGEMENT_ROUTES.questionBank} replace />}
               />
-              <Route path="test-configuration" element={<Navigate to={TEST_MANAGEMENT_ROUTES.cbt} replace />} />
               <Route path="test-integration" element={<Navigate to={TEST_MANAGEMENT_ROUTES.cbt} replace />} />
               <Route
                 path="results-analytics"

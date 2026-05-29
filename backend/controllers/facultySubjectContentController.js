@@ -39,6 +39,7 @@ export async function upsertSubjectContent(req, res, next) {
           facultyId: payload.facultyId ?? '',
           facultyName: payload.facultyName ?? '',
           folders: payload.folders ?? [],
+          categories: payload.categories ?? [],
           publishStatus: payload.publishStatus ?? 'draft',
         },
       },

@@ -9,6 +9,7 @@ import {
   isNavItemActive,
 } from '../../constants/navigation'
 import { usePermissions } from '../../hooks/usePermissions'
+import AccordionSidebarSection from './sidebar/AccordionSidebarSection'
 
 const groupShell = 'rounded-xl bg-[#2d2f58]'
 const salesModuleShell =
@@ -48,87 +49,6 @@ function SubNavLink({ to, label, onNavigate, end = false }) {
     >
       {label}
     </NavLink>
-  )
-}
-
-function CategorySubNavLink({ to, label, icon: Icon, onNavigate }) {
-  return (
-    <NavLink
-      to={to}
-      onClick={onNavigate}
-      end
-      className={({ isActive }) =>
-        cn(
-          'flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium leading-snug transition-colors duration-150',
-          isActive
-            ? 'bg-gradient-to-r from-[#d1e9f6] to-[#b3d9eb] text-[#05092b]'
-            : 'text-[#05092b] hover:bg-[#05092b]/[0.05]',
-        )
-      }
-    >
-      <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-      <span>{label}</span>
-    </NavLink>
-  )
-}
-
-function CategoriesSubmenu({ submenu, isOpen, onToggle, onNavigate, onExpand }) {
-  const blockRef = useRef(null)
-  const location = useLocation()
-  const hasActiveChild = submenu.children.some((child) =>
-    isNavItemActive(child, location.pathname),
-  )
-
-  const handleToggle = () => {
-    const willOpen = !isOpen
-    onToggle()
-    if (willOpen) setTimeout(() => onExpand?.(blockRef.current), 320)
-  }
-
-  return (
-    <div ref={blockRef} className="flex flex-col gap-0.5">
-      <button
-        type="button"
-        onClick={handleToggle}
-        className={cn(
-          'flex w-full items-center justify-between rounded-lg px-4 py-2.5 text-left text-[13px] font-medium leading-snug transition-colors duration-150',
-          isOpen || hasActiveChild ? 'bg-white/[0.08] text-white' : childIdle,
-        )}
-      >
-        <span>{submenu.label}</span>
-        {isOpen ? (
-          <ChevronUp className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2.5} />
-        ) : (
-          <ChevronDown className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2.5} />
-        )}
-      </button>
-
-      <div
-        className={cn(
-          'grid transition-[grid-template-rows] duration-300 ease-out',
-          isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-        )}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <div
-            className={cn(
-              'mt-0.5 flex flex-col gap-0.5 rounded-xl bg-white p-2 transition-opacity duration-300',
-              isOpen ? 'opacity-100' : 'opacity-0',
-            )}
-          >
-            {submenu.children.map((child) => (
-              <CategorySubNavLink
-                key={child.path}
-                to={child.path}
-                label={child.label}
-                icon={child.icon}
-                onNavigate={onNavigate}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 
@@ -225,7 +145,7 @@ function NavGroup({ group, isOpen, onToggle, onNavigate, onExpand }) {
       <div className="flex flex-col gap-0.5 px-2 pb-2 pt-0">
         {visibleChildren.map((child) =>
           child.children ? (
-            <CategoriesSubmenu
+            <AccordionSidebarSection
               key={child.id}
               submenu={child}
               isOpen={openSubmenuId === child.id}
@@ -245,7 +165,8 @@ function NavGroup({ group, isOpen, onToggle, onNavigate, onExpand }) {
                 !child.path.startsWith('/academics/content-library') &&
                 !child.path.startsWith('/finance/') &&
                 !child.path.startsWith('/sales-analytics/') &&
-                !child.path.startsWith('/admin/bookstore/')
+                !child.path.startsWith('/admin/bookstore/') &&
+                !child.path.startsWith('/test-management/test-configuration')
               }
             />
           ),

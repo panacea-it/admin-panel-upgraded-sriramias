@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   BarChart3,
 } from 'lucide-react'
+import { TEST_CONFIGURATION_SUBMENU } from './testConfigurationNav'
 
 export const TEST_MANAGEMENT_BASE = '/test-management'
 
@@ -37,6 +38,7 @@ export const TEST_MANAGEMENT_NAV_ITEMS = [
   { label: 'CBT Management', path: TEST_MANAGEMENT_ROUTES.cbt, icon: Monitor },
   { label: 'Mains Management', path: TEST_MANAGEMENT_ROUTES.mains, icon: ListChecks },
   { label: 'Question Bank', path: TEST_MANAGEMENT_ROUTES.questionBank, icon: Database },
+  TEST_CONFIGURATION_SUBMENU,
   { label: 'Evaluation Oversight', path: TEST_MANAGEMENT_ROUTES.evaluations, icon: ClipboardCheck },
   { label: 'Analytics', path: TEST_MANAGEMENT_ROUTES.analytics, icon: BarChart3 },
 ]

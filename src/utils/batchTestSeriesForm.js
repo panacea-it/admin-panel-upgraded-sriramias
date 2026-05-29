@@ -1,5 +1,18 @@
 /** Test Series data for Faculty Subjects (and legacy batch payloads) */
 
+import { normalizePrelimsSectionQuestions } from './prelimsSectionQuestions'
+
+export const PRELIMS_SECTION_TIMER_EXPIRY_ACTIONS = [
+  { value: 'moveNext', label: 'Auto move to next section' },
+  { value: 'submitSection', label: 'Auto submit section' },
+]
+
+export const PRELIMS_ATTEMPT_RESTRICTION_TYPES = [
+  { value: 'lifetime', label: 'Lifetime Attempts' },
+  { value: 'daily', label: 'Daily Attempts' },
+  { value: 'weekly', label: 'Weekly Attempts' },
+]
+
 export const BATCH_TEST_TYPES = [
   'Prelims',
   'Mains',
@@ -38,6 +51,28 @@ export function createEmptyQuestionDraft() {
   }
 }
 
+export function createEmptyPrelimsSection(order = 1) {
+  return {
+    sectionId: `sec-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    sectionMasterId: '',
+    sectionName: '',
+    description: '',
+    totalQuestions: '',
+    totalMarks: '',
+    marksPerQuestion: '',
+    negativeMarks: '',
+    duration: '30',
+    durationCustom: '',
+    timerEnabled: false,
+    status: 'active',
+    lockSection: false,
+    order,
+    questionCount: 0,
+    questions: [],
+    uploadedFiles: [],
+  }
+}
+
 export function createEmptyTestSeriesBlock() {
   return {
     details: createEmptyTestSeriesDetails(),
@@ -46,6 +81,17 @@ export function createEmptyTestSeriesBlock() {
     questions: [],
     uploadedFiles: [],
     questionCount: 0,
+    languages: [],
+    sectionWiseEnabled: false,
+    sections: [],
+    sectionTimerExpiryAction: 'moveNext',
+    attemptLimitEnabled: false,
+    maxAttempts: 1,
+    attemptRestrictionType: 'lifetime',
+    showRemainingAttempts: true,
+    shuffleQuestions: false,
+    shuffleOptions: false,
+    shuffleSections: false,
   }
 }
 
@@ -60,6 +106,7 @@ export function createEmptyTestSeriesDetails() {
     marksPerCorrectAnswer: '',
     negativeMarkingEnabled: false,
     negativeMarkPerQuestion: '',
+    instructionId: '',
     instructions: '',
     manualQuestions: '',
     pdfFileName: '',
@@ -105,6 +152,7 @@ export function flattenTestSeriesBlock(raw = {}) {
       details.negativeMarkingEnabled ?? raw.negativeMarkingEnabled ?? false,
     negativeMarkPerQuestion:
       details.negativeMarkPerQuestion ?? raw.negativeMarkPerQuestion ?? '',
+    instructionId: details.instructionId ?? raw.instructionId ?? '',
     instructions: details.instructions ?? raw.instructions ?? '',
     manualQuestions: details.manualQuestions ?? raw.manualQuestions ?? '',
     pdfFileName: details.pdfFileName ?? raw.pdfFileName ?? '',
@@ -120,7 +168,77 @@ export function flattenTestSeriesBlock(raw = {}) {
     questionCount: raw.questionCount ?? 0,
     questions: raw.questions ?? [],
     uploadFiles: raw.uploadedFiles ?? raw.uploadFiles ?? [],
+    languages: raw.languages ?? [],
+    sectionWiseEnabled: raw.sectionWiseEnabled ?? false,
+    sections: raw.sections ?? [],
+    sectionTimerExpiryAction: raw.sectionTimerExpiryAction ?? 'moveNext',
+    attemptLimitEnabled: raw.attemptLimitEnabled ?? false,
+    maxAttempts: raw.maxAttempts ?? 1,
+    attemptRestrictionType: raw.attemptRestrictionType ?? 'lifetime',
+    showRemainingAttempts:
+      raw.showRemainingAttempts !== undefined ? Boolean(raw.showRemainingAttempts) : true,
+    shuffleQuestions: raw.shuffleQuestions ?? false,
+    shuffleOptions: raw.shuffleOptions ?? false,
+    shuffleSections: raw.shuffleSections ?? false,
   }
+}
+
+function normalizeAttemptRestrictionType(value) {
+  const v = String(value || 'lifetime').toLowerCase()
+  if (v === 'daily' || v === 'weekly') return v
+  return 'lifetime'
+}
+
+function normalizeMaxAttempts(value, enabled) {
+  if (!enabled) return 1
+  const n = parseInt(String(value ?? ''), 10)
+  return Number.isFinite(n) && n >= 1 ? n : 1
+}
+
+function normalizePrelimsLanguages(raw = []) {
+  if (!Array.isArray(raw)) return []
+  return [...new Set(raw.map((l) => String(l || '').trim()).filter(Boolean))]
+}
+
+function normalizePrelimsSection(raw = {}, index = 0) {
+  const order = parseInt(String(raw.order ?? index + 1), 10) || index + 1
+  const status = String(raw.status || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active'
+  return {
+    sectionId: raw.sectionId || createEmptyPrelimsSection(order).sectionId,
+    sectionMasterId: String(raw.sectionMasterId || '').trim(),
+    sectionName: String(raw.sectionName || '').trim(),
+    description: String(raw.description || '').trim(),
+    totalQuestions:
+      raw.totalQuestions === '' || raw.totalQuestions == null ? '' : String(raw.totalQuestions),
+    totalMarks: raw.totalMarks === '' || raw.totalMarks == null ? '' : String(raw.totalMarks),
+    marksPerQuestion:
+      raw.marksPerQuestion === '' || raw.marksPerQuestion == null
+        ? ''
+        : String(raw.marksPerQuestion),
+    negativeMarks:
+      raw.negativeMarks === '' || raw.negativeMarks == null ? '' : String(raw.negativeMarks),
+    duration: String(raw.duration || '30'),
+    durationCustom: String(raw.durationCustom || '').trim(),
+    timerEnabled: Boolean(raw.timerEnabled),
+    status,
+    lockSection: Boolean(raw.lockSection),
+    order,
+    questionCount: Math.max(
+      0,
+      parseInt(String(raw.questionCount ?? ''), 10) || 0,
+      Array.isArray(raw.questions) ? raw.questions.length : 0,
+    ),
+    questions: normalizePrelimsSectionQuestions(raw.questions || []),
+    uploadedFiles: Array.isArray(raw.uploadedFiles) ? raw.uploadedFiles : [],
+  }
+}
+
+export function normalizePrelimsSections(rawSections = []) {
+  if (!Array.isArray(rawSections)) return []
+  return rawSections
+    .map((section, index) => normalizePrelimsSection(section, index))
+    .sort((a, b) => a.order - b.order)
+    .map((section, index) => ({ ...section, order: index + 1 }))
 }
 
 export function normalizeTestSeriesBlock(raw = {}) {
@@ -159,6 +277,7 @@ export function normalizeTestSeriesBlock(raw = {}) {
         flat.negativeMarkPerQuestion === '' || flat.negativeMarkPerQuestion == null
           ? ''
           : String(flat.negativeMarkPerQuestion),
+      instructionId: String(flat.instructionId || '').trim(),
       instructions: String(flat.instructions || '').trim(),
       manualQuestions: String(flat.manualQuestions || ''),
       pdfFileName: String(flat.pdfFileName || '').trim(),
@@ -183,6 +302,21 @@ export function normalizeTestSeriesBlock(raw = {}) {
         ? Math.max(...deduped.map((q) => q.questionNo || 0), deduped.length)
         : 0,
     ),
+    languages: normalizePrelimsLanguages(flat.languages),
+    sectionWiseEnabled: Boolean(flat.sectionWiseEnabled),
+    sections: normalizePrelimsSections(flat.sections),
+    sectionTimerExpiryAction:
+      flat.sectionTimerExpiryAction === 'submitSection' ? 'submitSection' : 'moveNext',
+    attemptLimitEnabled: Boolean(flat.attemptLimitEnabled),
+    maxAttempts: normalizeMaxAttempts(flat.maxAttempts, Boolean(flat.attemptLimitEnabled)),
+    attemptRestrictionType: normalizeAttemptRestrictionType(flat.attemptRestrictionType),
+    showRemainingAttempts:
+      flat.showRemainingAttempts === undefined || flat.showRemainingAttempts === null
+        ? true
+        : Boolean(flat.showRemainingAttempts),
+    shuffleQuestions: Boolean(flat.shuffleQuestions),
+    shuffleOptions: Boolean(flat.shuffleOptions),
+    shuffleSections: flat.sectionWiseEnabled ? Boolean(flat.shuffleSections) : false,
   }
 }
 
@@ -198,6 +332,17 @@ export function getTestSeriesFlat(block = {}) {
     questionCount: n.questionCount,
     questions: n.questions,
     uploadFiles: n.uploadedFiles,
+    languages: n.languages,
+    sectionWiseEnabled: n.sectionWiseEnabled,
+    sections: n.sections,
+    sectionTimerExpiryAction: n.sectionTimerExpiryAction,
+    attemptLimitEnabled: n.attemptLimitEnabled,
+    maxAttempts: n.maxAttempts,
+    attemptRestrictionType: n.attemptRestrictionType,
+    showRemainingAttempts: n.showRemainingAttempts,
+    shuffleQuestions: n.shuffleQuestions,
+    shuffleOptions: n.shuffleOptions,
+    shuffleSections: n.shuffleSections,
   }
 }
 
@@ -216,6 +361,7 @@ export function patchTestSeriesBlock(prev = {}, patch = {}) {
       marksPerCorrectAnswer: flat.marksPerCorrectAnswer,
       negativeMarkingEnabled: flat.negativeMarkingEnabled,
       negativeMarkPerQuestion: flat.negativeMarkPerQuestion,
+      instructionId: flat.instructionId,
       instructions: flat.instructions,
       manualQuestions: flat.manualQuestions,
       pdfFileName: flat.pdfFileName,
@@ -228,7 +374,39 @@ export function patchTestSeriesBlock(prev = {}, patch = {}) {
     questions: flat.questions ?? current.questions,
     uploadedFiles: flat.uploadFiles ?? current.uploadedFiles,
     questionCount: flat.questionCount ?? current.questionCount,
+    languages: flat.languages ?? current.languages,
+    sectionWiseEnabled:
+      flat.sectionWiseEnabled !== undefined
+        ? flat.sectionWiseEnabled
+        : current.sectionWiseEnabled,
+    sections: flat.sections ?? current.sections,
+    sectionTimerExpiryAction: flat.sectionTimerExpiryAction ?? current.sectionTimerExpiryAction,
+    attemptLimitEnabled:
+      flat.attemptLimitEnabled !== undefined
+        ? flat.attemptLimitEnabled
+        : current.attemptLimitEnabled,
+    maxAttempts: flat.maxAttempts ?? current.maxAttempts,
+    attemptRestrictionType: flat.attemptRestrictionType ?? current.attemptRestrictionType,
+    showRemainingAttempts:
+      flat.showRemainingAttempts !== undefined
+        ? flat.showRemainingAttempts
+        : current.showRemainingAttempts,
+    shuffleQuestions:
+      flat.shuffleQuestions !== undefined ? flat.shuffleQuestions : current.shuffleQuestions,
+    shuffleOptions:
+      flat.shuffleOptions !== undefined ? flat.shuffleOptions : current.shuffleOptions,
+    shuffleSections:
+      flat.shuffleSections !== undefined ? flat.shuffleSections : current.shuffleSections,
   })
+}
+
+export function resolvePrelimsSectionDurationMinutes(section = {}) {
+  if (section.duration === 'custom') {
+    const n = parseInt(String(section.durationCustom || '').replace(/\D/g, ''), 10)
+    return Number.isFinite(n) && n > 0 ? n : null
+  }
+  const n = parseInt(String(section.duration || ''), 10)
+  return Number.isFinite(n) && n > 0 ? n : null
 }
 
 export function resolveTestSeriesDurationMinutes(block = {}) {
@@ -324,6 +502,7 @@ export function serializeTestSeriesForStorage(testSeriesRaw = {}) {
     marksPerCorrectAnswer: ts.details.marksPerCorrectAnswer,
     negativeMarkingEnabled: ts.details.negativeMarkingEnabled,
     negativeMarkPerQuestion: ts.details.negativeMarkPerQuestion,
+    instructionId: ts.details.instructionId,
     instructions: ts.details.instructions,
     manualQuestions: ts.details.manualQuestions,
     pdfFileName: ts.details.pdfFileName,
@@ -332,5 +511,16 @@ export function serializeTestSeriesForStorage(testSeriesRaw = {}) {
     resultDate: ts.resultSettings.resultDate,
     rankingEnabled: ts.resultSettings.rankingEnabled,
     uploadFiles: ts.uploadedFiles,
+    languages: ts.languages,
+    sectionWiseEnabled: ts.sectionWiseEnabled,
+    sections: ts.sections,
+    sectionTimerExpiryAction: ts.sectionTimerExpiryAction,
+    attemptLimitEnabled: ts.attemptLimitEnabled,
+    maxAttempts: ts.maxAttempts,
+    attemptRestrictionType: ts.attemptRestrictionType,
+    showRemainingAttempts: ts.showRemainingAttempts,
+    shuffleQuestions: ts.shuffleQuestions,
+    shuffleOptions: ts.shuffleOptions,
+    shuffleSections: ts.shuffleSections,
   }
 }

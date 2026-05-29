@@ -27,6 +27,7 @@ export default function PaginatedFigmaTable({
   stickyLastColumn = false,
   animateRows = false,
   onRowClick,
+  tableMinWidth = 720,
   /** { selectedIds, onToggle(id), onTogglePage(pageIds, select), getRowId? } */
   selection,
 }) {
@@ -105,6 +106,7 @@ export default function PaginatedFigmaTable({
         stickyLastColumn={stickyLastColumn}
         animateRows={animateRows}
         onRowClick={onRowClick}
+        tableMinWidth={tableMinWidth}
       />
       {!loading && data.length > 0 && (
         <TablePagination
