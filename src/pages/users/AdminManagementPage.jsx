@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Shield, Trash2 } from 'lucide-react'
+import { Eye, Plus, Shield, Trash2 } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import CreateAdminModal from '../../components/admin-management/CreateAdminModal'
+import ViewAdminDrawer from '../../components/admin-management/ViewAdminDrawer'
 import EditButton from '../../components/common/EditButton'
+import { useTableRowSelection } from '../../hooks/useTableRowSelection'
 import { StatusBadge } from '../../components/academics/AcademicsUi'
 import { useAdminRoles } from '../../contexts/AdminRolesContext'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -36,6 +38,8 @@ export default function AdminManagementPage() {
   const { roles } = useAdminRoles()
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState(null)
+  const [viewingRecord, setViewingRecord] = useState(null)
+  const { selection, clearSelection } = useTableRowSelection((row) => row.id)
   const [entries, setEntries] = useState([])
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -82,6 +86,7 @@ export default function AdminManagementPage() {
     setSearch('')
     setRoleFilter('all')
     setStatusFilter('all')
+    clearSelection()
   }
 
   const openCreate = () => {
@@ -173,7 +178,15 @@ export default function AdminManagementPage() {
         key: 'actions',
         label: 'Actions',
         render: (row) => (
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <div className="flex flex-nowrap items-center gap-3 sm:gap-4">
+            <button
+              type="button"
+              onClick={() => setViewingRecord(row._raw)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-[#686868] transition hover:text-[#246392] sm:text-base"
+            >
+              <Eye className="h-4 w-4" strokeWidth={2.2} />
+              View
+            </button>
             <EditButton onClick={() => openEdit(row)} />
             <button
               type="button"
@@ -211,6 +224,12 @@ export default function AdminManagementPage() {
           editingRecord={editingRecord}
         />
 
+        <ViewAdminDrawer
+          open={!!viewingRecord}
+          employee={viewingRecord}
+          onClose={() => setViewingRecord(null)}
+        />
+
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <CourseFilterToolbar
@@ -241,6 +260,7 @@ export default function AdminManagementPage() {
           itemLabel="employees"
           resetDeps={[debouncedSearch, roleFilter, statusFilter]}
           rowClassName="hover:bg-slate-50/90"
+          selection={selection}
         />
       </section>
     </div>

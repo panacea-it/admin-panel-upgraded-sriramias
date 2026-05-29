@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   Ban,
   Building2,
+  ChevronDown,
   Eye,
   Pencil,
   Plus,
@@ -15,7 +16,36 @@ import CenterFormDrawer from '../../components/center-management/CenterFormDrawe
 import ViewCenterDrawer from '../../components/center-management/ViewCenterDrawer'
 import ConfirmCenterDeleteModal from '../../components/center-management/ConfirmCenterDeleteModal'
 import { useCenters } from '../../contexts/CentersContext'
+import AdminCheckbox from '../../components/admin-management/ui/AdminCheckbox'
+import { useTableRowSelection } from '../../hooks/useTableRowSelection'
 import { cn } from '../../utils/cn'
+
+const CENTER_STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'disabled', label: 'Disabled' },
+]
+
+function CenterStatusFilter({ value, onChange }) {
+  return (
+    <div className="relative w-full sm:w-auto sm:min-w-[150px]">
+      <select
+        id="center-status-filter"
+        value={value}
+        onChange={onChange}
+        aria-label="Status"
+        className="h-10 w-full min-h-[38px] appearance-none rounded-lg border-0 bg-[#55ace7] pl-4 pr-9 text-sm font-semibold text-white outline-none focus:ring-2 focus:ring-[#246392]/50 sm:text-base"
+      >
+        {CENTER_STATUS_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value} className="bg-white text-[#222]">
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white" />
+    </div>
+  )
+}
 
 function StatusPill({ status }) {
   const active = status === 'active'
@@ -49,6 +79,7 @@ export default function CenterManagementPage() {
   const [viewing, setViewing] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const { selectedIds, selection } = useTableRowSelection((row) => row.centerId)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -86,6 +117,12 @@ export default function CenterManagementPage() {
     const disable = row.status === 'active'
     setCenterDisabled(row.centerId, disable)
     toast.success(disable ? 'Center disabled' : 'Center enabled')
+  }
+
+  const toggleSelectAllFiltered = () => {
+    const ids = filtered.map((c) => c.centerId)
+    const allSelected = ids.length > 0 && ids.every((id) => selectedIds.includes(id))
+    selection.onTogglePage(ids, !allSelected)
   }
 
   const confirmDelete = async () => {
@@ -128,33 +165,27 @@ export default function CenterManagementPage() {
                 className="w-full rounded-xl border border-slate-200/90 bg-slate-50/80 py-2.5 pl-10 pr-3 text-[13px] font-medium text-slate-900 outline-none ring-violet-500/0 transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-500/15"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'all', label: 'All' },
-                { id: 'active', label: 'Active' },
-                { id: 'disabled', label: 'Disabled' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setStatusFilter(t.id)}
-                  className={cn(
-                    'rounded-xl px-4 py-2 text-[12px] font-bold uppercase tracking-wide transition',
-                    statusFilter === t.id
-                      ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            <CenterStatusFilter
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            />
           </div>
 
           <div className="mt-6 overflow-x-auto rounded-xl border border-slate-100">
             <table className="min-w-[880px] w-full border-collapse text-left text-[13px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/90 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                  <th className="w-12 whitespace-nowrap px-4 py-3">
+                    <AdminCheckbox
+                      id="center-select-all"
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((c) => selectedIds.includes(c.centerId))
+                      }
+                      aria-label="Select all centers on this page"
+                      onChange={toggleSelectAllFiltered}
+                    />
+                  </th>
                   <th className="whitespace-nowrap px-4 py-3">Center</th>
                   <th className="whitespace-nowrap px-4 py-3">City</th>
                   <th className="whitespace-nowrap px-4 py-3">State</th>
@@ -170,6 +201,14 @@ export default function CenterManagementPage() {
                     key={row.centerId}
                     className="bg-white transition hover:bg-violet-50/40"
                   >
+                    <td className="px-4 py-3">
+                      <AdminCheckbox
+                        id={`center-select-${row.centerId}`}
+                        checked={selectedIds.includes(row.centerId)}
+                        aria-label={`Select ${row.centerName}`}
+                        onChange={() => selection.onToggle(row.centerId)}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="font-semibold text-slate-900">
                         {row.centerName}
@@ -203,7 +242,7 @@ export default function CenterManagementPage() {
                         : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap justify-end gap-2">
+                      <div className="flex flex-nowrap items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setViewing(row)}

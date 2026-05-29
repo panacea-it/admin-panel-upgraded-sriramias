@@ -212,7 +212,7 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                   id="create-admin-modal-title"
                   className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl"
                 >
-                  Create Admin Access
+                  {editingRecord ? 'Edit User Access' : 'Create Admin Access'}
                 </h2>
                 <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">
                   Manage and assign secure administrative access across departments.
@@ -482,8 +482,10 @@ export default function CreateAdminModal({ open, onClose, onSuccess, editingReco
                   {loading ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Creating…
+                      {editingRecord ? 'Saving…' : 'Creating…'}
                     </span>
+                  ) : editingRecord ? (
+                    'Save changes'
                   ) : (
                     'Create Admin'
                   )}

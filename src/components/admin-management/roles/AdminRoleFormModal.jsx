@@ -30,6 +30,7 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
   const initialRoleRef = useRef(initialRole)
   initialRoleRef.current = initialRole
   const editKey = getModalEditKey(initialRole)
+  const savingRef = useRef(false)
 
   useInitOnModalOpen(open, editKey, () => {
     const role = initialRoleRef.current
@@ -48,7 +49,10 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!label.trim()) {
+    if (savingRef.current) return
+
+    const trimmedLabel = label.trim()
+    if (!trimmedLabel) {
       toast.error('Role title is required')
       return
     }
@@ -57,18 +61,23 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
       return
     }
 
+    const role = initialRoleRef.current
+    if (isEdit && role && isSystemRole) {
+      toast.error('This system role cannot be edited')
+      return
+    }
+
+    savingRef.current = true
     setLoading(true)
     await new Promise((r) => setTimeout(r, 300))
 
     try {
-      if (isEdit && initialRole) {
-        if (!isSystemRole) {
-          updateRole(initialRole.id, { label: label.trim() })
-        }
+      if (isEdit && role) {
+        updateRole(role.id, { label: trimmedLabel })
         toast.success('Role access updated')
       } else {
         createRole({
-          label: label.trim(),
+          label: trimmedLabel,
           customId: normalizeRoleCode(roleCode),
         })
         toast.success('Role access created')
@@ -77,6 +86,7 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
     } catch (err) {
       toast.error('Could not save', { description: String(err?.message || err) })
     } finally {
+      savingRef.current = false
       setLoading(false)
     }
   }
@@ -95,10 +105,11 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
         <form onSubmit={handleSubmit} className="flex flex-col">
           <div className="space-y-6 px-6 py-6">
             <FloatingInput
+              id="role-access-label"
               label="Role Title (Display)"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              disabled={isSystemRole}
+              disabled={isSystemRole && isEdit}
             />
 
             {isEdit ? (
@@ -128,7 +139,7 @@ export default function AdminRoleFormModal({ open, onClose, initialRole }) {
             </button>
             <button
               type="submit"
-              disabled={loading || (isSystemRole && isEdit)}
+              disabled={loading || (isSystemRole && isEdit) || !label.trim()}
               className="inline-flex min-w-[8rem] items-center justify-center gap-2 rounded-xl bg-[#1a3a5c] px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#152f4a] disabled:opacity-60"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

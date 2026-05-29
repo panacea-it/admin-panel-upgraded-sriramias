@@ -30,6 +30,12 @@ export default function BannerFilterToolbar({
   status,
   onStatusChange,
   categoryOptions,
+  centerOptions = [
+    { value: 'all', label: 'Center' },
+    { value: 'New Delhi', label: 'New Delhi' },
+    { value: 'Hyderabad', label: 'Hyderabad' },
+    { value: 'Pune', label: 'Pune' },
+  ],
 }) {
   return (
     <div className="flex min-h-14 flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.08)] sm:px-4">
@@ -54,12 +60,7 @@ export default function BannerFilterToolbar({
           label="Center"
           value={center}
           onChange={onCenterChange}
-          options={[
-            { value: 'all', label: 'Center' },
-            { value: 'New Delhi', label: 'New Delhi' },
-            { value: 'Hyderabad', label: 'Hyderabad' },
-            { value: 'Pune', label: 'Pune' },
-          ]}
+          options={centerOptions}
         />
         <FilterSelect
           label="Status"

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { cn } from '../../utils/cn'
+import AdminCheckbox from './ui/AdminCheckbox'
 import {
   emptyPermissionSet,
   fullPermissionSet,
@@ -7,31 +8,7 @@ import {
   normalizeFeaturePermissions,
 } from '../../utils/rbacPermissionModel'
 
-function FeatureSwitch({ on, disabled, onChange }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      disabled={disabled}
-      onClick={() => !disabled && onChange(!on)}
-      className={cn(
-        'relative h-9 w-[52px] shrink-0 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40',
-        disabled && 'pointer-events-none opacity-45',
-        on ? 'bg-violet-600' : 'bg-slate-300',
-      )}
-    >
-      <motion.span
-        layout
-        className="absolute top-1 left-1 h-7 w-7 rounded-full bg-white shadow"
-        animate={{ x: on ? 18 : 0 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-      />
-    </button>
-  )
-}
-
-/** Feature rows with on/off switches only. */
+/** Feature rows with permission checkboxes. */
 export default function PermissionGroup({
   definitions,
   featureMap,
@@ -76,9 +53,11 @@ export default function PermissionGroup({
                 Feature
               </p>
             </div>
-            <FeatureSwitch
-              on={on}
+            <AdminCheckbox
+              id={`perm-${def.id}`}
+              checked={on}
               disabled={!editable}
+              aria-label={`${def.label} permission`}
               onChange={(enabled) =>
                 onFeatureBulkChange(def.id, enabled ? fullPermissionSet() : emptyPermissionSet())
               }

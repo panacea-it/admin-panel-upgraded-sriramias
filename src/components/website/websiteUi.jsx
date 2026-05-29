@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Edit3, Globe, ImageIcon, Trash2 } from 'lucide-react'
+import { StatusBadge } from '../academics/AcademicsUi'
 import { UploadFieldHint, UploadValidationMessage } from '../common/UploadFieldHint'
 import { cn } from '../../utils/cn'
 import { validateUploadFile } from '../../utils/uploadValidation'
@@ -142,17 +143,57 @@ export function WebsiteImageInput({ value, onChange, id }) {
   )
 }
 
-export function RankerImageCell({ name }) {
+export function WebsiteStatusBadge({ status }) {
+  return <StatusBadge status={status} />
+}
+
+export function WebsiteStatusSelect({ value, onChange, id, required }) {
   return (
-    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-[#e8f4fc] to-[#dbeafe]">
-      <span className="text-xs font-bold text-[#246392]">
-        {name
-          .split(' ')
-          .map((w) => w[0])
-          .join('')
-          .slice(0, 2)
-          .toUpperCase()}
-      </span>
-    </div>
+    <select
+      id={id}
+      value={value}
+      onChange={onChange}
+      required={required}
+      className={cn(websiteInputClass, 'cursor-pointer')}
+    >
+      <option value="Active">Active</option>
+      <option value="Inactive">Inactive</option>
+    </select>
+  )
+}
+
+function rankerPlaceholderSrc(name) {
+  const safeName = encodeURIComponent(name?.trim() || 'Ranker')
+  return `https://ui-avatars.com/api/?name=${safeName}&background=55ace7&color=ffffff&size=96&bold=true&format=png`
+}
+
+function isResolvableImageUrl(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string') return false
+  const trimmed = imageUrl.trim()
+  if (!trimmed || trimmed === '312×214 Kb') return false
+  return (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:image/') ||
+    trimmed.startsWith('/')
+  )
+}
+
+export function RankerImageCell({ name, imageUrl }) {
+  const [uploadFailed, setUploadFailed] = useState(false)
+  const placeholderSrc = useMemo(() => rankerPlaceholderSrc(name), [name])
+  const canUseUpload = isResolvableImageUrl(imageUrl) && !uploadFailed
+  const src = canUseUpload ? imageUrl.trim() : placeholderSrc
+
+  return (
+    <img
+      src={src}
+      alt={name ? `${name} profile` : 'Ranker'}
+      loading="lazy"
+      onError={() => {
+        if (canUseUpload) setUploadFailed(true)
+      }}
+      className="h-12 w-12 rounded-lg border border-slate-200/80 object-cover shadow-sm"
+    />
   )
 }

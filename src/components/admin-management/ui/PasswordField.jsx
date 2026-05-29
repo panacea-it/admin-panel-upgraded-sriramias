@@ -47,6 +47,7 @@ export default function PasswordField({
           error={error}
           helper={helper}
           icon={Lock}
+          hasSuffix
           autoComplete="new-password"
         />
         <button

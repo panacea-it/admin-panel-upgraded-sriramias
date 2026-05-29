@@ -245,7 +245,7 @@ const RoleAccessMatrix = forwardRef(function RoleAccessMatrix({ onSave, focusRol
             className="sticky top-0 z-30 grid border-b border-slate-200/90 bg-slate-50/95 shadow-[0_4px_12px_rgba(15,23,42,0.06)] backdrop-blur-md"
             style={matrixGridStyle}
           >
-            <div className="sticky left-0 z-40 border-r border-slate-200/80 bg-slate-50/98 px-5 py-4">
+            <div className="sticky left-0 z-40 flex min-h-[56px] items-center border-r border-slate-200/80 bg-slate-50/98 px-5 py-4">
               <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
                 Role
               </span>

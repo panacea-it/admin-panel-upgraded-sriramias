@@ -8,12 +8,15 @@ import WebsiteFilterToolbar from '../../components/website/WebsiteFilterToolbar'
 import WebsiteFormShell from '../../components/website/WebsiteFormShell'
 import WebsiteFormModal from '../../components/website/WebsiteFormModal'
 import YoutubeManagementTab from '../../components/website/YoutubeManagementTab'
+import ConfirmDeleteDialog from '../../components/subjects/ConfirmDeleteDialog'
 import {
   DateTimeCell,
   RankerImageCell,
   TableRowActions,
   WebsiteField,
   WebsiteImageInput,
+  WebsiteStatusBadge,
+  WebsiteStatusSelect,
   websiteInputClass,
 } from '../../components/website/websiteUi'
 import {
@@ -50,6 +53,7 @@ const emptyRankForm = () => ({
   rankerName: '',
   image: '',
   rank: '',
+  status: 'Active',
 })
 
 export default function WebsitePage() {
@@ -62,13 +66,17 @@ export default function WebsitePage() {
 
   const [search, setSearch] = useState('')
   const [dateFilter, setDateFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [rankForm, setRankForm] = useState(emptyRankForm)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const meta = TAB_META[activeTab]
 
   const resetFilters = () => {
     setSearch('')
     setDateFilter('all')
+    setStatusFilter('all')
   }
 
   const handleTabChange = (tab) => {
@@ -87,9 +95,10 @@ export default function WebsitePage() {
         row.name.toLowerCase().includes(q) ||
         row.rank.toLowerCase().includes(q)
       const matchDate = dateFilter === 'all' || row.dateBucket === dateFilter
-      return matchSearch && matchDate
+      const matchStatus = statusFilter === 'all' || row.status === statusFilter
+      return matchSearch && matchDate && matchStatus
     })
-  }, [rankers, search, dateFilter])
+  }, [rankers, search, dateFilter, statusFilter])
 
   const filteredReviews = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -118,6 +127,7 @@ export default function WebsitePage() {
       rankerName: row.name,
       image: row.imageUrl || '',
       rank: row.rank,
+      status: row.status || 'Active',
     })
     setRankFormOpen(true)
   }
@@ -127,14 +137,33 @@ export default function WebsitePage() {
     setEditingId(null)
   }
 
-  const deleteRanker = (id) => {
-    setRankers((prev) => prev.filter((r) => r.id !== id))
-    toast.success('Ranker deleted')
+  const requestDeleteRanker = (row) => setDeleteTarget(row)
+
+  const cancelDeleteRanker = () => {
+    if (!deleting) setDeleteTarget(null)
+  }
+
+  const confirmDeleteRanker = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      setRankers((prev) => prev.filter((r) => r.id !== deleteTarget.id))
+      toast.success('Ranker deleted')
+      setDeleteTarget(null)
+    } catch {
+      toast.error('Failed to delete ranker. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const saveRank = () => {
     if (!rankForm.rankerName.trim() || !rankForm.rank.trim()) {
       toast.error('Please fill required fields')
+      return
+    }
+    if (!rankForm.status) {
+      toast.error('Please select a status')
       return
     }
     const payload = {
@@ -145,6 +174,7 @@ export default function WebsitePage() {
       time: '10 AM',
       date: '14 May 2026',
       dateBucket: 'Today',
+      status: rankForm.status,
     }
     if (editingId) {
       setRankers((prev) =>
@@ -169,9 +199,15 @@ export default function WebsitePage() {
     {
       key: 'image',
       label: 'Image',
-      render: (row) => <RankerImageCell name={row.name} />,
+      render: (row) => <RankerImageCell name={row.name} imageUrl={row.imageUrl} />,
     },
-    { key: 'rank', label: 'Ranker', cellClassName: 'font-semibold text-[#246392]' },
+    { key: 'rank', label: 'Rank', cellClassName: 'font-semibold text-[#246392]' },
+    {
+      key: 'status',
+      label: 'Status',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => <WebsiteStatusBadge status={row.status} />,
+    },
     {
       key: 'created',
       label: 'Created On',
@@ -184,7 +220,7 @@ export default function WebsitePage() {
         <TableRowActions
           compact
           onEdit={() => openEditRank(row)}
-          onDelete={() => deleteRanker(row.id)}
+          onDelete={() => requestDeleteRanker(row)}
         />
       ),
     },
@@ -246,6 +282,9 @@ export default function WebsitePage() {
               searchPlaceholder={meta.searchPlaceholder}
               dateRange={dateFilter}
               onDateRangeChange={(e) => setDateFilter(e.target.value)}
+              statusFilter={statusFilter}
+              onStatusFilterChange={(e) => setStatusFilter(e.target.value)}
+              showStatusFilter={activeTab === 'rank'}
             />
 
             <PaginatedFigmaTable
@@ -254,7 +293,7 @@ export default function WebsitePage() {
               emptyMessage={meta.emptyMessage}
               itemLabel={meta.itemLabel}
               initialPageSize={6}
-              resetDeps={[activeTab, search, dateFilter]}
+              resetDeps={[activeTab, search, dateFilter, statusFilter]}
               density="compact"
               className="rounded-xl shadow-[0_11px_25px_rgba(15,23,42,0.07)]"
             />
@@ -272,7 +311,7 @@ export default function WebsitePage() {
           onReset={() => setRankForm(emptyRankForm())}
           onSave={saveRank}
         >
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <WebsiteField label="ID">
               <input
                 type="text"
@@ -296,8 +335,16 @@ export default function WebsitePage() {
                 onChange={(val) => setRankForm((f) => ({ ...f, image: val }))}
               />
             </WebsiteField>
+            <WebsiteField label="Status" required>
+              <WebsiteStatusSelect
+                id="ranker-status"
+                value={rankForm.status}
+                onChange={(e) => setRankForm((f) => ({ ...f, status: e.target.value }))}
+                required
+              />
+            </WebsiteField>
           </div>
-          <WebsiteField label="Rank" className="max-w-md">
+          <WebsiteField label="Rank" className="max-w-md" required>
             <input
               type="text"
               value={rankForm.rank}
@@ -308,6 +355,16 @@ export default function WebsitePage() {
           </WebsiteField>
         </WebsiteFormShell>
       </WebsiteFormModal>
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete Ranker"
+        message="Are you sure you want to delete this ranker?"
+        onCancel={cancelDeleteRanker}
+        onConfirm={confirmDeleteRanker}
+        loading={deleting}
+        confirmLabel="Delete"
+      />
     </div>
   )
 }

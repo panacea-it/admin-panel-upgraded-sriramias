@@ -8,9 +8,10 @@ const sizeStyles = {
     labelBase: 'left-3.5',
     labelFloat: 'top-2 text-[11px]',
     labelCenter: 'peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2',
-    labelIcon: 'left-10 peer-focus:left-10',
+    labelIcon: 'left-11 peer-focus:left-11',
     icon: 'left-3.5 h-4 w-4',
-    iconPadding: 'pl-10',
+    iconPadding: 'pl-11',
+    suffixPadding: 'pr-11',
   },
   comfortable: {
     input:
@@ -19,9 +20,10 @@ const sizeStyles = {
     labelFloat: 'top-2.5 text-xs',
     labelCenter:
       'peer-placeholder-shown:top-[calc(50%-1px)] peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-[15px]',
-    labelIcon: 'left-11 peer-focus:left-11',
+    labelIcon: 'left-12 peer-focus:left-12',
     icon: 'left-4 h-[18px] w-[18px]',
-    iconPadding: 'pl-11',
+    iconPadding: 'pl-12',
+    suffixPadding: 'pr-12',
   },
 }
 
@@ -32,6 +34,8 @@ export default function FloatingInput({
   error,
   icon: Icon,
   className,
+  inputClassName,
+  hasSuffix = false,
   type = 'text',
   size = 'default',
   onFocus,
@@ -60,11 +64,11 @@ export default function FloatingInput({
           'peer w-full rounded-xl border bg-white/80 text-slate-900 shadow-sm backdrop-blur-sm transition-all outline-none',
           'border-slate-200/80 placeholder-transparent',
           'focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15',
-          '',
           Icon && s.iconPadding,
+          hasSuffix && s.suffixPadding,
           error && 'border-rose-400 focus:border-rose-400 focus:ring-rose-500/15',
           s.input,
-          className,
+          inputClassName,
         )}
         placeholder={label}
         onFocus={(e) => {

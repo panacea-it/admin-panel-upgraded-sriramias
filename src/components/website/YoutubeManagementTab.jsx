@@ -5,10 +5,13 @@ import WebsiteFilterToolbar from './WebsiteFilterToolbar'
 import WebsiteFormShell from './WebsiteFormShell'
 import WebsiteFormModal from './WebsiteFormModal'
 import YoutubeIcon from './YoutubeIcon'
+import ConfirmDeleteDialog from '../subjects/ConfirmDeleteDialog'
 import {
   DateTimeInline,
   TableRowActions,
   WebsiteField,
+  WebsiteStatusBadge,
+  WebsiteStatusSelect,
   WebsiteUrlInput,
   YoutubeUrlLink,
   websiteInputClass,
@@ -21,6 +24,7 @@ const emptyYoutubeForm = () => ({
   id: String(56565 + Math.floor(Math.random() * 1000)),
   name: '',
   url: '',
+  status: 'Active',
 })
 
 export default function YoutubeManagementTab() {
@@ -31,6 +35,8 @@ export default function YoutubeManagementTab() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyYoutubeForm)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -54,7 +60,12 @@ export default function YoutubeManagementTab() {
 
   const openEdit = (row) => {
     setEditingId(row.id)
-    setForm({ id: row.id, name: row.name, url: row.url })
+    setForm({
+      id: row.id,
+      name: row.name,
+      url: row.url,
+      status: row.status || 'Active',
+    })
     setFormOpen(true)
   }
 
@@ -63,14 +74,33 @@ export default function YoutubeManagementTab() {
     setEditingId(null)
   }
 
-  const handleDelete = (id) => {
-    setVideos((prev) => prev.filter((v) => v.id !== id))
-    toast.success('Video deleted')
+  const requestDelete = (row) => setDeleteTarget(row)
+
+  const cancelDelete = () => {
+    if (!deleting) setDeleteTarget(null)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      setVideos((prev) => prev.filter((v) => v.id !== deleteTarget.id))
+      toast.success('Video deleted')
+      setDeleteTarget(null)
+    } catch {
+      toast.error('Failed to delete video. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const handleSave = () => {
     if (!form.name.trim() || !form.url.trim()) {
       toast.error('Please fill required fields')
+      return
+    }
+    if (!form.status) {
+      toast.error('Please select a status')
       return
     }
     const payload = {
@@ -80,7 +110,7 @@ export default function YoutubeManagementTab() {
       time: '10 AM',
       date: '14 May 2026',
       dateBucket: 'Today',
-      status: 'Active',
+      status: form.status,
     }
     if (editingId) {
       setVideos((prev) =>
@@ -113,6 +143,12 @@ export default function YoutubeManagementTab() {
       render: (row) => <YoutubeUrlLink url={row.url} />,
     },
     {
+      key: 'status',
+      label: 'Status',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => <WebsiteStatusBadge status={row.status} />,
+    },
+    {
       key: 'created',
       label: 'Created On',
       cellClassName: 'whitespace-nowrap',
@@ -126,7 +162,7 @@ export default function YoutubeManagementTab() {
         <TableRowActions
           compact
           onEdit={() => openEdit(row)}
-          onDelete={() => handleDelete(row.id)}
+          onDelete={() => requestDelete(row)}
         />
       ),
     },
@@ -189,7 +225,7 @@ export default function YoutubeManagementTab() {
           onReset={() => setForm(emptyYoutubeForm())}
           onSave={handleSave}
         >
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <WebsiteField label="ID">
               <input
                 type="text"
@@ -213,9 +249,27 @@ export default function YoutubeManagementTab() {
                 onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
               />
             </WebsiteField>
+            <WebsiteField label="Status" required>
+              <WebsiteStatusSelect
+                id="youtube-status"
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                required
+              />
+            </WebsiteField>
           </div>
         </WebsiteFormShell>
       </WebsiteFormModal>
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete Video"
+        message="Are you sure you want to delete this video?"
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+        loading={deleting}
+        confirmLabel="Delete"
+      />
     </div>
   )
 }

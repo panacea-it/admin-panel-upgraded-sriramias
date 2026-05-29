@@ -71,7 +71,7 @@ export default function WebsiteFilterToolbar({
             options={[
               { value: 'all', label: 'Status' },
               { value: 'Active', label: 'Active' },
-              { value: 'Draft', label: 'Draft' },
+              { value: 'Inactive', label: 'Inactive' },
             ]}
           />
         )}

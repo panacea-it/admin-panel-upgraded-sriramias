@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getModalEditKey, useInitOnModalOpen } from '../../hooks/modalFormSync'
-import useBlogAutoSave from '../../hooks/useBlogAutoSave'
 import { FileText } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import Modal from '../ui/Modal'
@@ -11,6 +10,7 @@ import {
   CourseFormField,
   CourseInput,
   CourseMediaSlot,
+  CourseSelect,
 } from '../courses/CourseFormField'
 import { cn } from '../../utils/cn'
 import { slugifyTitle } from '../../utils/blogSlug'
@@ -37,24 +37,11 @@ function emptySection(blogId) {
   return createEmptySection(blogId)
 }
 
-function SaveStatusLine({ saveState, lastSavedLabel }) {
-  if (saveState === 'saving') {
-    return <span className="text-sm font-medium text-[#246392]">Saving…</span>
-  }
-  if (saveState === 'saved' && lastSavedLabel) {
-    return (
-      <span className="text-sm text-gray-600">
-        Draft saved · Last saved at {lastSavedLabel}
-      </span>
-    )
-  }
-  return null
-}
-
 export default function AddBlogModal({ open, onClose, blog, onSave }) {
   const isEdit = Boolean(blog?.id)
   const [form, setForm] = useState(createEmptyBlog)
   const [initialSnapshot, setInitialSnapshot] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
   const blogRef = useRef(blog)
   useEffect(() => {
     blogRef.current = blog
@@ -136,8 +123,9 @@ export default function AddBlogModal({ open, onClose, blog, onSave }) {
     }))
   }
 
-  const buildPayload = (status) => {
+  const buildPayload = () => {
     const now = new Date().toISOString()
+    const status = form.status === 'published' ? 'published' : 'draft'
     return {
       ...form,
       title: form.title.trim(),
@@ -157,32 +145,6 @@ export default function AddBlogModal({ open, onClose, blog, onSave }) {
     }
   }
 
-  const handleAutoSave = useCallback(
-    async (currentForm) => {
-      if (!currentForm?.title?.trim()) return null
-      const now = new Date().toISOString()
-      const payload = {
-        ...currentForm,
-        title: currentForm.title.trim(),
-        status: 'draft',
-        slug: currentForm.slug?.trim() || slugifyTitle(currentForm.title),
-        lastSavedAt: now,
-      }
-      const isEditing = Boolean(blogRef.current?.id)
-      await onSave?.(payload, { isEdit: isEditing, silent: true })
-      setForm((f) => ({ ...f, lastSavedAt: now, status: 'draft', id: payload.id }))
-      return payload
-    },
-    [onSave],
-  )
-
-  const { saveState, lastSavedLabel } = useBlogAutoSave({
-    open,
-    form,
-    onAutoSave: handleAutoSave,
-    enabled: open && Boolean(form.title?.trim()),
-  })
-
   const handleClose = () => onClose()
 
   const handleReset = () => {
@@ -194,63 +156,53 @@ export default function AddBlogModal({ open, onClose, blog, onSave }) {
     toast.message('Form reset')
   }
 
-  const validate = ({ requireImage = true } = {}) => {
+  const validate = () => {
     if (!form.title.trim()) {
       toast.error('Blog title is required')
       return false
     }
-    if (requireImage && !form.backgroundImageName && !form.backgroundImage) {
+    if (!form.backgroundImageName && !form.backgroundImage) {
       toast.error('Background image is required')
       return false
     }
     return true
   }
 
-  const persist = (status, { closeAfter = true, toastMsg } = {}) => {
-    if (!validate({ requireImage: status === 'published' })) return
-    const payload = buildPayload(status)
-    onSave?.(payload, { isEdit })
-    if (toastMsg) toast.success(toastMsg)
-    if (closeAfter) handleClose()
-    else setForm((f) => ({ ...f, ...payload }))
-  }
-
-  const handleSaveDraft = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault()
-    persist('draft', {
-      closeAfter: false,
-      toastMsg: isEdit ? 'Draft updated' : 'Draft saved',
-    })
-  }
+    if (!validate() || submitting) return
 
-  const handlePublish = (e) => {
-    e.preventDefault()
-    persist('published', {
-      closeAfter: true,
-      toastMsg: isEdit ? 'Blog published' : 'Blog published successfully',
-    })
-  }
-
-  const handleUpdate = (e) => {
-    e.preventDefault()
-    const status = form.status === 'published' ? 'published' : 'draft'
-    persist(status, {
-      closeAfter: true,
-      toastMsg: 'Blog updated successfully',
-    })
+    setSubmitting(true)
+    try {
+      const payload = buildPayload()
+      await onSave?.(payload, { isEdit })
+      toast.success(isEdit ? 'Blog updated successfully' : 'Blog saved successfully')
+      handleClose()
+    } catch (err) {
+      toast.error(err?.message || 'Failed to save blog')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    <Modal open={open} onClose={handleClose} size="full" title={isEdit ? 'Edit Blog' : 'Create Blog'}>
+    <Modal
+      open={open}
+      onClose={handleClose}
+      size="full"
+      title={isEdit ? 'Edit Blog' : 'Create Blog'}
+      showCloseButton={false}
+    >
       <form
-        onSubmit={handlePublish}
+        onSubmit={handleUpdate}
         className="flex max-h-[min(92vh,880px)] flex-col overflow-hidden rounded-xl bg-[#f0f4f8] shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
       >
         <ModalPanelHeader
           title={isEdit ? 'Edit Blog' : 'Create Blog'}
           icon={FileText}
           iconClassName="text-[#246392]"
-          onBack={handleClose}
+          onClose={handleClose}
+          closeVariant="icon"
         />
 
         <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
@@ -264,6 +216,16 @@ export default function AddBlogModal({ open, onClose, blog, onSave }) {
                   onChange={(e) => setField('title', e.target.value)}
                   placeholder="Enter blog title"
                 />
+              </CourseFormField>
+
+              <CourseFormField label="Status" required>
+                <CourseSelect
+                  value={form.status === 'published' ? 'published' : 'draft'}
+                  onChange={(e) => setField('status', e.target.value)}
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </CourseSelect>
               </CourseFormField>
 
               <CourseFormField label="Background Image" required>
@@ -337,54 +299,29 @@ export default function AddBlogModal({ open, onClose, blog, onSave }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 border-t border-slate-200/80 bg-[#f0f4f8] px-4 py-4 sm:px-6">
-          <div className="flex min-h-[24px] items-center justify-center sm:justify-start">
-            <SaveStatusLine saveState={saveState} lastSavedLabel={lastSavedLabel} />
-          </div>
-
-          <div className="flex flex-col-reverse items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:justify-end sm:gap-4">
+        <div className="sticky bottom-0 shrink-0 border-t border-slate-200/80 bg-[#f0f4f8] px-4 py-4 sm:px-6">
+          <div
+            className={cn(
+              'flex flex-col-reverse items-stretch justify-center gap-3',
+              'sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-4',
+            )}
+          >
             <button
               type="button"
               onClick={handleReset}
-              className={cn(
-                'min-w-[120px] rounded-full bg-[#e8f4fc] px-6 py-2.5 text-sm font-bold text-[#246392] shadow-sm transition hover:bg-[#d9ebf9]',
-              )}
+              disabled={submitting}
+              className="min-w-[120px] rounded-full bg-[#e8f4fc] px-6 py-2.5 text-sm font-bold text-[#246392] shadow-sm transition hover:bg-[#d9ebf9] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Reset
             </button>
             <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="min-w-[120px] rounded-full border-2 border-[#246392] bg-white px-6 py-2.5 text-sm font-bold text-[#246392] transition hover:bg-[#e8f4fc]"
+              type="submit"
+              disabled={submitting}
+              aria-busy={submitting}
+              className="min-w-[120px] rounded-full bg-[#55ace7] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#3d96d4] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save Draft
+              {submitting ? 'Saving…' : 'Update'}
             </button>
-            {isEdit ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleUpdate}
-                  className="min-w-[120px] rounded-full bg-[#55ace7] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#3d96d4]"
-                >
-                  Update
-                </button>
-                {form.status !== 'published' && (
-                  <button
-                    type="submit"
-                    className="min-w-[120px] rounded-full bg-[#1a3a5c] px-6 py-2.5 text-sm font-bold text-white shadow-[0_6px_16px_rgba(26,58,92,0.35)] transition hover:bg-[#152f4a]"
-                  >
-                    Publish
-                  </button>
-                )}
-              </>
-            ) : (
-              <button
-                type="submit"
-                className="min-w-[120px] rounded-full bg-[#1a3a5c] px-6 py-2.5 text-sm font-bold text-white shadow-[0_6px_16px_rgba(26,58,92,0.35)] transition hover:bg-[#152f4a]"
-              >
-                Publish
-              </button>
-            )}
           </div>
         </div>
       </form>

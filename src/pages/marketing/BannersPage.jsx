@@ -1,47 +1,39 @@
-import { useMemo, useState } from 'react'
-import { Edit3, Image } from 'lucide-react'
-import { toast } from '@/utils/toast'
+import { useCallback, useMemo, useState } from 'react'
+import { Image, RefreshCw } from 'lucide-react'
 import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
 import BannerFilterToolbar from '../../components/banners/BannerFilterToolbar'
+import BannerEditModal from '../../components/banners/BannerEditModal'
+import BannerImagePreviewModal from '../../components/banners/BannerImagePreviewModal'
+import { buildBannerTableColumns } from '../../components/banners/bannerTableColumns'
+import ConfirmDeleteDialog from '../../components/subjects/ConfirmDeleteDialog'
+import { BANNER_CATEGORIES, BANNER_CENTERS } from '../../data/bannersData'
+import { useBanners } from '../../hooks/useBanners'
 import { cn } from '../../utils/cn'
-import { BANNER_CATEGORIES, INITIAL_BANNERS } from '../../data/bannersData'
-
-function BannerStatusBadge({ status }) {
-  const active = status === 'Active'
-  return (
-    <span
-      className={cn(
-        'inline-flex min-w-[88px] items-center justify-center rounded-md px-3 py-1.5 text-sm font-semibold text-white',
-        active ? 'bg-[#69df66]' : 'bg-[#9ca3af]',
-      )}
-    >
-      {status}
-    </span>
-  )
-}
-
-function BannerThumbnail({ hasThumbnail, course }) {
-  if (!hasThumbnail) {
-    return (
-      <span
-        className="inline-block h-10 w-16 shrink-0 rounded bg-[#e5e7eb]"
-        aria-hidden
-      />
-    )
-  }
-
-  return (
-    <img
-      src={`https://picsum.photos/seed/${encodeURIComponent(course.slice(0, 24))}/64/40`}
-      alt=""
-      className="h-10 w-16 shrink-0 rounded object-cover"
-    />
-  )
-}
 
 export default function BannersPage() {
-  const [banners] = useState(INITIAL_BANNERS)
+  const {
+    banners,
+    loading,
+    loadError,
+    statusUpdatingIds,
+    editBanner,
+    previewBanner,
+    deleteTarget,
+    deleting,
+    saving,
+    load,
+    handleSave,
+    handleToggleStatus,
+    handleDelete,
+    openEdit,
+    closeEdit,
+    openPreview,
+    closePreview,
+    requestDelete,
+    cancelDelete,
+  } = useBanners()
+
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [centerFilter, setCenterFilter] = useState('all')
@@ -55,14 +47,18 @@ export default function BannersPage() {
     [],
   )
 
+  const centerOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Center' },
+      ...BANNER_CENTERS.map((name) => ({ value: name, label: name })),
+    ],
+    [],
+  )
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return banners.filter((row) => {
-      const matchSearch =
-        !q ||
-        row.course.toLowerCase().includes(q) ||
-        row.category.toLowerCase().includes(q) ||
-        String(row.id).includes(q)
+      const matchSearch = !q || row.course.toLowerCase().includes(q)
       const matchCategory = categoryFilter === 'all' || row.category === categoryFilter
       const matchCenter = centerFilter === 'all' || row.center === centerFilter
       const matchStatus = statusFilter === 'all' || row.status === statusFilter
@@ -70,54 +66,26 @@ export default function BannersPage() {
     })
   }, [banners, search, categoryFilter, centerFilter, statusFilter])
 
-  const columns = [
-    {
-      key: 'id',
-      label: 'ID',
-      headerClassName: 'pl-6 sm:pl-10',
-      cellClassName: 'pl-6 sm:pl-10 align-middle font-semibold',
-    },
-    {
-      key: 'course',
-      label: 'Course',
-      cellClassName: 'align-middle max-w-xs',
-      render: (row) => <span className="font-medium leading-snug">{row.course}</span>,
-    },
-    {
-      key: 'category',
-      label: 'Category',
-      cellClassName: 'align-middle whitespace-nowrap',
-    },
-    {
-      key: 'banner',
-      label: 'Banner',
-      cellClassName: 'align-middle',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <BannerThumbnail hasThumbnail={row.hasThumbnail} course={row.course} />
-          <button
-            type="button"
-            onClick={() => toast.message('Banner editor coming soon')}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#686868] transition hover:text-[#246392]"
-          >
-            <Edit3 className="h-4 w-4" strokeWidth={2.35} />
-            Edit
-          </button>
-        </div>
-      ),
-    },
-    {
-      key: 'center',
-      label: 'Center',
-      cellClassName: 'align-middle',
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      cellClassName: 'align-middle',
-      render: (row) => <BannerStatusBadge status={row.status} />,
-    },
-  ]
+  const onEdit = useCallback((row) => openEdit(row), [openEdit])
+  const onDelete = useCallback((row) => requestDelete(row), [requestDelete])
+  const onPreview = useCallback((row) => openPreview(row), [openPreview])
+
+  const columns = useMemo(
+    () =>
+      buildBannerTableColumns({
+        onEdit,
+        onDelete,
+        onPreview,
+        onToggleStatus: handleToggleStatus,
+        statusUpdatingIds,
+      }),
+    [onEdit, onDelete, onPreview, handleToggleStatus, statusUpdatingIds],
+  )
+
+  const emptyMessage =
+    loadError && banners.length === 0
+      ? 'Unable to load banners. Try refreshing.'
+      : 'No banners match your filters.'
 
   return (
     <div className="figma-admin-section min-h-screen bg-[#f7f7f7] px-4 pb-8 pt-6 sm:px-5 lg:px-6">
@@ -139,17 +107,59 @@ export default function BannersPage() {
           status={statusFilter}
           onStatusChange={(e) => setStatusFilter(e.target.value)}
           categoryOptions={categoryOptions}
+          centerOptions={centerOptions}
         />
+
+        {loadError && banners.length > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <span>{loadError}</span>
+            <button
+              type="button"
+              onClick={load}
+              className="inline-flex items-center gap-2 font-semibold text-[#246392] hover:underline"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </button>
+          </div>
+        ) : null}
 
         <PaginatedFigmaTable
           columns={columns}
           data={filtered}
-          emptyMessage="No banners match your filters."
+          emptyMessage={emptyMessage}
           rowClassName="hover:bg-slate-50/90"
           itemLabel="banners"
           resetDeps={[search, categoryFilter, centerFilter, statusFilter]}
+          loading={loading}
+          stickyLastColumn
+          tableClassName={cn(loading && 'opacity-60 pointer-events-none')}
         />
       </section>
+
+      <BannerEditModal
+        open={Boolean(editBanner)}
+        onClose={closeEdit}
+        banner={editBanner}
+        onSave={handleSave}
+        saving={saving}
+      />
+
+      <BannerImagePreviewModal
+        open={Boolean(previewBanner)}
+        onClose={closePreview}
+        banner={previewBanner}
+      />
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Delete banner?"
+        message="Are you sure you want to delete this banner?"
+        onCancel={cancelDelete}
+        onConfirm={handleDelete}
+        loading={deleting}
+        confirmLabel="Confirm"
+      />
     </div>
   )
 }

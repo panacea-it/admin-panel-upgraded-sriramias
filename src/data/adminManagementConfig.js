@@ -116,6 +116,13 @@ export const CENTERS = [
   'Hyderabad Center',
 ]
 
+/** Quick links from role overview module chips (Create User Access modal). */
+export const ROLE_MODULE_ROUTES = {
+  Sales: '/sales-analytics/leads',
+  'Failed Payment List': '/sales-analytics/payment-failures',
+  'Follow-ups': '/sales-analytics/follow-ups',
+}
+
 export const SESSION_TIMEOUTS = [
   { value: '15', label: '15 minutes' },
   { value: '30', label: '30 minutes' },

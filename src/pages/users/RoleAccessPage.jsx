@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { LayoutGrid, Pencil, Trash2 } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { Eye, LayoutGrid, Pencil, Trash2 } from 'lucide-react'
 import { toast } from '@/utils/toast'
 import PageBanner from '../../components/figma/PageBanner'
 import PaginatedFigmaTable from '../../components/figma/PaginatedFigmaTable'
@@ -7,7 +7,10 @@ import CategoryBreadcrumb from '../../components/categories/CategoryBreadcrumb'
 import CourseFilterToolbar from '../../components/courses/CourseFilterToolbar'
 import { BannerButton, StatusBadge } from '../../components/academics/AcademicsUi'
 import AdminRoleFormModal from '../../components/admin-management/roles/AdminRoleFormModal'
+import AdminRoleViewModal from '../../components/admin-management/roles/AdminRoleViewModal'
+import ConfirmRoleDeleteModal from '../../components/admin-management/roles/ConfirmRoleDeleteModal'
 import { useAdminRoles } from '../../contexts/AdminRolesContext'
+import { useTableRowSelection } from '../../hooks/useTableRowSelection'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 import { cn } from '../../utils/cn'
 
@@ -27,9 +30,18 @@ function roleStatus(role) {
   return role.enabled ? 'Active' : 'In Active'
 }
 
-function RoleAccessTableActions({ onEdit, onDelete, canDelete }) {
+function RoleAccessTableActions({ onView, onEdit, onDelete, canDelete }) {
   return (
     <div className="flex items-center gap-2 sm:gap-3">
+      <button
+        type="button"
+        onClick={onView}
+        title="View"
+        aria-label="View"
+        className="inline-flex items-center justify-center rounded-md p-1.5 text-[#686868] transition hover:bg-slate-100 hover:text-[#246392]"
+      >
+        <Eye className="h-4 w-4" strokeWidth={2.2} />
+      </button>
       <button
         type="button"
         onClick={onEdit}
@@ -62,6 +74,11 @@ export default function RoleAccessPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [viewing, setViewing] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const { selection, clearSelection } = useTableRowSelection((row) => row.id)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -93,21 +110,35 @@ export default function RoleAccessPage() {
     setEditing(null)
   }
 
-  const handleDelete = (role) => {
-    if (role.systemProtected || role.fullAccess) return
-    if (!window.confirm(`Delete role "${role.label}"?`)) return
-    const ok = deleteRole(role.id)
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    await new Promise((r) => setTimeout(r, 300))
+    const ok = deleteRole(deleteTarget.id)
+    setDeleteLoading(false)
     if (!ok) {
       toast.error('Cannot delete this role')
       return
     }
     toast.success('Role deleted')
+    setDeleteTarget(null)
   }
 
   const handleResetFilters = () => {
     setSearch('')
     setStatusFilter('all')
+    clearSelection()
   }
+
+  const handleStatusToggle = useCallback(
+    (row) => {
+      if (row.systemProtected || row.fullAccess) return
+      const nextEnabled = !row.enabled
+      setRoleEnabled(row.id, nextEnabled)
+      toast.success(nextEnabled ? 'Role marked active' : 'Role marked inactive')
+    },
+    [setRoleEnabled],
+  )
 
   const columns = useMemo(
     () => [
@@ -145,12 +176,12 @@ export default function RoleAccessPage() {
             <button
               type="button"
               disabled={!canToggle}
-              onClick={() => {
-                if (!canToggle) return
-                setRoleEnabled(row.id, !row.enabled)
-                toast.success(row.enabled ? 'Role marked inactive' : 'Role marked active')
-              }}
-              className={cn(!canToggle && 'cursor-default')}
+              onClick={() => handleStatusToggle(row)}
+              className={cn(
+                'rounded-md transition',
+                canToggle && 'hover:opacity-90',
+                !canToggle && 'cursor-default',
+              )}
               title={canToggle ? 'Click to toggle status' : undefined}
             >
               <StatusBadge status={status} />
@@ -172,14 +203,15 @@ export default function RoleAccessPage() {
         label: 'Actions',
         render: (row) => (
           <RoleAccessTableActions
+            onView={() => setViewing(roles.find((r) => r.id === row.id) || row)}
             onEdit={() => openEdit(roles.find((r) => r.id === row.id) || row)}
-            onDelete={() => handleDelete(row)}
+            onDelete={() => setDeleteTarget(row)}
             canDelete={!row.systemProtected && !row.fullAccess}
           />
         ),
       },
     ],
-    [filtered, roles, setRoleEnabled],
+    [filtered, roles, handleStatusToggle],
   )
 
   return (
@@ -222,10 +254,19 @@ export default function RoleAccessPage() {
           itemLabel="roles"
           resetDeps={[search, statusFilter]}
           rowClassName="hover:bg-slate-50/90"
+          selection={selection}
         />
       </section>
 
       <AdminRoleFormModal open={formOpen} initialRole={editing} onClose={handleCloseForm} />
+      <AdminRoleViewModal open={!!viewing} role={viewing} onClose={() => setViewing(null)} />
+      <ConfirmRoleDeleteModal
+        open={!!deleteTarget}
+        roleLabel={deleteTarget?.label}
+        loading={deleteLoading}
+        onCancel={() => !deleteLoading && setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

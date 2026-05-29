@@ -1,15 +1,28 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, Lock } from 'lucide-react'
+import { toast } from '@/utils/toast'
 import { cn } from '../../utils/cn'
-import { SECURITY_BADGES } from '../../data/adminManagementConfig'
+import { ROLE_MODULE_ROUTES, SECURITY_BADGES } from '../../data/adminManagementConfig'
 
 /**
  * Role summary shown when selecting an admin type (Create Admin modal).
  */
 export default function RoleOverviewCard({ role }) {
+  const navigate = useNavigate()
+
   if (!role) return null
 
   const badge = SECURITY_BADGES[role.securityLevel] || SECURITY_BADGES.medium
+
+  const handleModuleClick = (mod) => {
+    const path = ROLE_MODULE_ROUTES[mod]
+    if (path) {
+      navigate(path)
+      return
+    }
+    toast.info(`No quick link configured for "${mod}"`)
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -47,12 +60,14 @@ export default function RoleOverviewCard({ role }) {
 
         <div className="mt-6 flex flex-wrap gap-2.5 sm:gap-3">
           {role.modules.map((mod) => (
-            <span
+            <button
               key={mod}
-              className="inline-flex rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-[13px] font-medium leading-tight text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
+              type="button"
+              onClick={() => handleModuleClick(mod)}
+              className="inline-flex rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-[13px] font-medium leading-tight text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/25"
             >
               {mod}
-            </span>
+            </button>
           ))}
         </div>
 

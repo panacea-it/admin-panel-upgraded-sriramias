@@ -6,7 +6,7 @@ const makeYoutubeRows = () =>
     time: '10 AM',
     date: '14 May 2026',
     dateBucket: i < 6 ? 'Today' : i < 12 ? 'This Week' : 'This Month',
-    status: i % 3 === 0 ? 'Draft' : 'Active',
+    status: i % 3 === 0 ? 'Inactive' : 'Active',
   }))
 
 const makeRankRows = () =>
@@ -18,6 +18,7 @@ const makeRankRows = () =>
     time: '10 AM',
     date: '14 May 2026',
     dateBucket: i < 6 ? 'Today' : i < 12 ? 'This Week' : 'This Month',
+    status: i % 4 === 0 ? 'Inactive' : 'Active',
   }))
 
 const makeReviewRows = () =>
