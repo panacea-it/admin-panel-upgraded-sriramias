@@ -1,6 +1,9 @@
 import { Download, MessageCircle, Printer, Send } from 'lucide-react'
 import FinanceSlideDrawer from './FinanceSlideDrawer'
 import FinanceStatusBadge from './FinanceStatusBadge'
+import FinanceRefundBadge from './FinanceRefundBadge'
+import FinanceAccessStatusBadge from './FinanceAccessStatusBadge'
+import FinanceTimeline from './FinanceTimeline'
 import { formatINR } from '../../utils/financeFilters'
 import { formatCategoryDateTime } from '../../utils/formatDateTime'
 
@@ -70,6 +73,8 @@ export default function PaymentViewDrawer({
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
           <FinanceStatusBadge status={payment.paymentStatus} />
+          <FinanceRefundBadge status={payment.refundStatus} className="rounded-full px-3 py-1 text-xs" />
+          <FinanceAccessStatusBadge status={payment.accessStatus} className="rounded-full px-3 py-1 text-xs" />
           <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
             {payment.paymentType}
           </span>
@@ -77,10 +82,12 @@ export default function PaymentViewDrawer({
 
         <div className="grid gap-3 rounded-lg border border-slate-100 bg-slate-50/60 p-4">
           <DetailRow label="Student ID" value={payment.studentId} />
+          <DetailRow label="Enrollment" value={payment.enrollmentNumber} />
           <DetailRow label="Mobile" value={payment.mobile} />
           <DetailRow label="Email" value={payment.email} />
           <DetailRow label="Branch" value={payment.branch} />
           <DetailRow label="Payment mode" value={payment.paymentMode || '—'} />
+          <DetailRow label="Payment gateway" value={payment.paymentGateway || '—'} />
           <DetailRow label="Transaction ID" value={payment.transactionId || '—'} />
           <DetailRow label="Payment date" value={formatCategoryDateTime(payment.paymentDate)} />
           <DetailRow label="Amount paid" value={formatINR(payment.amountPaid)} />
@@ -90,9 +97,16 @@ export default function PaymentViewDrawer({
           <DetailRow label="Receipt" value={payment.receiptNumber || 'Not generated'} />
         </div>
 
+        {(payment.studentTimeline?.length > 0 || payment.timeline?.length > 0) && (
+          <div>
+            <h3 className="mb-3 text-sm font-bold text-[#246392]">Student payment timeline</h3>
+            <FinanceTimeline events={payment.studentTimeline || []} />
+          </div>
+        )}
+
         {payment.timeline?.length > 0 && (
           <div>
-            <h3 className="mb-3 text-sm font-bold text-[#246392]">Payment timeline</h3>
+            <h3 className="mb-3 text-sm font-bold text-[#246392]">Payment events</h3>
             <ul className="space-y-2">
               {payment.timeline.map((ev, i) => (
                 <li

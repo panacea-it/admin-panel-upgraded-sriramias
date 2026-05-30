@@ -3,6 +3,13 @@ import EmiPlan from '../models/EmiPlan.js'
 import GstSettings from '../models/GstSettings.js'
 import CommunicationLog from '../models/CommunicationLog.js'
 import {
+  bulkResendReceipts,
+  generateReceiptForPayment,
+  getCompletedReceipts,
+  previewInvoiceNumber,
+  sendReceiptNotification,
+} from '../services/receiptService.js'
+import {
   SEED_PAYMENTS,
   SEED_OFFLINE,
   SEED_EMI_PLANS,
@@ -10,6 +17,24 @@ import {
   SEED_GST,
   buildSeedDashboard,
 } from '../data/financeSeedData.js'
+import {
+  buildEnrichedProfiles,
+  buildProfileDetail,
+} from '../services/studentFinanceProfileService.js'
+import {
+  appendAudit,
+  applyOfflineDecision,
+  buildSummary,
+  evaluateBranchAccess,
+  mapOfflineFull,
+  validateApproval,
+} from '../services/offlineApprovalService.js'
+import {
+  enrichAttemptLogs,
+  buildAttemptAnalytics,
+  setAttemptOverride,
+  getAttemptOverrides,
+} from '../services/paymentAttemptService.js'
 
 function toIso(value) {
   if (!value) return value === 0 ? 0 : ''
@@ -84,6 +109,18 @@ function mapEmi(doc) {
     pendingAmount: p.pendingAmount,
     completionPercent: p.completionPercent,
     installments: p.installments || [],
+    loanProvider: p.loanProvider,
+    planStatus: p.planStatus || p.status,
+    status: p.status,
+    providerStatus: p.providerStatus,
+    providerRefId: p.providerRefId,
+    loanAmount: p.loanAmount,
+    counselorName: p.counselorName,
+    planHistory: p.planHistory || [],
+    reminderLogs: p.reminderLogs || [],
+    agreements: p.agreements || [],
+    settlementRemarks: p.settlementRemarks,
+    emiStartDate: p.emiStartDate,
   }
 }
 
@@ -91,11 +128,28 @@ function mapComm(doc) {
   const c = doc.toObject ? doc.toObject() : { ...doc }
   return {
     id: c.logId || String(c._id),
+    studentId: c.studentId,
+    studentName: c.studentName,
+    paymentReference: c.paymentReference,
     recipient: c.recipient,
     type: c.type,
     channel: c.channel,
     status: c.status,
+    deliveryStatus: c.deliveryStatus || c.status,
+    openStatus: c.openStatus,
+    readStatus: c.readStatus,
+    sentBy: c.sentBy,
     timestamp: toIso(c.timestamp),
+    tracking: c.tracking,
+    followUpTag: c.followUpTag,
+    followUpPriority: c.followUpPriority,
+    followUpNotes: c.followUpNotes,
+    nextFollowUpDate: c.nextFollowUpDate ? toIso(c.nextFollowUpDate) : null,
+    counselorId: c.counselorId,
+    counselorName: c.counselorName,
+    templateId: c.templateId,
+    auditTrail: c.auditTrail,
+    meta: c.meta,
   }
 }
 
@@ -118,13 +172,13 @@ async function loadPayments(filter = {}) {
 
 async function loadOffline() {
   const docs = await Payment.find({ isOfflineRequest: true }).lean()
-  if (docs.length) return docs.map((d) => mapOffline({ toObject: () => d }))
+  if (docs.length) return docs.map((d) => mapOfflineFull({ toObject: () => d }))
   return SEED_OFFLINE.map((o) =>
-    mapOffline({
+    mapOfflineFull({
       toObject: () => ({
         ...o,
-        courseName: o.courseName,
-        offlineStatus: o.offlineStatus,
+        courseName: o.courseName || o.course,
+        offlineStatus: o.offlineStatus || o.status,
       }),
     }),
   )
@@ -189,23 +243,92 @@ function buildProfiles(payments) {
 }
 
 function buildAttemptLogs(payments) {
-  return payments.flatMap((p) =>
-    (p.attempts || []).map((a) => ({
-      id: `${p.id}-${a.attemptNo}`,
-      student: p.studentName,
-      studentId: p.studentId,
-      course: p.courseName,
-      transactionId: a.transactionId,
-      attemptNo: a.attemptNo,
-      gatewayStatus: a.gatewayResponse,
-      gatewayMessage: a.failureReason || 'OK',
-      amount: p.totalFees,
-      dateTime: a.dateTime,
-      retryCount: Math.max(0, (a.attemptNo || 1) - 1),
-      paymentMode: a.paymentMode,
-      status: a.status,
-    })),
-  )
+  return enrichAttemptLogs(payments, getAttemptOverrides())
+}
+
+export async function getPaymentAttemptLogs(req, res, next) {
+  try {
+    const payments = await loadPayments()
+    res.json({ success: true, data: buildAttemptLogs(payments) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getPaymentAttemptAnalytics(req, res, next) {
+  try {
+    const payments = await loadPayments()
+    res.json({ success: true, data: buildAttemptAnalytics(payments, getAttemptOverrides()) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function assignPaymentAttemptCounselor(req, res, next) {
+  try {
+    const { ids = [], counselorId, counselorName, leadStatus, priority } = req.body || {}
+    if (!ids.length || !counselorId) {
+      return res.status(400).json({ success: false, message: 'ids and counselorId required' })
+    }
+    ids.forEach((id) => setAttemptOverride(id, { counselorId, counselorName, leadStatus, priority }))
+    const payments = await loadPayments()
+    res.json({ success: true, data: buildAttemptLogs(payments) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function blockPaymentAttemptDevice(req, res, next) {
+  try {
+    const { attemptId } = req.body || {}
+    if (!attemptId) return res.status(400).json({ success: false, message: 'attemptId required' })
+    const by = req.user?.name || 'Finance Admin'
+    const prev = getAttemptOverrides()[attemptId] || {}
+    setAttemptOverride(attemptId, {
+      fraudStatus: 'Blocked',
+      isBlocked: true,
+      fraudAudit: [...(prev.fraudAudit || []), { id: `AUD-${Date.now()}`, action: 'Blocked device/IP', by, at: new Date().toISOString() }],
+    })
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function unblockPaymentAttemptDevice(req, res, next) {
+  try {
+    const { attemptId } = req.body || {}
+    if (!attemptId) return res.status(400).json({ success: false, message: 'attemptId required' })
+    const by = req.user?.name || 'Finance Admin'
+    const prev = getAttemptOverrides()[attemptId] || {}
+    setAttemptOverride(attemptId, {
+      fraudStatus: 'Safe',
+      isBlocked: false,
+      fraudAudit: [...(prev.fraudAudit || []), { id: `AUD-${Date.now()}`, action: 'Unblocked device/IP', by, at: new Date().toISOString() }],
+    })
+    res.json({ success: true })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function sendPaymentAttemptRecoveryMessage(req, res, next) {
+  try {
+    const payload = req.body || {}
+    if (!payload.attemptId) return res.status(400).json({ success: false, message: 'attemptId required' })
+    const entry = await CommunicationLog.create({
+      logId: `COM-ATT-${Date.now()}`,
+      recipient: payload.mobile || payload.email || 'Student',
+      type: 'Payment Recovery',
+      channel: payload.channel || 'WhatsApp',
+      status: `${payload.channel || 'WhatsApp'} trigger placeholder`,
+      timestamp: new Date(),
+      meta: payload,
+    })
+    res.status(201).json({ success: true, data: mapComm(entry) })
+  } catch (error) {
+    next(error)
+  }
 }
 
 function buildVerificationQueue(payments) {
@@ -325,8 +448,116 @@ export async function updatePaymentStatus(req, res, next) {
 
 export async function getOfflineApprovals(req, res, next) {
   try {
-    const data = await loadOffline()
+    let data = await loadOffline()
+    const { branch, paymentMode, status, dateFrom, dateTo } = req.query || {}
+    if (branch && branch !== 'all') data = data.filter((r) => r.branchCode === branch)
+    if (paymentMode && paymentMode !== 'all') data = data.filter((r) => r.paymentMode === paymentMode)
+    if (status && status !== 'all') {
+      data = data.filter((r) => r.status === status || r.workflowStatus === status)
+    }
+    if (dateFrom) {
+      const from = new Date(dateFrom)
+      data = data.filter((r) => new Date(r.requestedDate) >= from)
+    }
+    if (dateTo) {
+      const to = new Date(dateTo)
+      to.setHours(23, 59, 59, 999)
+      data = data.filter((r) => new Date(r.requestedDate) <= to)
+    }
     res.json({ success: true, count: data.length, data })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getOfflineDailySummary(req, res, next) {
+  try {
+    const data = await loadOffline()
+    res.json({ success: true, data: buildSummary(data) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getOfflineNotifications(req, res, next) {
+  try {
+    const docs = await Payment.find({ isOfflineRequest: true, 'notificationLog.0': { $exists: true } }).lean()
+    const logs = docs.flatMap((d) => d.notificationLog || [])
+    res.json({ success: true, data: logs })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function uploadOfflineProofHandler(req, res, next) {
+  try {
+    const { id } = req.params
+    const { files = [], adminName } = req.body || {}
+    const doc = await Payment.findOne({
+      $or: [{ paymentId: id }, { _id: id }],
+      isOfflineRequest: true,
+    })
+    if (!doc) return res.status(404).json({ success: false, message: 'Request not found' })
+
+    doc.proofFiles = files
+    doc.paymentProof = files.map((f) => f.name).join(', ')
+    appendAudit(doc, {
+      by: adminName || 'Admin',
+      action: 'Re-upload',
+      remark: `${files.length} file(s) uploaded`,
+    })
+    await doc.save()
+    res.json({ success: true, data: mapOfflineFull(doc) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function overrideOfflineDuplicateHandler(req, res, next) {
+  try {
+    const { id } = req.params
+    const { adminName, comment } = req.body || {}
+    const doc = await Payment.findOne({
+      $or: [{ paymentId: id }, { _id: id }],
+      isOfflineRequest: true,
+    })
+    if (!doc) return res.status(404).json({ success: false, message: 'Request not found' })
+
+    doc.duplicateOverride = true
+    doc.duplicateStatus = 'Override Approved'
+    appendAudit(doc, {
+      by: adminName || 'Finance Head',
+      action: 'Duplicate override',
+      remark: comment || 'Marked valid',
+    })
+    await doc.save()
+    res.json({ success: true, data: mapOfflineFull(doc) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function updateOfflineReconciliationHandler(req, res, next) {
+  try {
+    const { id } = req.params
+    const { collectedAmount, verifiedAmount, notes, status, adminName } = req.body || {}
+    const doc = await Payment.findOne({
+      $or: [{ paymentId: id }, { _id: id }],
+      isOfflineRequest: true,
+    })
+    if (!doc) return res.status(404).json({ success: false, message: 'Request not found' })
+
+    if (collectedAmount != null) doc.cashCollectedAmount = Number(collectedAmount)
+    if (verifiedAmount != null) doc.reconciliationVerifiedAmount = Number(verifiedAmount)
+    if (notes) doc.reconciliationNotes = notes
+    if (status) doc.reconciliationStatus = status
+    appendAudit(doc, {
+      by: adminName || 'Admin',
+      action: 'Reconciliation update',
+      remark: notes || `Status → ${doc.reconciliationStatus}`,
+    })
+    await doc.save()
+    res.json({ success: true, data: mapOfflineFull(doc) })
   } catch (error) {
     next(error)
   }
@@ -335,8 +566,10 @@ export async function getOfflineApprovals(req, res, next) {
 export async function approveOfflinePayment(req, res, next) {
   try {
     const { id } = req.params
-    const { newStatus } = req.body || {}
-    const status = newStatus === 'Approved' ? 'Approved' : 'Rejected'
+    const payload = req.body || {}
+    const user = req.user || { role: payload.role, centers: payload.centers, branches: payload.branches }
+    payload.adminName = payload.adminName || user.name || 'Admin'
+    payload.ip = req.ip
 
     let doc = await Payment.findOne({
       $or: [{ paymentId: id }, { _id: id }],
@@ -347,12 +580,34 @@ export async function approveOfflinePayment(req, res, next) {
       const offline = await loadOffline()
       const found = offline.find((o) => o.id === id)
       if (!found) return res.status(404).json({ success: false, message: 'Request not found' })
+      const access = evaluateBranchAccess(found, user)
+      if (!access.allowed && !payload.forceOverride) {
+        return res.status(403).json({ success: false, message: access.message || 'Branch restricted' })
+      }
+      const status = payload.newStatus === 'Approved' ? 'Approved' : 'Rejected'
       return res.json({ success: true, data: { ...found, status } })
     }
 
-    doc.offlineStatus = status
+    const access = evaluateBranchAccess(mapOfflineFull(doc), user)
+    if (!access.allowed && !access.override && !payload.forceOverride) {
+      appendAudit(doc, {
+        by: payload.adminName,
+        action: 'Unauthorized attempt',
+        remark: access.message,
+        ip: payload.ip,
+      })
+      await doc.save()
+      return res.status(403).json({ success: false, message: access.message || 'Branch restricted' })
+    }
+
+    const validation = validateApproval(doc, payload)
+    if (!validation.ok) {
+      return res.status(400).json({ success: false, message: validation.message })
+    }
+
+    applyOfflineDecision(doc, payload)
     await doc.save()
-    res.json({ success: true, data: mapOffline(doc) })
+    res.json({ success: true, data: mapOfflineFull(doc) })
   } catch (error) {
     next(error)
   }
@@ -394,20 +649,71 @@ export async function updateEmiPlan(req, res, next) {
 export async function getStudentFinanceProfiles(req, res, next) {
   try {
     const payments = await loadPayments()
-    res.json({ success: true, data: buildProfiles(payments) })
+    const emiPlans = await loadEmiPlans()
+    res.json({ success: true, data: buildEnrichedProfiles(payments, emiPlans) })
   } catch (error) {
     next(error)
   }
 }
 
-export async function getPaymentAttemptLogs(req, res, next) {
+export async function getStudentFinanceProfileById(req, res, next) {
   try {
     const payments = await loadPayments()
-    res.json({ success: true, data: buildAttemptLogs(payments) })
+    const emiPlans = await loadEmiPlans()
+    const data = buildProfileDetail(req.params.studentId, payments, emiPlans)
+    if (!data) return res.status(404).json({ success: false, message: 'Student finance profile not found' })
+    res.json({ success: true, data })
   } catch (error) {
     next(error)
   }
 }
+
+export async function creditStudentWallet(req, res, next) {
+  try {
+    const { amount, remarks } = req.body || {}
+    const credit = Number(amount) || 0
+    if (credit <= 0) return res.status(400).json({ success: false, message: 'Invalid amount' })
+    const by = req.user?.name || 'Finance Admin'
+    res.json({
+      success: true,
+      data: {
+        id: `WLT-${Date.now()}`,
+        type: 'Credit',
+        amount: credit,
+        remarks: remarks || 'Wallet top-up',
+        at: new Date().toISOString(),
+        by,
+        balanceAfter: credit,
+      },
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function uploadStudentFinanceDocument(req, res, next) {
+  try {
+    const { type, fileName } = req.body || {}
+    if (!type || !fileName) return res.status(400).json({ success: false, message: 'Document type and file name required' })
+    const by = req.user?.name || 'Finance Admin'
+    res.status(201).json({
+      success: true,
+      data: {
+        id: `DOC-${Date.now()}`,
+        type,
+        fileName,
+        label: type.replace(/_/g, ' '),
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: by,
+        status: 'uploaded',
+      },
+      audit: { action: 'document_uploaded', by, at: new Date().toISOString() },
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 
 export async function getCommunicationLogs(req, res, next) {
   try {
@@ -470,12 +776,10 @@ export async function updateGstSettings(req, res, next) {
 
 export async function generateReceipt(req, res, next) {
   try {
-    const payments = await loadPayments()
-    const found = findPaymentById(payments, req.params.paymentId)
-    if (!found) return res.status(404).json({ success: false, message: 'Payment not found' })
-    const receiptNumber =
-      found.receiptNumber || `RCP-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
-    res.json({ success: true, data: { ...found, receiptNumber } })
+    const generatedBy = req.user?.name || req.body?.generatedBy || 'Finance Admin'
+    const data = await generateReceiptForPayment(req.params.paymentId, { generatedBy })
+    if (!data) return res.status(404).json({ success: false, message: 'Payment not found' })
+    res.json({ success: true, data })
   } catch (error) {
     next(error)
   }
@@ -483,8 +787,145 @@ export async function generateReceipt(req, res, next) {
 
 export async function resendReceipt(req, res, next) {
   try {
-    const { channel } = req.body || {}
-    res.json({ success: true, data: { success: true, channel: channel || 'Email' } })
+    const { channel, mobile, email, message } = req.body || {}
+    const sentBy = req.user?.name || 'Finance Admin'
+    const data = await sendReceiptNotification(req.params.paymentId, {
+      channel: channel || 'Email',
+      mobile,
+      email,
+      message,
+      sentBy,
+    })
+    if (!data) return res.status(404).json({ success: false, message: 'Payment not found' })
+    res.json({ success: true, data })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getCompletedReceiptsHandler(req, res, next) {
+  try {
+    const data = await getCompletedReceipts(req.query || {})
+    res.json({ success: true, data })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function sendReceiptHandler(req, res, next) {
+  try {
+    const { channel, mobile, email, message } = req.body || {}
+    const sentBy = req.user?.name || 'Finance Admin'
+    const data = await sendReceiptNotification(req.params.paymentId, {
+      channel,
+      mobile,
+      email,
+      message,
+      sentBy,
+    })
+    if (!data) return res.status(404).json({ success: false, message: 'Payment not found' })
+    res.json({ success: true, data })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function bulkResendReceiptsHandler(req, res, next) {
+  try {
+    const { paymentIds = [], channel } = req.body || {}
+    if (!Array.isArray(paymentIds) || !paymentIds.length) {
+      return res.status(400).json({ success: false, message: 'paymentIds required' })
+    }
+    const sentBy = req.user?.name || 'Finance Admin'
+    const results = await bulkResendReceipts(paymentIds, { channel: channel || 'Email', sentBy })
+    res.json({ success: true, data: { results, total: results.length, succeeded: results.filter((r) => r.success).length } })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function previewReceiptNumberHandler(req, res, next) {
+  try {
+    const { branchCode = 'DEL', sequence = 1, financialYear } = req.query || {}
+    const fy = Number(financialYear) || new Date().getFullYear()
+    const invoiceNumber = previewInvoiceNumber(branchCode, Number(sequence), fy)
+    res.json({ success: true, data: { invoiceNumber, branchCode, sequence: Number(sequence), financialYear: fy } })
+  } catch (error) {
+    next(error)
+  }
+}
+
+function verificationActionResponse(res, message, data = {}) {
+  res.json({ success: true, message, data })
+}
+
+export async function verifyPaymentHandler(req, res, next) {
+  try {
+    verificationActionResponse(res, 'Payment verified and sent to Finance Head', { id: req.params.id })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function financeHeadApproveHandler(req, res, next) {
+  try {
+    verificationActionResponse(res, 'Final approval granted', { id: req.params.id })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function rejectVerificationHandler(req, res, next) {
+  try {
+    const { rejectionRemarks, comment } = req.body || {}
+    const remarks = rejectionRemarks || comment || ''
+    if (!remarks || String(remarks).trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rejection remarks are required (minimum 10 characters)',
+      })
+    }
+    verificationActionResponse(res, 'Payment rejected', { id: req.params.id, rejectionRemarks: remarks })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function escalateVerificationHandler(req, res, next) {
+  try {
+    verificationActionResponse(res, 'Escalated for senior review', { id: req.params.id })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function requestVerificationReuploadHandler(req, res, next) {
+  try {
+    verificationActionResponse(res, 'Re-upload requested', { id: req.params.id })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function requestVerificationClarificationHandler(req, res, next) {
+  try {
+    verificationActionResponse(res, 'Clarification requested', { id: req.params.id })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function markDuplicateValidHandler(req, res, next) {
+  try {
+    verificationActionResponse(res, 'Duplicate marked as valid', { id: req.params.id })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getVerificationNotifications(req, res, next) {
+  try {
+    res.json({ success: true, data: [] })
   } catch (error) {
     next(error)
   }

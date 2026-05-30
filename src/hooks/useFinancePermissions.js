@@ -19,6 +19,8 @@ export function useFinancePermissions() {
       canView: can(FINANCE_PERMS.VIEW) || roleHasFullAccess(role),
       canEdit: can(FINANCE_PERMS.EDIT_PAYMENTS),
       canApprove: can(FINANCE_PERMS.APPROVE),
+      canVerify: can(FINANCE_PERMS.VERIFY) || can(FINANCE_PERMS.APPROVE),
+      canFinanceHeadApprove: can(FINANCE_PERMS.HEAD_APPROVE) || roleHasFullAccess(role),
       canExport: can(FINANCE_PERMS.EXPORT),
       canManageEmi: can(FINANCE_PERMS.MANAGE_EMI),
       canManageGst: can(FINANCE_PERMS.MANAGE_GST),

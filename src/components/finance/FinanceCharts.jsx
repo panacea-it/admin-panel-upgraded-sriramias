@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { LayoutGrid, Table2, TrendingDown, TrendingUp } from 'lucide-react'
 import { formatINR } from '../../utils/financeFilters'
 import { cn } from '../../utils/cn'
 
@@ -151,6 +153,312 @@ export function EmiTrendChart({ data = [], className }) {
         ))}
       </div>
     </ChartCard>
+  )
+}
+
+export function CollectionVsOutstandingChart({ data = [], loading, className }) {
+  const max = Math.max(...data.map((d) => d.amount || 0), 1)
+  if (!loading && !data.length) {
+    return (
+      <ChartCard title="Collection vs Outstanding" subtitle="Collected revenue vs pending" className={className}>
+        <p className="py-8 text-center text-sm text-[#686868]">No collection data for selected filters.</p>
+      </ChartCard>
+    )
+  }
+  return (
+    <ChartCard title="Collection vs Outstanding" subtitle="Collected revenue vs pending" className={className}>
+      {loading ? (
+        <div className="h-48 animate-pulse rounded-lg bg-slate-100" />
+      ) : (
+        <div className="flex h-48 flex-col justify-end gap-4 sm:h-52 sm:flex-row sm:items-end sm:gap-6">
+          {data.map((item) => {
+            const pct = ((item.amount || 0) / max) * 100
+            return (
+              <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
+                <span className="text-xs font-semibold text-[#1a3a5c]" title={formatINR(item.amount)}>
+                  {formatINR(item.amount)}
+                </span>
+                <div
+                  className="w-full max-w-[80px] rounded-t-md transition-all sm:max-w-none"
+                  style={{
+                    height: `${Math.max(pct, 8)}%`,
+                    minHeight: '2rem',
+                    background: `linear-gradient(to top, ${item.color || '#246392'}, #55ace7)`,
+                  }}
+                  title={`${item.label}: ${formatINR(item.amount)}`}
+                />
+                <span className="text-center text-xs font-medium text-[#686868]">{item.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </ChartCard>
+  )
+}
+
+export function CenterMonthlyComparisonChart({ data = [], loading, className }) {
+  const [view, setView] = useState('chart')
+  const centers = data.filter((c) => c.centerName !== 'All')
+  const display = centers.length ? centers : data
+
+  if (!loading && !display.length) {
+    return (
+      <ChartCard title="Center-wise Monthly Comparison" subtitle="Revenue by center and month" className={className}>
+        <p className="py-8 text-center text-sm text-[#686868]">No center comparison data.</p>
+      </ChartCard>
+    )
+  }
+
+  return (
+    <ChartCard title="Center-wise Monthly Comparison" subtitle="Revenue by center and month" className={className}>
+      <div className="mb-3 flex justify-end gap-1">
+        <button
+          type="button"
+          onClick={() => setView('chart')}
+          className={cn(
+            'rounded-lg p-1.5 transition',
+            view === 'chart' ? 'bg-[#246392] text-white' : 'bg-slate-100 text-slate-600',
+          )}
+          aria-label="Chart view"
+        >
+          <LayoutGrid className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setView('table')}
+          className={cn(
+            'rounded-lg p-1.5 transition',
+            view === 'table' ? 'bg-[#246392] text-white' : 'bg-slate-100 text-slate-600',
+          )}
+          aria-label="Table view"
+        >
+          <Table2 className="h-4 w-4" />
+        </button>
+      </div>
+      {loading ? (
+        <div className="h-40 animate-pulse rounded-lg bg-slate-100" />
+      ) : view === 'table' ? (
+        <div className="-mx-1 overflow-x-auto">
+          <table className="w-full min-w-[480px] text-left text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b text-[#686868]">
+                <th className="px-2 py-2 font-semibold">Center</th>
+                {(display[0]?.months || []).map((m) => (
+                  <th key={m.month} className="px-2 py-2 font-semibold">
+                    {m.month}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {display.map((row) => (
+                <tr key={row.centerName} className="border-b border-slate-100">
+                  <td className="px-2 py-2 font-medium text-[#222]">{row.centerName}</td>
+                  {(row.months || []).map((m) => (
+                    <td key={m.month} className="px-2 py-2 text-[#246392]">
+                      {formatINR(m.amount)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="space-y-4 overflow-x-auto">
+          {display.slice(0, 5).map((row) => {
+            const max = Math.max(...(row.months || []).map((m) => m.amount || 0), 1)
+            return (
+              <div key={row.centerName} className="min-w-[280px]">
+                <p className="mb-2 truncate text-xs font-bold text-[#1a3a5c]">{row.centerName}</p>
+                <div className="flex items-end gap-1">
+                  {(row.months || []).map((m) => (
+                    <div key={m.month} className="flex flex-1 flex-col items-center gap-1">
+                      <div
+                        className="w-full rounded-t bg-gradient-to-t from-[#246392] to-[#55ace7]"
+                        style={{ height: `${Math.max(((m.amount || 0) / max) * 48, 4)}px` }}
+                        title={formatINR(m.amount)}
+                      />
+                      <span className="text-[10px] text-[#686868]">{m.month}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </ChartCard>
+  )
+}
+
+export function PaymentSuccessRatioChart({ ratio = {}, loading, className }) {
+  const items = [
+    { label: 'Successful', value: ratio.successful ?? 0, color: '#69df66', tip: 'Paid / successful payments' },
+    { label: 'Failed', value: ratio.failed ?? 0, color: '#df8284', tip: 'Failed payment attempts' },
+    { label: 'Pending', value: ratio.pending ?? 0, color: '#55ace7', tip: 'Pending or partial payments' },
+  ]
+  return (
+    <ChartCard title="Payment Success Ratio" subtitle="Outcome distribution" className={className}>
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-6 animate-pulse rounded-full bg-slate-100" />
+          ))}
+        </div>
+      ) : (
+        <ul className="space-y-4">
+          {items.map((item) => (
+            <li key={item.label} title={item.tip}>
+              <div className="mb-1 flex justify-between text-sm">
+                <span className="font-medium text-[#222]">{item.label}</span>
+                <span className="font-bold text-[#246392]">{item.value}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-[#eef2fc]">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${item.value}%`, backgroundColor: item.color }}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </ChartCard>
+  )
+}
+
+export function FailedRecoveryChart({ recovery, loading, className }) {
+  const trend = recovery?.trend || []
+  const max = Math.max(...trend.flatMap((t) => [t.failed || 0, t.recovered || 0]), 1)
+
+  return (
+    <ChartCard title="Failed Payment Recovery" subtitle="Recovery tracking & trend" className={className}>
+      {loading ? (
+        <div className="h-36 animate-pulse rounded-lg bg-slate-100" />
+      ) : (
+        <>
+          <div className="mb-4 grid grid-cols-3 gap-2 text-center sm:gap-3">
+            <div className="rounded-lg bg-[#eef2fc] p-2 sm:p-3">
+              <p className="text-[10px] font-semibold uppercase text-[#686868] sm:text-xs">Failed</p>
+              <p className="text-lg font-bold text-[#df8284] sm:text-xl">{recovery?.failed ?? 0}</p>
+            </div>
+            <div className="rounded-lg bg-[#eef2fc] p-2 sm:p-3">
+              <p className="text-[10px] font-semibold uppercase text-[#686868] sm:text-xs">Recovered</p>
+              <p className="text-lg font-bold text-[#69df66] sm:text-xl">{recovery?.recovered ?? 0}</p>
+            </div>
+            <div className="rounded-lg bg-[#eef2fc] p-2 sm:p-3">
+              <p className="text-[10px] font-semibold uppercase text-[#686868] sm:text-xs">Recovery</p>
+              <p className="text-lg font-bold text-[#246392] sm:text-xl">{recovery?.recoveryPct ?? 0}%</p>
+            </div>
+          </div>
+          <div className="flex h-28 items-end justify-between gap-1 sm:h-32">
+            {trend.map((t) => (
+              <div key={t.month} className="flex flex-1 flex-col items-center gap-1">
+                <div className="flex w-full items-end justify-center gap-0.5" style={{ height: '5rem' }}>
+                  <div
+                    className="w-[42%] rounded-t bg-[#df8284]/80"
+                    style={{ height: `${Math.max(((t.failed || 0) / max) * 100, 6)}%` }}
+                    title={`Failed: ${t.failed}`}
+                  />
+                  <div
+                    className="w-[42%] rounded-t bg-[#69df66]"
+                    style={{ height: `${Math.max(((t.recovered || 0) / max) * 100, 4)}%` }}
+                    title={`Recovered: ${t.recovered}`}
+                  />
+                </div>
+                <span className="text-[10px] text-[#686868]">{t.month}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </ChartCard>
+  )
+}
+
+export function EmiAgingChart({ data = [], loading, className }) {
+  const max = Math.max(...data.map((d) => d.count || 0), 1)
+  return (
+    <ChartCard title="Pending EMI Aging" subtitle="Overdue installment buckets" className={className}>
+      {loading ? (
+        <div className="h-40 animate-pulse rounded-lg bg-slate-100" />
+      ) : !data.length ? (
+        <p className="py-8 text-center text-sm text-[#686868]">No pending EMI installments.</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {data.map((bucket) => (
+            <div
+              key={bucket.key}
+              className="rounded-lg border border-slate-100 p-3"
+              style={{ borderLeftWidth: 4, borderLeftColor: bucket.color }}
+            >
+              <p className="text-xs font-semibold text-[#686868]">{bucket.label}</p>
+              <p className="mt-1 text-2xl font-bold" style={{ color: bucket.color }}>
+                {bucket.count}
+              </p>
+              <p className="text-xs text-[#686868]">{formatINR(bucket.amount)} due</p>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#eef2fc]">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.max(((bucket.count || 0) / max) * 100, 8)}%`,
+                    backgroundColor: bucket.color,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </ChartCard>
+  )
+}
+
+export function DailyCollectionWidget({ daily, loading, className }) {
+  const trend = daily?.trendPct ?? 0
+  const TrendIcon = trend >= 0 ? TrendingUp : TrendingDown
+  return (
+    <div
+      className={cn(
+        'overflow-hidden rounded-xl bg-gradient-to-br from-[#1a3a5c] to-[#246392] shadow-[0_8px_24px_rgba(15,23,42,0.08)]',
+        className,
+      )}
+    >
+      <div className="px-4 py-3 sm:px-5">
+        <h3 className="text-sm font-bold text-white sm:text-base">Daily Collection</h3>
+        <p className="text-xs text-white/75">Today vs yesterday</p>
+      </div>
+      <div className="bg-white/95 px-4 py-4 sm:px-5">
+        {loading ? (
+          <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
+        ) : (
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase text-[#686868]">Today</p>
+              <p className="text-2xl font-bold text-[#1a3a5c] sm:text-3xl">{formatINR(daily?.today ?? 0)}</p>
+              <p className="mt-1 text-xs text-[#686868]">{daily?.count ?? 0} transactions</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-[#686868]">Yesterday</p>
+              <p className="text-sm font-semibold text-[#222]">{formatINR(daily?.yesterday ?? 0)}</p>
+              <p
+                className={cn(
+                  'mt-1 inline-flex items-center gap-1 text-sm font-bold',
+                  trend >= 0 ? 'text-[#69df66]' : 'text-[#df8284]',
+                )}
+                title="Day-over-day change"
+              >
+                <TrendIcon className="h-4 w-4" />
+                {trend >= 0 ? '+' : ''}
+                {trend}%
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

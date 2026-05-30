@@ -1,4 +1,5 @@
 import AppModalWrapper from './AppModalWrapper'
+import { cn } from '../../utils/cn'
 
 export default function CommonFormModal({
   open,
@@ -9,6 +10,8 @@ export default function CommonFormModal({
   footer,
   size = 'lg',
   role = 'dialog',
+  className,
+  zIndex,
 }) {
   return (
     <AppModalWrapper
@@ -17,6 +20,8 @@ export default function CommonFormModal({
       title={title || 'Dialog'}
       size={size}
       role={role}
+      zIndex={zIndex}
+      className={cn('overflow-hidden rounded-xl bg-white shadow-xl', className)}
     >
       <div className="flex min-h-0 flex-col">
         {(title || subtitle) && (

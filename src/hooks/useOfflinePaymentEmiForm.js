@@ -84,6 +84,7 @@ export function useOfflinePaymentEmiForm({ open }) {
   const [modeFields, setModeFields] = useState({})
   const [proofFile, setProofFile] = useState(null)
   const [proofPreview, setProofPreview] = useState(null)
+  const [proofFiles, setProofFiles] = useState([])
   const [editInstallment, setEditInstallment] = useState(null)
   const [collectInstallment, setCollectInstallment] = useState(null)
   const [collectDialogTitle, setCollectDialogTitle] = useState('Collect installment')
@@ -130,6 +131,7 @@ export function useOfflinePaymentEmiForm({ open }) {
     setModeFields({})
     setProofFile(null)
     setProofPreview(null)
+    setProofFiles([])
     setValidationErrors([])
     setEditInstallment(null)
     setCollectInstallment(null)
@@ -218,9 +220,17 @@ export function useOfflinePaymentEmiForm({ open }) {
     }
   }, [])
 
+  const handleProofFilesChange = useCallback((items) => {
+    setProofFiles(items)
+    const first = items[0]?.file || null
+    setProofFile(first)
+    setProofPreview(items[0]?.preview || null)
+  }, [])
+
   const clearProof = useCallback(() => {
     setProofFile(null)
     setProofPreview(null)
+    setProofFiles([])
   }, [])
 
   const expectedPrincipal = useMemo(() => {
@@ -323,8 +333,9 @@ export function useOfflinePaymentEmiForm({ open }) {
         courseName: course?.name || financials?.courseName || '',
         courseType: course?.type || financials?.courseType || 'Offline',
         amount,
-        proofFileName: proofFile?.name || null,
+        proofFileName: proofFile?.name || proofFiles[0]?.name || null,
         proofFile,
+        proofFiles: proofFiles.map((p) => p.file).filter(Boolean),
         modeFields,
         financials,
         emiPlan: emiEnabled
@@ -351,6 +362,7 @@ export function useOfflinePaymentEmiForm({ open }) {
       installments,
       financials,
       proofFile,
+      proofFiles,
       modeFields,
       emiPlanStatus,
     ],
@@ -409,10 +421,12 @@ export function useOfflinePaymentEmiForm({ open }) {
     emiPlanStatus,
     modeFields,
     setModeFields,
-    proofFile,
-    proofPreview,
-    handleProofChange,
-    clearProof,
+      proofFile,
+      proofFiles,
+      proofPreview,
+      handleProofChange,
+      handleProofFilesChange,
+      clearProof,
     schedulePreview,
     validationErrors,
     editInstallment,

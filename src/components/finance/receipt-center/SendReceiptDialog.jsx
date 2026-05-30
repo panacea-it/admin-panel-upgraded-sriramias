@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Download, Mail, MessageCircle, MessageSquare, Printer, Send } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import CompletionReceiptDocument from './CompletionReceiptDocument'
-import { buildReceiptMessage, printReceiptDocument } from '../../../utils/receiptCompletion'
+import { buildReceiptMessage, printReceiptDocument, downloadReceiptHtml } from '../../../utils/receiptCompletion'
 import { cn } from '../../../utils/cn'
 import Modal from '../../ui/Modal'
 
@@ -12,7 +12,7 @@ const CHANNELS = [
   { id: 'Email', icon: Mail, color: 'border-indigo-300 text-indigo-700' },
 ]
 
-export default function SendReceiptDialog({ open, row, onClose, onSend, sending = false }) {
+export default function SendReceiptDialog({ open, row, gstSettings = null, onClose, onSend, sending = false }) {
   const [channel, setChannel] = useState('WhatsApp')
 
   const { register, handleSubmit, reset, setValue } = useForm({
@@ -70,12 +70,12 @@ export default function SendReceiptDialog({ open, row, onClose, onSend, sending 
               Receipt preview
             </p>
             <div className="origin-top scale-[0.92] sm:scale-100">
-              <CompletionReceiptDocument row={row} compact />
+              <CompletionReceiptDocument row={row} gstSettings={gstSettings} compact />
             </div>
             <div className="mt-3 flex flex-wrap gap-2 print:hidden">
               <button
                 type="button"
-                onClick={() => printReceiptDocument(row)}
+                onClick={() => printReceiptDocument(row, gstSettings || {})}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#444] hover:bg-slate-50"
               >
                 <Printer className="h-3.5 w-3.5" />
@@ -83,7 +83,7 @@ export default function SendReceiptDialog({ open, row, onClose, onSend, sending 
               </button>
               <button
                 type="button"
-                onClick={() => printReceiptDocument(row)}
+                onClick={() => downloadReceiptHtml(row, gstSettings || {})}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#444] hover:bg-slate-50"
               >
                 <Download className="h-3.5 w-3.5" />

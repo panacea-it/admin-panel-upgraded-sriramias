@@ -8,6 +8,7 @@ export default function Modal({
   size = 'lg',
   title = 'Dialog',
   showCloseButton = true,
+  zIndex,
 }) {
   return (
     <AppModalWrapper
@@ -17,6 +18,7 @@ export default function Modal({
       size={size}
       title={title}
       showCloseButton={showCloseButton}
+      zIndex={zIndex}
     >
       {children}
     </AppModalWrapper>

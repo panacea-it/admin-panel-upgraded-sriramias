@@ -35,6 +35,10 @@ export default function WebsiteFilterToolbar({
   statusFilter,
   onStatusFilterChange,
   showStatusFilter = false,
+  priorityFilter,
+  onPriorityFilterChange,
+  showPriorityFilter = false,
+  priorityFilterOptions,
 }) {
   return (
     <div className="flex min-h-[56px] flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.07)] sm:gap-4">
@@ -73,6 +77,16 @@ export default function WebsiteFilterToolbar({
               { value: 'Active', label: 'Active' },
               { value: 'Inactive', label: 'Inactive' },
             ]}
+          />
+        )}
+        {showPriorityFilter && (
+          <FilterSelect
+            label="Priority"
+            value={priorityFilter}
+            onChange={onPriorityFilterChange}
+            options={
+              priorityFilterOptions ?? [{ value: 'all', label: 'Priority' }]
+            }
           />
         )}
       </div>

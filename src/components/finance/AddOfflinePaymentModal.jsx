@@ -34,8 +34,10 @@ export default function AddOfflinePaymentModal({ open, onClose, onSubmit, loadin
     modeFields,
     setModeFields,
     proofFile,
+    proofFiles,
     proofPreview,
     handleProofChange,
+    handleProofFilesChange,
     clearProof,
     schedulePreview,
     validationErrors,
@@ -177,8 +179,10 @@ export default function AddOfflinePaymentModal({ open, onClose, onSubmit, loadin
                       modeFields={modeFields}
                       setModeFields={setModeFields}
                       proofFile={proofFile}
+                      proofFiles={proofFiles}
                       proofPreview={proofPreview}
                       onProofChange={handleProofChange}
+                      onProofFilesChange={handleProofFilesChange}
                       onClearProof={clearProof}
                     />
                   </div>

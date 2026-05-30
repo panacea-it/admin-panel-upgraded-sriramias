@@ -1,4 +1,4 @@
-import { Upload, X } from 'lucide-react'
+import OfflineProofDropzone from '../OfflineProofDropzone'
 import { cn } from '../../../utils/cn'
 
 const fieldClass =
@@ -10,8 +10,10 @@ export default function OfflinePaymentModeFields({
   modeFields,
   setModeFields,
   proofFile,
+  proofFiles = [],
   proofPreview,
   onProofChange,
+  onProofFilesChange,
   onClearProof,
 }) {
   const setMode = (key, value) => setModeFields((f) => ({ ...f, [key]: value }))
@@ -31,8 +33,8 @@ export default function OfflinePaymentModeFields({
             />
           </label>
           <ProofUploadBlock
-            proofFile={proofFile}
-            proofPreview={proofPreview}
+            proofFiles={proofFiles}
+            onProofFilesChange={onProofFilesChange}
             onProofChange={onProofChange}
             onClearProof={onClearProof}
             label="UPI screenshot"
@@ -47,8 +49,8 @@ export default function OfflinePaymentModeFields({
             <input {...register('utrNumber')} className={cn(fieldClass, 'font-mono')} />
           </label>
           <ProofUploadBlock
-            proofFile={proofFile}
-            proofPreview={proofPreview}
+            proofFiles={proofFiles}
+            onProofFilesChange={onProofFilesChange}
             onProofChange={onProofChange}
             onClearProof={onClearProof}
             label="Transfer receipt"
@@ -128,8 +130,8 @@ export default function OfflinePaymentModeFields({
 
       {!['UPI', 'Bank Transfer'].includes(paymentMode) && (
         <ProofUploadBlock
-          proofFile={proofFile}
-          proofPreview={proofPreview}
+          proofFiles={proofFiles}
+          onProofFilesChange={onProofFilesChange}
           onProofChange={onProofChange}
           onClearProof={onClearProof}
           label="Upload proof"
@@ -139,29 +141,31 @@ export default function OfflinePaymentModeFields({
   )
 }
 
-function ProofUploadBlock({ proofFile, proofPreview, onProofChange, onClearProof, label }) {
+function ProofUploadBlock({ proofFiles, onProofFilesChange, onProofChange, onClearProof, label }) {
+  if (onProofFilesChange) {
+    return (
+      <OfflineProofDropzone
+        label={label}
+        files={proofFiles}
+        onChange={(items) => {
+          onProofFilesChange(items)
+          if (!items.length) onClearProof?.()
+        }}
+      />
+    )
+  }
+
   return (
-    <div>
-      <p className="text-sm font-semibold text-[#333]">{label}</p>
-      <div className="mt-2 flex flex-wrap items-start gap-3">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-[#55ace7]/50 bg-white px-4 py-2.5 text-sm font-semibold text-[#246392] hover:bg-[#eef6fc]">
-          <Upload className="h-4 w-4" />
-          Upload proof
-          <input type="file" accept="image/*,.pdf" className="sr-only" onChange={onProofChange} />
-        </label>
-        {proofFile && (
-          <button
-            type="button"
-            onClick={onClearProof}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#df8284] hover:underline"
-          >
-            <X className="h-3.5 w-3.5" /> Remove
-          </button>
-        )}
-      </div>
-      {proofPreview && (
-        <img src={proofPreview} alt="" className="mt-2 max-h-32 rounded-lg object-contain" />
-      )}
-    </div>
+    <OfflineProofDropzone
+      label={label}
+      files={proofFiles}
+      onChange={(items) => {
+        onProofFilesChange?.(items)
+        if (!items.length) onClearProof?.()
+        else if (items[0]?.file) {
+          onProofChange?.({ target: { files: [items[0].file] } })
+        }
+      }}
+    />
   )
 }

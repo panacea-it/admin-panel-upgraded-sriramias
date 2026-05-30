@@ -22,7 +22,10 @@ export const LiveClassDetailPage = lazyRoute(
 )
 export const ContentLibraryPage = lazyRoute(() => import('../pages/academics/ContentLibraryPage'))
 export const ContentLibraryLayout = lazyRoute(() => import('../layouts/ContentLibraryLayout'))
-export const FreeResourcesPage = lazyRoute(() => import('../pages/academics/FreeResourcesPage'))
+export const FreeResourcesPage = lazyRoute(
+  () => import('../pages/academics/FreeResourcesPage'),
+  'Free Resources',
+)
 export const TestsPage = lazyRoute(() => import('../pages/academics/TestsPage'))
 export const CurrentAffairsPage = lazyRoute(() => import('../pages/academics/CurrentAffairsPage'))
 export const CategoriesLayout = lazyRoute(() => import('../layouts/CategoriesLayout'))

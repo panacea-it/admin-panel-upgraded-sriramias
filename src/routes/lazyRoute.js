@@ -1,9 +1,11 @@
 import { createElement, lazy } from 'react'
 import { isChunkLoadError } from '../utils/chunkLoadError'
+import LazyLoadErrorPage from '../pages/LazyLoadErrorPage'
 
 /**
  * Wraps React.lazy so a failed dynamic import shows a recoverable fallback
- * instead of a blank screen. Surfaces the real error in development.
+ * instead of a blank screen. LazyLoadErrorPage is statically imported so the
+ * fallback never depends on a second dynamic import (which can also fail in dev).
  */
 export function lazyRoute(importer, moduleLabel = 'page') {
   return lazy(async () => {
@@ -11,8 +13,6 @@ export function lazyRoute(importer, moduleLabel = 'page') {
       return await importer()
     } catch (error) {
       console.error(`[lazyRoute] Failed to load ${moduleLabel}:`, error)
-
-      const { default: LazyLoadErrorPage } = await import('../pages/LazyLoadErrorPage.jsx')
 
       const isChunk = isChunkLoadError(error)
       const devDetail =

@@ -3,14 +3,22 @@ import { fetchPaymentDashboardByScope } from '../api/financeAPI'
 import { useFinanceCenterFilter } from '../contexts/FinanceCenterFilterContext'
 import { toast } from '../utils/toast'
 
-export function useFinanceDashboard(courseFilter = 'all', monthFilter = 'all') {
+export function useFinanceDashboard(
+  courseFilter = 'all',
+  monthFilter = 'all',
+  batchFilter = 'all',
+  courseTypeFilter = 'all',
+  paymentTypeFilter = 'all',
+  studentTypeFilter = 'all',
+) {
   const { apiParams } = useFinanceCenterFilter()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
   const initialLoad = useRef(true)
 
-  const filterKey = `${apiParams.scope}|${apiParams.centerIds || ''}|${apiParams.centerNames || ''}|${courseFilter}|${monthFilter}`
+  const filterKey = `${apiParams.scope}|${apiParams.centerIds || ''}|${apiParams.centerNames || ''}|${courseFilter}|${monthFilter}|${batchFilter}|${courseTypeFilter}|${paymentTypeFilter}|${studentTypeFilter}`
 
   const load = useCallback(async () => {
     const isInitial = initialLoad.current
@@ -22,8 +30,13 @@ export function useFinanceDashboard(courseFilter = 'all', monthFilter = 'all') {
         ...apiParams,
         course: courseFilter,
         month: monthFilter,
+        batch: batchFilter,
+        courseType: courseTypeFilter,
+        paymentType: paymentTypeFilter,
+        studentType: studentTypeFilter,
       })
       setData(res)
+      setLastUpdated(new Date())
     } catch {
       toast.error('Failed to load payment dashboard')
     } finally {
@@ -31,7 +44,7 @@ export function useFinanceDashboard(courseFilter = 'all', monthFilter = 'all') {
       setRefreshing(false)
       initialLoad.current = false
     }
-  }, [filterKey, apiParams, courseFilter, monthFilter])
+  }, [filterKey, apiParams, courseFilter, monthFilter, batchFilter, courseTypeFilter, paymentTypeFilter, studentTypeFilter])
 
   useEffect(() => {
     load()
@@ -39,5 +52,5 @@ export function useFinanceDashboard(courseFilter = 'all', monthFilter = 'all') {
     return () => clearInterval(interval)
   }, [load])
 
-  return { data, loading, refreshing, reload: load }
+  return { data, loading, refreshing, reload: load, lastUpdated }
 }

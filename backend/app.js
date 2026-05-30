@@ -12,6 +12,7 @@ import evaluationOversightRoutes from './routes/evaluationOversightRoutes.js'
 import testLanguageRoutes from './routes/testLanguageRoutes.js'
 import testExamPatternRoutes from './routes/testExamPatternRoutes.js'
 import testSectionConfigRoutes from './routes/testSectionConfigRoutes.js'
+import youtubeVideoRoutes from './routes/youtubeVideoRoutes.js'
 import { connectDB } from './config/db.js'
 import { errorHandler, notFound } from './middleware/errorHandler.js'
 
@@ -89,6 +90,7 @@ app.use('/api/evaluation-oversight', evaluationOversightRoutes)
 app.use('/api/test-management/languages', testLanguageRoutes)
 app.use('/api/test-management/exam-patterns', testExamPatternRoutes)
 app.use('/api/test-management/section-configs', testSectionConfigRoutes)
+app.use('/api/youtube-videos', youtubeVideoRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

@@ -3,6 +3,7 @@ import { XCircle } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ModalPanelHeader from '../courses/ModalPanelHeader'
 import { cn } from '../../utils/cn'
+import { REJECTION_REMARK_MIN_LENGTH, validateRejectionRemarks } from '../../utils/financeVerificationWorkflow'
 
 const REJECT_REASONS = [
   'Invalid or unclear payment proof',
@@ -15,17 +16,24 @@ const REJECT_REASONS = [
 export default function VerificationRejectDialog({ open, row, onClose, onConfirm, loading }) {
   const [reason, setReason] = useState(REJECT_REASONS[0])
   const [comment, setComment] = useState('')
+  const [touched, setTouched] = useState(false)
 
   useEffect(() => {
     if (!open) return
     setReason(REJECT_REASONS[0])
     setComment('')
+    setTouched(false)
   }, [open, row?.id])
+
+  const validationError = touched ? validateRejectionRemarks(comment) : null
+  const charCount = comment.trim().length
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!comment.trim()) return
-    onConfirm?.({ reason, comment: comment.trim() })
+    setTouched(true)
+    const err = validateRejectionRemarks(comment)
+    if (err) return
+    onConfirm?.({ reason, comment: comment.trim(), rejectionRemarks: comment.trim() })
   }
 
   if (!row) return null
@@ -47,6 +55,9 @@ export default function VerificationRejectDialog({ open, row, onClose, onConfirm
             Rejecting <span className="font-semibold text-[#222]">{row.student}</span> —{' '}
             <span className="font-mono text-xs">{row.id}</span>
           </p>
+          <p className="rounded-lg border border-[#df8284]/30 bg-[#df8284]/10 px-3 py-2 text-xs text-[#b94b4b]">
+            Rejection remarks are mandatory and will be stored in the audit trail.
+          </p>
           <label className="block text-sm font-semibold text-[#333]">
             Rejection reason
             <select
@@ -62,16 +73,25 @@ export default function VerificationRejectDialog({ open, row, onClose, onConfirm
             </select>
           </label>
           <label className="block text-sm font-semibold text-[#333]">
-            Details <span className="text-[#df8284]">*</span>
+            Rejection remarks <span className="text-[#df8284]">*</span>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              rows={3}
+              onBlur={() => setTouched(true)}
+              rows={4}
               required
-              placeholder="Explain why this payment was rejected…"
-              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+              placeholder={`Explain why this payment was rejected (min. ${REJECTION_REMARK_MIN_LENGTH} characters)…`}
+              className={cn(
+                'mt-1.5 w-full rounded-lg border bg-white px-3 py-2 text-sm',
+                validationError ? 'border-[#df8284] ring-1 ring-[#df8284]/30' : 'border-slate-200',
+              )}
             />
           </label>
+          <div className="flex items-center justify-between text-xs">
+            <span className={cn('font-medium', validationError ? 'text-[#df8284]' : 'text-[#686868]')}>
+              {validationError || `${charCount} / ${REJECTION_REMARK_MIN_LENGTH}+ characters`}
+            </span>
+          </div>
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
@@ -83,13 +103,13 @@ export default function VerificationRejectDialog({ open, row, onClose, onConfirm
             </button>
             <button
               type="submit"
-              disabled={loading || !comment.trim()}
+              disabled={loading || charCount < REJECTION_REMARK_MIN_LENGTH}
               className={cn(
                 'h-10 rounded-xl px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-60',
                 'bg-gradient-to-r from-[#c96565] to-[#b94b4b]',
               )}
             >
-              {loading ? 'Rejecting…' : 'Reject payment'}
+              {loading ? 'Rejecting…' : 'Confirm rejection'}
             </button>
           </div>
         </div>

@@ -1,16 +1,15 @@
 import { formatINR } from '../../../utils/financeFilters'
 import { formatCategoryDateTime } from '../../../utils/formatDateTime'
-import FinanceStatusBadge from '../FinanceStatusBadge'
+import { calcReceiptGst, resolveBranchGstSettings } from '../../../utils/finance/receiptGst'
+import ReceiptStatusBadge from './ReceiptStatusBadge'
 import { cn } from '../../../utils/cn'
 
-const GST_RATE = 0.18
-
-export default function CompletionReceiptDocument({ row, className, compact = false }) {
+export default function CompletionReceiptDocument({ row, gstSettings = null, className, compact = false }) {
   if (!row) return null
 
+  const branch = resolveBranchGstSettings(row, gstSettings || {})
   const totalFees = row.totalFees ?? row.amountPaid ?? 0
-  const base = Math.round(totalFees / (1 + GST_RATE))
-  const gst = totalFees - base
+  const gst = row.gstBreakup || calcReceiptGst({ ...row, totalFees }, gstSettings || {})
   const isEmi = row.receiptStatus === 'EMI Completed'
 
   return (
@@ -24,20 +23,25 @@ export default function CompletionReceiptDocument({ row, className, compact = fa
     >
       <div className="flex items-start justify-between gap-3 border-b-2 border-[#1a3a5c] pb-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#246392] to-[#1a4d73] text-lg font-bold text-white">
-            SI
-          </div>
+          {branch.logoUrl ? (
+            <img src={branch.logoUrl} alt="" className="h-10 w-auto object-contain" />
+          ) : (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#246392] to-[#1a4d73] text-lg font-bold text-white">
+              SI
+            </div>
+          )}
           <div>
             <h2 className={cn('font-bold text-[#1a3a5c]', compact ? 'text-base' : 'text-xl')}>
-              Sriram IAS
+              {branch.companyName}
             </h2>
             <p className="text-[#686868]">Official Fee Receipt</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="font-bold text-[#246392]">{row.receiptNumber}</p>
-          <p className="text-[#686868]">{formatCategoryDateTime(row.paymentDate)}</p>
-          <FinanceStatusBadge status={row.receiptStatus} className="mt-1" />
+          <p className="font-bold text-[#246392]">{row.invoiceNumber || row.receiptNumber}</p>
+          <p className="text-[10px] text-[#686868]">{row.receiptNumber}</p>
+          <p className="text-[#686868]">{formatCategoryDateTime(row.receiptGeneratedAt || row.paymentDate)}</p>
+          <ReceiptStatusBadge status={row.receiptLifecycleStatus || row.receiptStatus} className="mt-1" />
         </div>
       </div>
 
@@ -47,15 +51,13 @@ export default function CompletionReceiptDocument({ row, className, compact = fa
           <p className="font-bold text-[#222]">{row.studentName}</p>
           <p className="text-[#686868]">ID: {row.studentId}</p>
           <p className="text-[#686868]">{row.mobile}</p>
-          <p className="text-[#686868]">{row.email}</p>
         </div>
         <div className="sm:text-right">
           <p className="text-[10px] font-bold uppercase tracking-wide text-[#55ace7]">Course</p>
           <p className="font-bold text-[#222]">{row.courseName}</p>
           <p className="text-[#686868]">
-            {row.paymentTypeLabel} · {row.paymentMode}
+            {row.paymentTypeLabel} · {row.paymentMode} · {row.branchCode}
           </p>
-          <p className="text-[#686868]">{row.centerName || row.branch}</p>
         </div>
       </div>
 
@@ -83,28 +85,50 @@ export default function CompletionReceiptDocument({ row, className, compact = fa
         </tbody>
       </table>
 
-      <div className="mt-4 ml-auto max-w-[200px] space-y-1 text-xs">
+      <div className="mt-4 ml-auto max-w-[220px] space-y-1 text-xs">
         <div className="flex justify-between">
-          <span className="text-[#686868]">Taxable</span>
-          <span>{formatINR(base)}</span>
+          <span className="text-[#686868]">Base</span>
+          <span>{formatINR(gst.baseAmount)}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-[#686868]">GST 18%</span>
-          <span>{formatINR(gst)}</span>
-        </div>
+        {branch.gstEnabled && gst.gstAmount > 0 && (
+          gst.interState ? (
+            <div className="flex justify-between">
+              <span className="text-[#686868]">IGST {gst.gstPercent}%</span>
+              <span>{formatINR(gst.igst)}</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between">
+                <span className="text-[#686868]">CGST {gst.gstPercent / 2}%</span>
+                <span>{formatINR(gst.cgst)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#686868]">SGST {gst.gstPercent / 2}%</span>
+                <span>{formatINR(gst.sgst)}</span>
+              </div>
+            </>
+          )
+        )}
         <div className="flex justify-between border-t border-[#1a3a5c] pt-1 text-sm font-bold text-[#1a3a5c]">
           <span>Total paid</span>
           <span>{formatINR(row.amountPaid)}</span>
         </div>
       </div>
 
-      <p className="mt-6 text-center text-[10px] text-[#9ca0a8]">
-        Generated by {row.receiptAudit?.generatedBy || 'Finance'} · GSTIN: 29ABCDESRI0001Z5
-      </p>
       <div className="mt-4 flex justify-between text-[10px] text-[#555]">
         <span className="w-[40%] border-t border-slate-300 pt-2">Student signature</span>
-        <span className="w-[40%] border-t border-slate-300 pt-2 text-right">Finance signature</span>
+        <span className="w-[40%] border-t border-slate-300 pt-2 text-right">
+          {branch.signatureUrl && <img src={branch.signatureUrl} alt="" className="ml-auto mb-1 max-h-8" />}
+          {branch.signatoryName}
+          <br />
+          <small>{branch.signatoryDesignation}</small>
+        </span>
       </div>
+
+      <p className="mt-4 text-center text-[10px] text-[#9ca0a8]">
+        GSTIN: {branch.gstNumber}
+        {row.verificationHash && ` · Verify: ${row.verificationHash}`}
+      </p>
     </div>
   )
 }
